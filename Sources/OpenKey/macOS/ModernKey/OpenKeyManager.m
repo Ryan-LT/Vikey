@@ -47,9 +47,7 @@ static NSTimer*           watchdog;
                  (1 << kCGEventKeyUp) |
                  (1 << kCGEventFlagsChanged) |
                  (1 << kCGEventLeftMouseDown) |
-                 (1 << kCGEventRightMouseDown) |
-                 (1 << kCGEventLeftMouseDragged) |
-                 (1 << kCGEventRightMouseDragged));
+                 (1 << kCGEventRightMouseDown));
     
     eventTap = CGEventTapCreate(kCGSessionEventTap,
                                 kCGHeadInsertEventTap,

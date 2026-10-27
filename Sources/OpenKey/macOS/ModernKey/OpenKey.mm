@@ -11,6 +11,9 @@
 #import "Engine.h"
 #import "AppDelegate.h"
 #import "OpenKeyManager.h"
+
+// Marks keystrokes OpenKey posts itself, so the callback can skip them cheaply.
+#define OPENKEY_EVENT_TAG 0x0F341991
 #import "ViewController.h"
 
 #define FRONT_APP [[NSWorkspace sharedWorkspace] frontmostApplication].bundleIdentifier
@@ -119,7 +122,9 @@ extern "C" {
         pData = (vKeyHookState*)vKeyInit();
 
         eventBackSpaceDown = CGEventCreateKeyboardEvent (myEventSource, 51, true);
+        CGEventSetIntegerValueField(eventBackSpaceDown, kCGEventSourceUserData, OPENKEY_EVENT_TAG);
         eventBackSpaceUp = CGEventCreateKeyboardEvent (myEventSource, 51, false);
+        CGEventSetIntegerValueField(eventBackSpaceUp, kCGEventSourceUserData, OPENKEY_EVENT_TAG);
         
         //init and load macro data
         NSUserDefaults *prefs = [NSUserDefaults standardUserDefaults];
@@ -253,7 +258,9 @@ extern "C" {
     
     void SendPureCharacter(const Uint16& ch) {
         _newEventDown = CGEventCreateKeyboardEvent(myEventSource, 0, true);
+        CGEventSetIntegerValueField(_newEventDown, kCGEventSourceUserData, OPENKEY_EVENT_TAG);
         _newEventUp = CGEventCreateKeyboardEvent(myEventSource, 0, false);
+        CGEventSetIntegerValueField(_newEventUp, kCGEventSourceUserData, OPENKEY_EVENT_TAG);
         CGEventKeyboardSetUnicodeString(_newEventDown, 1, &ch);
         CGEventKeyboardSetUnicodeString(_newEventUp, 1, &ch);
         CGEventTapPostEvent(_proxy, _newEventDown);
@@ -272,7 +279,9 @@ extern "C" {
                 InsertKeyLength(1);
             
             _newEventDown = CGEventCreateKeyboardEvent(myEventSource, _newChar, true);
+            CGEventSetIntegerValueField(_newEventDown, kCGEventSourceUserData, OPENKEY_EVENT_TAG);
             _newEventUp = CGEventCreateKeyboardEvent(myEventSource, _newChar, false);
+            CGEventSetIntegerValueField(_newEventUp, kCGEventSourceUserData, OPENKEY_EVENT_TAG);
             _privateFlag = CGEventGetFlags(_newEventDown);
             
             if (data & CAPS_MASK) {
@@ -289,7 +298,9 @@ extern "C" {
         } else {
             if (vCodeTable == 0) { //unicode 2 bytes code
                 _newEventDown = CGEventCreateKeyboardEvent(myEventSource, 0, true);
+                CGEventSetIntegerValueField(_newEventDown, kCGEventSourceUserData, OPENKEY_EVENT_TAG);
                 _newEventUp = CGEventCreateKeyboardEvent(myEventSource, 0, false);
+                CGEventSetIntegerValueField(_newEventUp, kCGEventSourceUserData, OPENKEY_EVENT_TAG);
                 CGEventKeyboardSetUnicodeString(_newEventDown, 1, &_newChar);
                 CGEventKeyboardSetUnicodeString(_newEventUp, 1, &_newChar);
                 CGEventTapPostEvent(_proxy, _newEventDown);
@@ -299,7 +310,9 @@ extern "C" {
                 _newChar = LOBYTE(_newChar);
                 
                 _newEventDown = CGEventCreateKeyboardEvent(myEventSource, 0, true);
+                CGEventSetIntegerValueField(_newEventDown, kCGEventSourceUserData, OPENKEY_EVENT_TAG);
                 _newEventUp = CGEventCreateKeyboardEvent(myEventSource, 0, false);
+                CGEventSetIntegerValueField(_newEventUp, kCGEventSourceUserData, OPENKEY_EVENT_TAG);
                 CGEventKeyboardSetUnicodeString(_newEventDown, 1, &_newChar);
                 CGEventKeyboardSetUnicodeString(_newEventUp, 1, &_newChar);
                 CGEventTapPostEvent(_proxy, _newEventDown);
@@ -310,7 +323,9 @@ extern "C" {
                     CFRelease(_newEventDown);
                     CFRelease(_newEventUp);
                     _newEventDown = CGEventCreateKeyboardEvent(myEventSource, 0, true);
+                    CGEventSetIntegerValueField(_newEventDown, kCGEventSourceUserData, OPENKEY_EVENT_TAG);
                     _newEventUp = CGEventCreateKeyboardEvent(myEventSource, 0, false);
+                    CGEventSetIntegerValueField(_newEventUp, kCGEventSourceUserData, OPENKEY_EVENT_TAG);
                     CGEventKeyboardSetUnicodeString(_newEventDown, 1, &_newCharHi);
                     CGEventKeyboardSetUnicodeString(_newEventUp, 1, &_newCharHi);
                     CGEventTapPostEvent(_proxy, _newEventDown);
@@ -326,7 +341,9 @@ extern "C" {
                 _uniChar[1] = _newCharHi > 0 ? (_unicodeCompoundMark[_newCharHi - 1]) : 0;
                 InsertKeyLength(_newCharHi > 0 ? 2 : 1);
                 _newEventDown = CGEventCreateKeyboardEvent(myEventSource, 0, true);
+                CGEventSetIntegerValueField(_newEventDown, kCGEventSourceUserData, OPENKEY_EVENT_TAG);
                 _newEventUp = CGEventCreateKeyboardEvent(myEventSource, 0, false);
+                CGEventSetIntegerValueField(_newEventUp, kCGEventSourceUserData, OPENKEY_EVENT_TAG);
                 CGEventKeyboardSetUnicodeString(_newEventDown, (_newCharHi > 0 ? 2 : 1), _uniChar);
                 CGEventKeyboardSetUnicodeString(_newEventUp, (_newCharHi > 0 ? 2 : 1), _uniChar);
                 CGEventTapPostEvent(_proxy, _newEventDown);
@@ -347,7 +364,9 @@ extern "C" {
         }
         
         _newEventDown = CGEventCreateKeyboardEvent(myEventSource, 0, true);
+        CGEventSetIntegerValueField(_newEventDown, kCGEventSourceUserData, OPENKEY_EVENT_TAG);
         _newEventUp = CGEventCreateKeyboardEvent(myEventSource, 0, false);
+        CGEventSetIntegerValueField(_newEventUp, kCGEventSourceUserData, OPENKEY_EVENT_TAG);
         CGEventKeyboardSetUnicodeString(_newEventDown, 1, &_newChar);
         CGEventKeyboardSetUnicodeString(_newEventUp, 1, &_newChar);
         CGEventTapPostEvent(_proxy, _newEventDown);
@@ -358,7 +377,9 @@ extern "C" {
     
     void SendVirtualKey(const Byte& vKey) {
         CGEventRef eventVkeyDown = CGEventCreateKeyboardEvent (myEventSource, vKey, true);
+        CGEventSetIntegerValueField(eventVkeyDown, kCGEventSourceUserData, OPENKEY_EVENT_TAG);
         CGEventRef eventVkeyUp = CGEventCreateKeyboardEvent (myEventSource, vKey, false);
+        CGEventSetIntegerValueField(eventVkeyUp, kCGEventSourceUserData, OPENKEY_EVENT_TAG);
         
         CGEventTapPostEvent(_proxy, eventVkeyDown);
         CGEventTapPostEvent(_proxy, eventVkeyUp);
@@ -384,7 +405,9 @@ extern "C" {
     
     void SendShiftAndLeftArrow() {
         CGEventRef eventVkeyDown = CGEventCreateKeyboardEvent (myEventSource, KEY_LEFT, true);
+        CGEventSetIntegerValueField(eventVkeyDown, kCGEventSourceUserData, OPENKEY_EVENT_TAG);
         CGEventRef eventVkeyUp = CGEventCreateKeyboardEvent (myEventSource, KEY_LEFT, false);
+        CGEventSetIntegerValueField(eventVkeyUp, kCGEventSourceUserData, OPENKEY_EVENT_TAG);
         _privateFlag = CGEventGetFlags(eventVkeyDown);
         _privateFlag |= kCGEventFlagMaskShift;
         CGEventSetFlags(eventVkeyDown, _privateFlag);
@@ -408,7 +431,9 @@ extern "C" {
     
     void SendCutKey() {
         CGEventRef eventVkeyDown = CGEventCreateKeyboardEvent (myEventSource, KEY_X, true);
+        CGEventSetIntegerValueField(eventVkeyDown, kCGEventSourceUserData, OPENKEY_EVENT_TAG);
         CGEventRef eventVkeyUp = CGEventCreateKeyboardEvent (myEventSource, KEY_X, false);
+        CGEventSetIntegerValueField(eventVkeyUp, kCGEventSourceUserData, OPENKEY_EVENT_TAG);
         _privateFlag = CGEventGetFlags(eventVkeyDown);
         _privateFlag |= NX_COMMANDMASK;
         CGEventSetFlags(eventVkeyDown, _privateFlag);
@@ -495,7 +520,9 @@ extern "C" {
         }
         
         _newEventDown = CGEventCreateKeyboardEvent(myEventSource, 0, true);
+        CGEventSetIntegerValueField(_newEventDown, kCGEventSourceUserData, OPENKEY_EVENT_TAG);
         _newEventUp = CGEventCreateKeyboardEvent(myEventSource, 0, false);
+        CGEventSetIntegerValueField(_newEventUp, kCGEventSourceUserData, OPENKEY_EVENT_TAG);
         CGEventKeyboardSetUnicodeString(_newEventDown, _willContinuteSending ? 16 : _newCharSize - offset, _newCharString);
         CGEventKeyboardSetUnicodeString(_newEventUp, _willContinuteSending ? 16 : _newCharSize - offset, _newCharString);
         CGEventTapPostEvent(_proxy, _newEventDown);
@@ -607,6 +634,9 @@ extern "C" {
             [OpenKeyManager reenableEventTap];
             return event;
         }
+        if (CGEventGetIntegerValueField(event, kCGEventSourceUserData) == OPENKEY_EVENT_TAG) {
+            return event;
+        }
         //dont handle my event
         if (CGEventGetIntegerValueField(event, kCGEventSourceStateID) == CGEventSourceGetSourceStateID(myEventSource)) {
             return event;
@@ -693,27 +723,25 @@ extern "C" {
         }
         
         //handle mouse
-        if (type == kCGEventLeftMouseDown || type == kCGEventRightMouseDown || type == kCGEventLeftMouseDragged || type == kCGEventRightMouseDragged) {
+        if (type == kCGEventLeftMouseDown || type == kCGEventRightMouseDown) {
             RequestNewSession();
             return event;
         }
 
         //if "turn off Vietnamese when in other language" mode on
         if(vOtherLanguage){
+            // Copy rule: we own isource and must release it on every path; the language
+            // array and its items belong to isource and must not be released.
             TISInputSourceRef isource = TISCopyCurrentKeyboardInputSource();
-            if ( isource != NULL )
-            {
+            if (isource != NULL) {
                 CFArrayRef languages = (CFArrayRef) TISGetInputSourceProperty(isource, kTISPropertyInputSourceLanguages);
-                
-                if (CFArrayGetCount(languages) > 0) {
-                    CFStringRef langRef = (CFStringRef)CFArrayGetValueAtIndex(languages, 0);
-                    NSString *currentLanguage = (__bridge NSString *)langRef;
-                    if(![currentLanguage isLike:@"en"]){
-                        return event;
-                    }
-                    CFRelease(langRef);
-                    CFRelease(isource);
+                BOOL otherLanguage = NO;
+                if (languages != NULL && CFArrayGetCount(languages) > 0) {
+                    NSString *currentLanguage = (__bridge NSString *)(CFStringRef)CFArrayGetValueAtIndex(languages, 0);
+                    otherLanguage = ![currentLanguage isLike:@"en"];
                 }
+                CFRelease(isource);
+                if (otherLanguage) return event;
             }
         }
         
