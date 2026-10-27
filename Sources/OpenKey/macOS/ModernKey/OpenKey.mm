@@ -10,6 +10,7 @@
 #import <Foundation/Foundation.h>
 #import "Engine.h"
 #import "AppDelegate.h"
+#import "OpenKeyManager.h"
 #import "ViewController.h"
 
 #define FRONT_APP [[NSWorkspace sharedWorkspace] frontmostApplication].bundleIdentifier
@@ -599,6 +600,13 @@ extern "C" {
      * MAIN Callback.
      */
     CGEventRef OpenKeyCallback(CGEventTapProxy proxy, CGEventType type, CGEventRef event, void *refcon) {
+        // macOS turns the tap off when a callback is too slow (busy or memory-starved Mac) or
+        // during secure input, and only tells us once. Turn it straight back on, otherwise
+        // typing silently stops until the app is restarted.
+        if (type == kCGEventTapDisabledByTimeout || type == kCGEventTapDisabledByUserInput) {
+            [OpenKeyManager reenableEventTap];
+            return event;
+        }
         //dont handle my event
         if (CGEventGetIntegerValueField(event, kCGEventSourceStateID) == CGEventSourceGetSourceStateID(myEventSource)) {
             return event;

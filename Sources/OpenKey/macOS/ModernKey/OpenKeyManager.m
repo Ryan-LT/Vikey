@@ -29,6 +29,7 @@ static BOOL _isInited = NO;
 static CFMachPortRef      eventTap;
 static CGEventMask        eventMask;
 static CFRunLoopSourceRef runLoopSource;
+static NSTimer*           watchdog;
 
 +(BOOL)isInited {
     return _isInited;
@@ -73,8 +74,29 @@ static CFRunLoopSourceRef runLoopSource;
     
     // Enable the event tap.
     CGEventTapEnable(eventTap, true);
+
+    // Safety net: if the tap is ever off (a missed disable event, or the port died),
+    // bring it back within two seconds instead of needing a restart.
+    if (watchdog == nil) {
+        watchdog = [NSTimer scheduledTimerWithTimeInterval:2.0 repeats:YES block:^(NSTimer * _Nonnull t) {
+            if (!_isInited) return;
+            if (eventTap == nil || !CFMachPortIsValid(eventTap)) {
+                [OpenKeyManager stopEventTap];
+                [OpenKeyManager initEventTap];
+            } else if (!CGEventTapIsEnabled(eventTap)) {
+                CGEventTapEnable(eventTap, true);
+            }
+        }];
+        watchdog.tolerance = 0.5;
+    }
     
     return YES;
+}
+
++(void)reenableEventTap {
+    if (eventTap != nil && CFMachPortIsValid(eventTap)) {
+        CGEventTapEnable(eventTap, true);
+    }
 }
 
 +(BOOL)stopEventTap {
