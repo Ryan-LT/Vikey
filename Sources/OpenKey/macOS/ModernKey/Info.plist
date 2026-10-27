@@ -31,7 +31,7 @@
 	<key>LSUIElement</key>
 	<true/>
 	<key>NSAppleEventsUsageDescription</key>
-	<string>Used for keyboard</string>
+	<string>OpenKey reads the address of the current browser tab so it can remember your typing language for each website. Nothing leaves your Mac.</string>
 	<key>NSHumanReadableCopyright</key>
 	<string>Copyright © 2019 Tuyen Mai. All rights reserved.</string>
 	<key>NSMainStoryboardFile</key>

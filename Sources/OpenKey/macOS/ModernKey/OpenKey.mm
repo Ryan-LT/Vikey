@@ -89,6 +89,102 @@ extern "C" {
     vector<Byte> savedSmartSwitchKeyData; ////use for smart switch key
     
     NSString* _frontMostApp = @"UnknownApp";
+
+    // ---- Smart switch per website -------------------------------------------------------
+    // For browsers, the remembered language is keyed by "bundleId|hostname" instead of the
+    // bundle id alone, so each site keeps its own language. The active tab's URL comes from
+    // the browser's AppleScript dictionary, read off the main thread so a busy browser can
+    // never stall the event tap.
+    NSString* _siteHost = nil;                 // host of the active tab, nil if not a browser
+    static dispatch_queue_t _siteQueue;
+    static NSTimer* _siteTimer;
+    static BOOL _siteCheckPending = NO;
+
+    static NSDictionary<NSString*, NSString*>* BrowserScripts() {
+        static NSDictionary* d;
+        static dispatch_once_t once;
+        dispatch_once(&once, ^{
+            NSString* chromium = @"tell application id \"%@\" to if (count of windows) > 0 then return URL of active tab of front window";
+            NSMutableDictionary* m = [NSMutableDictionary dictionary];
+            for (NSString* b in @[@"com.google.Chrome", @"com.google.Chrome.beta", @"com.google.Chrome.canary", @"com.brave.Browser",
+                                   @"com.microsoft.edgemac", @"company.thebrowser.Browser", @"com.vivaldi.Vivaldi",
+                                   @"org.chromium.Chromium", @"com.operasoftware.Opera"]) {
+                m[b] = [NSString stringWithFormat:chromium, b];
+            }
+            for (NSString* b in @[@"com.apple.Safari", @"com.apple.SafariTechnologyPreview"]) {
+                m[b] = [NSString stringWithFormat:@"tell application id \"%@\" to if (count of windows) > 0 then return URL of current tab of front window", b];
+            }
+            d = m;
+        });
+        return d;
+    }
+
+    static BOOL PerSiteEnabled() {
+        id v = [[NSUserDefaults standardUserDefaults] objectForKey:@"SmartSwitchPerSite"];
+        return v == nil ? YES : [v boolValue];
+    }
+
+    /// The key smart switch uses: bundle id, plus "|host" for a browser tab with a website open.
+    static string SmartSwitchContextKey() {
+        NSString* k = _frontMostApp;
+        if (_siteHost.length > 0) k = [NSString stringWithFormat:@"%@|%@", _frontMostApp, _siteHost];
+        return string(k.UTF8String);
+    }
+
+    void OnSiteChanged(void);
+
+    /// Asks the frontmost browser for its active tab's host, then reports a change on the main thread.
+    void CheckBrowserSite() {
+        if (!PerSiteEnabled() || _siteCheckPending) return;
+        NSString* bundle = [[NSWorkspace sharedWorkspace] frontmostApplication].bundleIdentifier;
+        NSString* script = bundle ? BrowserScripts()[bundle] : nil;
+        if (script == nil) {
+            if (_siteHost != nil) { _siteHost = nil; }
+            return;
+        }
+        if (_siteQueue == nil) _siteQueue = dispatch_queue_create("openkey.site", DISPATCH_QUEUE_SERIAL);
+        _siteCheckPending = YES;
+        dispatch_async(_siteQueue, ^{
+            NSDictionary* err = nil;
+            NSAppleEventDescriptor* r = [[[NSAppleScript alloc] initWithSource:script] executeAndReturnError:&err];
+            NSString* host = nil;
+            if (err == nil && r.stringValue.length > 0) {
+                NSURL* u = [NSURL URLWithString:r.stringValue];
+                if ([u.scheme hasPrefix:@"http"] && u.host.length > 0) {
+                    host = u.host.lowercaseString;
+                    if ([host hasPrefix:@"www."]) host = [host substringFromIndex:4];
+                }
+            }
+            dispatch_async(dispatch_get_main_queue(), ^{
+                _siteCheckPending = NO;
+                // Still the same browser in front? Otherwise the result no longer applies.
+                if (![[[NSWorkspace sharedWorkspace] frontmostApplication].bundleIdentifier isEqualToString:bundle]) return;
+                BOOL changed = !((host == nil && _siteHost == nil) || [host isEqualToString:_siteHost]);
+                if (changed) { _siteHost = host; OnSiteChanged(); }
+            });
+        });
+    }
+
+    /// Polls once a second while a supported browser is in front (tab switches don't notify).
+    void UpdateSiteWatcher() {
+        NSString* bundle = [[NSWorkspace sharedWorkspace] frontmostApplication].bundleIdentifier;
+        BOOL browser = PerSiteEnabled() && bundle != nil && BrowserScripts()[bundle] != nil;
+        if (!browser) {
+            [_siteTimer invalidate]; _siteTimer = nil; _siteHost = nil;
+            return;
+        }
+        if (_siteTimer == nil) {
+            _siteTimer = [NSTimer scheduledTimerWithTimeInterval:1.0 repeats:YES block:^(NSTimer* t) { CheckBrowserSite(); }];
+            _siteTimer.tolerance = 0.3;
+        }
+        CheckBrowserSite();
+    }
+
+    /// After a click or a tab shortcut in a browser, look sooner than the next poll.
+    void NudgeSiteCheck() {
+        if (_siteTimer == nil) return;
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.25 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{ CheckBrowserSite(); });
+    }
     
     void OpenKeyInit() {
         //load saved data
@@ -210,12 +306,25 @@ extern "C" {
         [prefs setObject:_data forKey:@"smartSwitchKey"];
     }
     
+    void ApplySmartSwitch(void);
+
     void OnActiveAppChanged() { //use for smart switch key; improved on Sep 28th, 2019
         queryFrontMostApp();
-        _languageTemp = getAppInputMethodStatus(string(_frontMostApp.UTF8String), vLanguage | (vCodeTable << 1));
+        _siteHost = nil;          // the new app's tab is looked up below; until then use the app key
+        ApplySmartSwitch();
+        UpdateSiteWatcher();
+    }
+
+    void OnSiteChanged() {
+        ApplySmartSwitch();
+        startNewSession();
+    }
+
+    void ApplySmartSwitch() {
+        _languageTemp = getAppInputMethodStatus(SmartSwitchContextKey(), vLanguage | (vCodeTable << 1));
         if ((_languageTemp & 0x01) != vLanguage) { //for input method
             if (_languageTemp != -1) {
-                vLanguage = _languageTemp;
+                vLanguage = _languageTemp & 0x01;
                 [appDelegate onImputMethodChanged:NO];
                 startNewSession();
             } else {
@@ -235,7 +344,7 @@ extern "C" {
         onTableCodeChange();
         if (vRememberCode) {
             queryFrontMostApp();
-            setAppInputMethodStatus(string(_frontMostApp.UTF8String), vLanguage | (vCodeTable << 1));
+            setAppInputMethodStatus(SmartSwitchContextKey(), vLanguage | (vCodeTable << 1));
             saveSmartSwitchKeyData();
         }
     }
@@ -243,7 +352,7 @@ extern "C" {
     void OnInputMethodChanged() {
         if (vUseSmartSwitchKey) {
             queryFrontMostApp();
-            setAppInputMethodStatus(string(_frontMostApp.UTF8String), vLanguage | (vCodeTable << 1));
+            setAppInputMethodStatus(SmartSwitchContextKey(), vLanguage | (vCodeTable << 1));
             saveSmartSwitchKeyData();
         }
     }
@@ -725,7 +834,11 @@ extern "C" {
         //handle mouse
         if (type == kCGEventLeftMouseDown || type == kCGEventRightMouseDown) {
             RequestNewSession();
+            if (vUseSmartSwitchKey) NudgeSiteCheck();
             return event;
+        }
+        if (vUseSmartSwitchKey && type == kCGEventKeyDown && (_flag & (kCGEventFlagMaskCommand | kCGEventFlagMaskControl))) {
+            NudgeSiteCheck();   // ⌘1–9, ⌃Tab, ⌘L, ⌘T, ⌘W can change the active tab
         }
 
         //if "turn off Vietnamese when in other language" mode on
