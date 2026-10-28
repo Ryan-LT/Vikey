@@ -70,7 +70,9 @@ final class KeyboardView: UIView {
     override init(frame: CGRect) {
         super.init(frame: frame)
         isMultipleTouchEnabled = true
-        backgroundColor = .clear
+        // not .clear: iOS doesn't deliver touches on fully transparent parts of a keyboard,
+        // so taps in the gaps between keys were lost
+        backgroundColor = UIColor.black.withAlphaComponent(0.001)
         rebuild()
     }
     required init?(coder: NSCoder) { fatalError() }

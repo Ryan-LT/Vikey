@@ -110,6 +110,14 @@ final class KeyboardPerformanceTests: XCTestCase {
         XCTAssertLessThan(perKeyUs, 300, "keyboard logic takes \(Int(perKeyUs)) µs per key")
     }
 
+    func testGapsBetweenKeysReceiveTouches() {
+        // iOS drops touches on fully transparent parts of a keyboard: the view must never be clear
+        let kb = KeyboardView(frame: CGRect(x: 0, y: 0, width: 402, height: 265))
+        var a: CGFloat = 0
+        kb.backgroundColor?.getWhite(nil, alpha: &a)
+        XCTAssertGreaterThan(a, 0, "keyboard background is fully transparent: taps between keys are lost")
+    }
+
     func testKeyShadowsHaveFixedPaths() {
         let kb = KeyboardView(frame: CGRect(x: 0, y: 0, width: 402, height: KeyboardView.keyboardHeight(compactHeight: false)))
         kb.layoutIfNeeded()
