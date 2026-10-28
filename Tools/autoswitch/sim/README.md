@@ -13,7 +13,7 @@ often the user still has to switch language by hand.
 
 ```sh
 python3 prep.py corpus/chat_messages.txt > chat.units      # Telex keystrokes, varied tone positions
-E=../../../Sources/OpenKey/engine
+E=../../../Engine
 clang++ -std=c++17 -O2 -w -DAS_TESTING -I$E -I$E/platforms -o sim sim.cpp $E/Engine.cpp $E/Vietnamese.cpp $E/Macro.cpp $E/SmartSwitchKey.cpp $E/ConvertTool.cpp
 ./sim chat.units            # ideal user: switches by hand only when the next word would come out wrong
 ./sim chat.units --lazy     # never switches by hand: wrong words per message

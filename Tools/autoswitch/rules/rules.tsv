@@ -1,4 +1,5 @@
 # Engine rules, each pinned to the decision in DECISIONS.md that created it.
+# Tests run with Vikey's app defaults (spell check on, restore-if-invalid on, modern tone placement).
 # rule	start(1=VN,0=EN)	keys ('<'=Backspace, '|'=Enter)	expected text	final lang	why
 D5.1	1	err	err	0	doubled tone key in VN mode switches to English (D8: keeps both letters)
 D5.1	1	boss 	boss 	0	doubled tone key keeps both letters
@@ -48,4 +49,6 @@ D8.1	0	cors gif 	có gì 	1	look-back: the common Vietnamese phrase wins
 D8.1	1	carm own 	cảm ơn 	1	EN start: carm converts, then own types ơn
 D8.2	1	cais testflight build 	cái testflight build 	0	unknown foreign word (not Vietnamese, not in the English list) restores + English
 D8.2	1	analytics dashboard 	analytics dashboard 	0	unknown foreign word restores
-D9	1	tooi thicsh lanwm 	tôi thích lănm 	1	Vietnamese typo (has ă/â/ơ/ư/đ marks) is never treated as a foreign word
+D9	1	tooi thicsh lanwm 	tôi thích lanwm 	1	Vietnamese typo (has ă/â/ơ/ư/đ marks) never switches the language (shown as typed keys: D10 restore-if-invalid is on)
+D10	1	khoongg 	khoongg 	1	an invalid word is kept as typed keys without switching (restore-if-invalid, on by default); stays Vietnamese
+D10	1	windoows 	windoows 	0	a multi-syllable invalid word counts as a foreign word: kept as typed, switches to English

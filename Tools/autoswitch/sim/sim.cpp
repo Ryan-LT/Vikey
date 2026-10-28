@@ -1,6 +1,6 @@
-// Types a mixed Vietnamese/English corpus into the real OpenKey engine, key by key, with an
+// Types a mixed Vietnamese/English corpus into the real Vikey engine, key by key, with an
 // "ideal user" who presses the switch hotkey only when the next word would come out wrong.
-// Mirrors macOS/ModernKey/OpenKey.mm (English-mode word buffer, auto switch, hotkey undo).
+// Mirrors App/Core/VikeyCore.mm (English-mode word buffer, auto switch, hotkey undo).
 // Build: see README.md.   Run: sim units.txt [--off] [--start en|vi] [--show N]
 #include "Engine.h"
 #include <cstdio>
@@ -9,11 +9,8 @@
 #include <string>
 #include <vector>
 
-int vLanguage = 1, vInputType = 0, vFreeMark = 0, vCodeTable = 0, vCheckSpelling = 1, vUseModernOrthography = 1,
-    vQuickTelex = 0, vSwitchKeyStatus = 0, vRestoreIfWrongSpelling = 0, vFixRecommendBrowser = 1, vUseMacro = 0,
-    vUseMacroInEnglishMode = 0, vAutoCapsMacro = 0, vUseSmartSwitchKey = 1, vUpperCaseFirstChar = 0, vTempOffSpelling = 0,
-    vAllowConsonantZFWJ = 0, vQuickStartConsonant = 0, vQuickEndConsonant = 0, vRememberCode = 1, vOtherLanguage = 1,
-    vTempOffOpenKey = 0, vAutoSwitchByTyping = 1;
+int vLanguage = 1, vSwitchKeyStatus = 0, vCheckSpelling = 1, vUseModernOrthography = 1, vRestoreIfWrongSpelling = 1,
+    vFixRecommendBrowser = 1, vUseSmartSwitchKey = 1, vOtherLanguage = 1, vAutoSwitchByTyping = 1;
 void* vTestSaveState();
 void vTestRestoreState(void*);
 void vTestFreeState(void*);
@@ -22,7 +19,7 @@ static vKeyHookState* H;
 static bool trace = false;
 typedef std::u16string U;
 
-struct Platform {                    // everything OpenKey.mm keeps outside the engine
+struct Platform {                    // everything VikeyCore.mm keeps outside the engine
     U screen;
     Uint32 enKeys[MAX_BUFF]; int enCount = 0; bool enValid = true;
     Uint32 prevKeys[2][MAX_BUFF]; int prevCounts[2] = {0, 0}; int prevN = 0;

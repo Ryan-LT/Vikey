@@ -13,7 +13,7 @@ Score = round(10 * log10(occurrences per million)); a 10-point gap = 10x more co
 import math, os, re, unicodedata
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-OUT = os.path.join(HERE, '..', '..', 'Sources', 'OpenKey', 'engine', 'AutoSwitchData.h')
+OUT = os.path.join(HERE, '..', '..', 'Engine', 'AutoSwitchData.h')
 TONES = {'́': 's', '̀': 'f', '̉': 'r', '̃': 'x', '̣': 'j'}
 VN_LETTERS = set("abcdeghiklmnopqrstuvxy")
 SYL = re.compile("^(ngh|ch|gh|gi|kh|ng|nh|ph|qu|th|tr|b|c|dd|d|g|h|k|l|m|n|p|r|s|t|v|x)?"

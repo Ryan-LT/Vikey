@@ -1,6 +1,6 @@
 import json, time, urllib.request, re, os, sys
 def get(url):
-    req = urllib.request.Request(url, headers={'Accept': 'application/json', 'User-Agent': 'Mozilla/5.0 (research; OpenKey typing test)'})
+    req = urllib.request.Request(url, headers={'Accept': 'application/json', 'User-Agent': 'Mozilla/5.0 (research; Vikey typing test)'})
     return json.load(urllib.request.urlopen(req, timeout=20))
 slugs = []
 for page in range(1, 16):

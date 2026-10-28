@@ -1,16 +1,13 @@
-// Drives the real OpenKey engine with key sequences and simulates the text field, mirroring
-// what macOS/ModernKey/OpenKey.mm does with the engine's output (Unicode code table).
+// Drives the real Vikey engine with key sequences and simulates the text field, mirroring
+// what App/Core/VikeyCore.mm does with the engine's output (Unicode code table).
 #include "Engine.h"
 #include <cstdio>
 #include <cstring>
 #include <string>
 #include <chrono>
 
-int vLanguage = 1, vInputType = 0, vFreeMark = 0, vCodeTable = 0, vCheckSpelling = 1, vUseModernOrthography = 1,
-    vQuickTelex = 0, vSwitchKeyStatus = 0, vRestoreIfWrongSpelling = 0, vFixRecommendBrowser = 1, vUseMacro = 1,
-    vUseMacroInEnglishMode = 1, vAutoCapsMacro = 0, vUseSmartSwitchKey = 1, vUpperCaseFirstChar = 0, vTempOffSpelling = 0,
-    vAllowConsonantZFWJ = 0, vQuickStartConsonant = 0, vQuickEndConsonant = 0, vRememberCode = 1, vOtherLanguage = 1,
-    vTempOffOpenKey = 0, vAutoSwitchByTyping = 1;
+int vLanguage = 1, vSwitchKeyStatus = 0, vCheckSpelling = 1, vUseModernOrthography = 1, vRestoreIfWrongSpelling = 1,
+    vFixRecommendBrowser = 1, vUseSmartSwitchKey = 1, vOtherLanguage = 1, vAutoSwitchByTyping = 1;
 
 static vKeyHookState* H;
 static std::u16string screen;

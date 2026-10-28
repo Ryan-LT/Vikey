@@ -1,6 +1,6 @@
 # Auto switch by typing: word lists and tests
 
-The engine (`Sources/OpenKey/engine/Engine.cpp`, "Auto switch language from typing behavior")
+The engine (`Engine/Engine.cpp`, "Auto switch language from typing behavior")
 decides when a word typed in one mode belongs to the other language. It uses
 `engine/AutoSwitchData.h`, generated here.
 
@@ -21,14 +21,14 @@ python3 build_dict.py
 
 ```sh
 cd Tools/autoswitch/test
-E=../../../Sources/OpenKey/engine
+E=../../../Engine
 clang++ -std=c++17 -O2 -w -I$E -I$E/platforms -o harness harness.cpp $E/Engine.cpp $E/Vietnamese.cpp $E/Macro.cpp $E/SmartSwitchKey.cpp $E/ConvertTool.cpp
 python3 run_cases.py   # regression cases in cases.tsv
 python3 bulk.py        # accuracy over the 20k English / 3.4k Vietnamese word lists
 ./harness bench        # cost of one English-mode check
 ```
 
-`harness.cpp` drives the real engine and mirrors what `macOS/ModernKey/OpenKey.mm` does with its output.
+`harness.cpp` drives the real engine and mirrors what `App/Core/VikeyCore.mm` does with its output.
 
 ## Lock down behavior (run before and after any rule change)
 

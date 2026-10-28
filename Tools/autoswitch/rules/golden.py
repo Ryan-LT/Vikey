@@ -61,6 +61,7 @@ src = open(os.path.join(AS, 'build_dict.py')).read().split('def load')[0]
 ns = {'__file__': os.path.join(AS, 'build_dict.py')}; exec(src, ns)
 TONES = {'́': 's', '̀': 'f', '̉': 'r', '̃': 'x', '̣': 'j'}
 def telex_variants(word):
+    word = unicodedata.normalize('NFC', word)
     letters, tone, tone_at = [], '', -1
     for ch in word:
         d = unicodedata.normalize('NFD', ch); base, marks = d[0], d[1:]
@@ -73,18 +74,21 @@ def telex_variants(word):
             else: return []
         letters.append((k, base in 'aeiouy'))
     keys = [k for k, _ in letters]
-    if not tone: return [''.join(keys)]
+    if not tone: return [''.join(keys)] if ''.join(keys).isascii() else []
     end = ''.join(keys) + tone
     at = keys[:]; at[tone_at] += tone
     last = max(i for i, (k, v) in enumerate(letters) if v); cl = keys[:]; cl[last] += tone
-    return sorted({end, ''.join(at), ''.join(cl)})
+    return sorted(v for v in {end, ''.join(at), ''.join(cl)} if v.isascii())
 syl = []
 for line in open(os.path.join(AS, 'vi_50k.txt'), encoding='utf-8'):
     w, c = line.split()
     k = ns['vn_key'](w)
     if k and ns['SYL'].match(k) and int(c) >= 5 and len(w) <= 7 and w[-1] not in 'srx':
-        syl.append(w)
-cases = sorted({v for w in syl for v in telex_variants(w)})
+        syl.append((w, int(c)))
+counts = {}
+for w, c in syl:
+    for v in telex_variants(w): counts[v] = max(counts.get(v, 0), c)
+cases = sorted(counts)
 res = subprocess.run([HARNESS, 'lines'], input=''.join(f'1\t{k} \n' for k in cases), capture_output=True, text=True).stdout.rstrip('\n').split('\n')
 lines = [f'{k}\t{r}' for k, r in zip(cases, res)]
 compare('telex_vn_mode.tsv', lines, lambda o, n: print(f'  {o.split(chr(9))[0]}: before {o.split(chr(9))[1:]!r} now {n.split(chr(9))[1:]!r}'))

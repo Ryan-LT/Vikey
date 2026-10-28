@@ -9,7 +9,7 @@ for w,c in vi:
     if k and SYL.match(k) and int(c)>=50 and k not in seen and k!=w:
         seen.add(k); vis.append((w,k,int(c)))
 ens=[(w,int(c)) for w,c in en if re.fullmatch('[a-z]{2,}',w)][:20000]
-E='../../../Sources/OpenKey/engine'
+E='../../../Engine'
 def build(p,vf,ef):
     subprocess.run(f'clang++ -std=c++17 -O2 -w -DAS_PREFER={p} -DAS_VN_FLOOR={vf} -DAS_EN_FLOOR={ef} -I{E} -I{E}/platforms -o h_sweep harness.cpp {E}/Engine.cpp {E}/Vietnamese.cpp {E}/Macro.cpp {E}/SmartSwitchKey.cpp {E}/ConvertTool.cpp',shell=True,check=True)
 def run(lines):

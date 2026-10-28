@@ -1,6 +1,6 @@
-# Fork decisions log
+# Vikey decisions log
 
-Product decisions for this fork (tonyminibot/OpenKey), written as user stories.
+Product decisions for Vikey (tonyminibot/Vikey, based on OpenKey by Tuyen Mai), written as user stories.
 Each entry records what was asked, what was decided, and its status. Newest first.
 
 Status values: **Shipped** (in a build Tony has), **Agreed** (decided, not built yet), **Rejected**.
@@ -20,6 +20,74 @@ It checks:
 4. **Metrics.** Manual switches and wrong words must not get worse.
 
 If every listed change is intended, accept them with `Tools/autoswitch/check.sh update`. Add a case for the new decision to `rules.tsv`. GitHub Actions runs the same check on every push.
+
+---
+
+## 10. Vikey: new name, new app, fewer features
+
+**Status:** In progress 2026-10-28.
+
+**Asked by Tony.**
+- "I want to make this official. Let's call this project Vikey."
+- Rename everything, including the repo and package name.
+- Rebuild the UI in modern SwiftUI.
+- Remove VNI.
+- Remove the old, irrelevant features.
+
+He approved Otto's suggested cuts and added: "gõ tắt: remove".
+
+**Decisions**
+
+- **Name.**
+  - Repo: tonyminibot/Vikey.
+  - App: Vikey.
+  - Bundle ID: com.devuap.vikey.
+  - Core: VikeyCore.
+  - Credit: "based on OpenKey by Tuyen Mai" is kept in the About screen, the file headers and the README, as GPL-3.0 requires.
+- **Kept**
+  - Telex, with modern or classic tone placement.
+  - Spell check, and restore-if-invalid.
+  - Switch hotkey and beep.
+  - Smart switch per app and per website.
+  - Auto-switch and the typing log.
+  - Browser autocomplete workarounds, built in.
+  - Non-QWERTY layouts (Dvorak etc.), now detected automatically.
+  - Turning off for other input languages, now automatic and checked once per input-source change instead of on every keystroke.
+  - Launch at login.
+- **Removed**
+  - VNI, Simple Telex 1 and 2.
+  - Code tables other than Unicode (TCVN3, VNI Windows, Unicode compound, CP1258) and remembering a code table per app.
+  - The convert tool.
+  - Quick Telex (cc → ch…) and quick start/end consonants.
+  - Z/F/W/J consonants.
+  - Auto-capitalizing the first letter.
+  - Macros (gõ tắt).
+  - The Ctrl key turning spell check off, and ⌘ turning the app off.
+  - Send-keys-one-by-one mode, and the alternative Chromium fix.
+  - The update checker (it pointed to upstream).
+  - Dock icon and show-on-startup options.
+  - Windows and Linux code.
+  - The old AppKit/storyboard app.
+- **New app.**
+  - SwiftUI menu bar app (MenuBarExtra, macOS 13+), generated with xcodegen.
+  - Settings window: General, Typing, Auto switch, About.
+  - Accessibility onboarding that starts Vikey as soon as permission is granted.
+  - Typing-log window and hotkey recorder.
+  - SMAppService for launch at login.
+  - OpenKey's settings, per-app/per-site memory and typing log are migrated on first launch.
+- **Restore-if-invalid is on by default (it was off in OpenKey).** Measured with the simulator:
+  - chat: 0.95 → 0.84 manual switches per 100 words;
+  - Viblo: 1.02 → 0.79;
+  - chat with typos: 1.18 → 0.96;
+  - Viblo with typos: 1.37 → 0.95;
+  - wrong words drop too.
+
+  The test harness now runs with the app's real defaults. The Telex lock changes were reviewed: only invalid "syllables" from the subtitle list (âi, bãt, bĩan…) are now kept as typed; no real syllable changed. D9's expected text became the typed keys, while the language still stays Vietnamese. A D10 rule was added.
+- **Bug fixed along the way.** An app without a bundle ID no longer makes the per-app memory save to the previous app.
+
+**Verified**
+- The rule-lock suite was unchanged after every removal step: 51/51 rules, identical snapshots and metrics.
+- The new app passes the live typing suite.
 
 ---
 
@@ -81,7 +149,7 @@ With no manual switching at all, wrong words go 9.8% → 1.2% (chat) and 3.2% �
 ### Decisions
 
 - **Look-back.** When a word confidently switches the language, the 1–2 words just before it are fixed too, if they were ambiguous and joined by single spaces. "this makes sense" no longer leaves "thí"; "check mail cos theer" becomes "check mail có thể". Words that look the same in both modes ("makes", "cho") are passed through. It helps most when nobody switches by hand.
-- **Unknown foreign words.** In VN mode, a word that is neither a real syllable nor in the English list, and fails OpenKey's own spelling rules, is restored and switches to English: TestFlight, analytics, workflow, postgresql. Without the spelling-rule check, rare real syllables like riệt and chịt were wrongly restored. Minimum 3 letters.
+- **Unknown foreign words.** In VN mode, a word that is neither a real syllable nor in the English list, and fails the engine's own spelling rules, is restored and switches to English: TestFlight, analytics, workflow, postgresql. Without the spelling-rule check, rare real syllables like riệt and chịt were wrongly restored. Minimum 3 letters.
 - **Undo moved to Backspace.** This changes decision 5. The simulation showed the hotkey can't mean both "undo that fix" and "the next word is in the other language": after "wifi" was correctly fixed, pressing the hotkey to type "tốt" reverted it to "ừii". Backspace right after an auto-fix now restores the original word and language, like macOS autocorrect. The hotkey is always a plain switch.
 - **"cors gif" in EN mode now becomes "có gì".** Look-back judges the common Vietnamese phrase more likely.
 - **Decided by Tony, 2026-10-28: keep both letters on a double key ("let's switch to 'err', I want to try it out").** Doubled-letter English words (issue, miss, sorry, pass, office, error, password, traffic) cause about a third of the remaining manual switches, because Telex drops one letter. Keeping both letters when the double key switches to English cuts chat manual switches from 1.51 to 0.95 per 100 words. This replaces rule 1's earlier "er" output: when the doubled tone key switches to English, it now outputs both letters (err, issue, sorry). Default on, controlled by `AS_DOUBLE_KEEP`.
@@ -93,9 +161,9 @@ With no manual switching at all, wrong words go 9.8% → 1.2% (chat) and 3.2% �
 
 **Status:** Built 2026-10-28 and sent as OpenKey-2.0.4-log. Tony uses it and sends the log for tuning.
 
-**User story.** As the user, I want OpenKey to record how often I switch language by hand versus how often it switches for me, plus what I typed, so the engine can be tuned. The goal is the fewest manual switches.
+**User story.** As the user, I want Vikey to record how often I switch language by hand versus how often it switches for me, plus what I typed, so the engine can be tuned. The goal is the fewest manual switches.
 
-**What is recorded.** The log is `~/Library/Application Support/OpenKey/typing-log.jsonl`, one JSON object per line. The file is user-only (0600) and rotates at 20 MB, keeping one old file.
+**What is recorded.** The log is `~/Library/Application Support/Vikey/typing-log.jsonl`, one JSON object per line. The file is user-only (0600) and rotates at 20 MB, keeping one old file.
 
 | Event | When | Fields |
 |---|---|---|
@@ -151,7 +219,7 @@ Word recording can be turned off in the log window. Nothing leaves the Mac; Tony
 
 **Status:** Built 2026-10-28 and sent as OpenKey-2.0.4-autoswitch. Tony is testing.
 
-**User story.** As someone who types Vietnamese and English all day, I want OpenKey to notice when I'm typing in the wrong mode and switch for me, so I rarely press the switch hotkey.
+**User story.** As someone who types Vietnamese and English all day, I want Vikey to notice when I'm typing in the wrong mode and switch for me, so I rarely press the switch hotkey.
 
 ### Tony's rules (2026-10-28)
 
@@ -159,7 +227,7 @@ Word recording can be turned off in the log window. Nothing leaves the Mac; Tony
 2. **Word end in VN mode, VN → EN.** If the raw keys, exactly as typed and in that order, are an English word, and the Vietnamese result isn't a real syllable, restore the keys and switch.
    - m-o-r-e means "more", so it switches.
    - m-o-e-r is meant as the odd Vietnamese "mỏe", so it stays.
-3. **Word end in EN mode, EN → VN.** If the raw keys aren't English, and replaying them through OpenKey's own Telex engine gives a real Vietnamese syllable, convert and switch.
+3. **Word end in EN mode, EN → VN.** If the raw keys aren't English, and replaying them through the engine's own Telex rules gives a real Vietnamese syllable, convert and switch.
    - Modifiers can sit anywhere: "truowfng", "truongwf" and "truwownfg" all give "trường".
    - Plain words that look the same in both languages never trigger.
 4. **Scope.** Good enough for day-to-day use, not every edge case.
@@ -241,18 +309,18 @@ Word recording can be turned off in the log window. Nothing leaves the Mac; Tony
 
 - Input-source over-release and leak fix.
 - No longer tapping mouse-drag events.
-- Tagging OpenKey's own synthesized events.
+- Tagging the app's own synthesized events.
 
 **Skipped.** The forced-English app list. That is a behavior change Tony didn't ask for.
 
 ---
 
-## 1. OpenKey stops typing until restarted
+## 1. The app stops typing until restarted
 
 **Status:** Shipped, commit d755b50. Tony is testing on his MacBook for a few weeks from 2026-10-27.
 
-**User story.** As a daily user, I want OpenKey to keep working without quitting and reopening it.
+**User story.** As a daily user, I want Vikey to keep working without quitting and reopening it.
 
-**Cause.** macOS disables the event tap when it times out or on user input (a slow Mac, secure input), and OpenKey never turned it back on.
+**Cause.** macOS disables the event tap when it times out or on user input (a slow Mac, secure input), and the app never turned it back on.
 
 **Fix.** Re-enable the tap when macOS reports it was disabled. A 2-second watchdog also re-enables it if needed.

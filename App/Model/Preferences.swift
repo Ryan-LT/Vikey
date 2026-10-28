@@ -1,0 +1,43 @@
+import Foundation
+import ServiceManagement
+
+/// UserDefaults keys shared with the keyboard core (VikeyCore.mm reads them in VKLoadSettings).
+enum PrefKey {
+    static let spelling = "Spelling"
+    static let restoreIfInvalid = "RestoreIfInvalidWord"
+    static let modernOrthography = "ModernOrthography"
+    static let useMacro = "UseMacro"
+    static let macroInEnglish = "UseMacroInEnglishMode"
+    static let autoCapsMacro = "vAutoCapsMacro"
+    static let smartSwitch = "UseSmartSwitchKey"
+    static let smartSwitchPerSite = "SmartSwitchPerSite"
+    static let autoSwitch = "AutoSwitchByTyping"
+    static let typingLogKeys = "TypingLogKeys"
+    static let hotkey = "SwitchKeyStatus"
+}
+
+/// Defaults every setting starts with (registered so @AppStorage and the core agree).
+enum Preferences {
+    static func register() {
+        UserDefaults.standard.register(defaults: [
+            PrefKey.spelling: 1, PrefKey.restoreIfInvalid: 1, PrefKey.modernOrthography: 1,
+            PrefKey.useMacro: 1, PrefKey.macroInEnglish: 1, PrefKey.autoCapsMacro: 0,
+            PrefKey.smartSwitch: 1, PrefKey.smartSwitchPerSite: true, PrefKey.autoSwitch: 1,
+            PrefKey.typingLogKeys: 1, PrefKey.hotkey: Hotkey.defaultValue,
+        ])
+    }
+
+    /// Call after changing a setting so the keyboard core picks it up.
+    static func apply() { VikeyCore.reloadSettings() }
+}
+
+enum LaunchAtLogin {
+    static var isEnabled: Bool { SMAppService.mainApp.status == .enabled }
+    static func set(_ on: Bool) {
+        do {
+            if on { try SMAppService.mainApp.register() } else { try SMAppService.mainApp.unregister() }
+        } catch {
+            NSLog("Vikey: launch at login change failed: \(error)")
+        }
+    }
+}

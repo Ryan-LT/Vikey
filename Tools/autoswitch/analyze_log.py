@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Summarize an OpenKey typing log (typing-log.jsonl) to find what to improve.
+"""Summarize an Vikey typing log (typing-log.jsonl) to find what to improve.
 
 usage: analyze_log.py typing-log.jsonl [--context 3]
 
