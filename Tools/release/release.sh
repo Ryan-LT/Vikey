@@ -57,7 +57,7 @@ SHA=$(shasum -a 256 "$DMG" | cut -d' ' -f1)
 printf '{"version": "%s", "download_url": "/downloads/Vikey-%s.dmg", "sha256": "%s"}\n' "$VER" "$VER" "$SHA" > site/release.json
 setopt null_glob; for old in site/downloads/Vikey-*.dmg; do [ "$old" = "site/downloads/Vikey-$VER.dmg" ] || rm "$old"; done
 git add project.yml site/release.json && git commit -q -m "Release $VER" && git push -q origin main
-gh release create "v$VER" "$DMG" -R tonyminibot/Vikey --title "Vikey $VER" --notes-file <(sed -n "/<!-- release $VER -->/,/<!-- \/release -->/p" site/pages/changelog.html | sed 's/<[^>]*>//g' | sed '/^\s*$/d') 2>/dev/null \
+gh release create "v$VER" "$DMG" -R tonyminibot/Vikey --title "Vikey $VER" --notes-file <(sed -n "/<!-- release $VER -->/,/<!-- \/release -->/p" site/pages/changelog.html | sed 's/<li>/- /; s/<[^>]*>//g' | sed '/^\s*$/d') 2>/dev/null \
   || gh release create "v$VER" "$DMG" -R tonyminibot/Vikey --title "Vikey $VER" --notes "Vikey $VER"
 Tools/release/deploy_site.sh
 echo "==> done: https://vikey.app"
