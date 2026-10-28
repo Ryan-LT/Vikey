@@ -30,15 +30,37 @@ struct DemoCard: View {
                     .padding(.horizontal, 7).padding(.vertical, 3)
                     .background(vietnamese ? Color.brand : Color.gray, in: RoundedRectangle(cornerRadius: 5))
             }
-            Text(plain.isEmpty ? " " : plain).font(.title3).foregroundStyle(.secondary).lineLimit(1)
+            Text(plain.isEmpty ? AttributedString(" ") : Self.marked(plain, against: vikey, good: false)).font(.title3).foregroundStyle(.secondary).lineLimit(1)
             Text("Vikey").font(.caption.weight(.semibold)).foregroundStyle(Color.brand).textCase(.uppercase)
-            Text(vikey.isEmpty ? " " : vikey).font(.title2.weight(.semibold)).lineLimit(1)
+            Text(vikey.isEmpty ? AttributedString(" ") : Self.marked(vikey, against: plain, good: true)).font(.title2.weight(.semibold)).lineLimit(1)
         }
         .padding(18)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(.background, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
         .shadow(color: Color.brand.opacity(0.18), radius: 20, y: 8)
         .task { await play() }
+    }
+
+    /// Like the website: words where a normal keyboard and Vikey disagree are marked,
+    /// red with a dotted underline on the normal side, brand-tinted on the Vikey side.
+    static func marked(_ a: String, against b: String, good: Bool) -> AttributedString {
+        let wa = a.split(separator: " ", omittingEmptySubsequences: false), wb = b.split(separator: " ", omittingEmptySubsequences: false)
+        var out = AttributedString()
+        for (i, w) in wa.enumerated() {
+            if i > 0 { out += AttributedString(" ") }
+            var part = AttributedString(String(w))
+            if !w.isEmpty, i >= wb.count || wb[i] != w {
+                if good {
+                    part.foregroundColor = .brand
+                    part.backgroundColor = Color.brand.opacity(0.14)
+                } else {
+                    part.foregroundColor = Color(red: 0.82, green: 0.26, blue: 0.26)
+                    part.underlineStyle = Text.LineStyle(pattern: .dot, color: Color(red: 0.82, green: 0.26, blue: 0.26))
+                }
+            }
+            out += part
+        }
+        return out
     }
 
     private func play() async {
