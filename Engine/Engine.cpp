@@ -501,19 +501,19 @@ Uint32 getCharacterCode(const Uint32& data) {
             key |= TONEW_MASK;
         }
         if (_unicodeTable.find(key) == _unicodeTable.end())
-            return data; //not found
+            return data & ~STANDALONE_MASK; //not found (a standalone w that lost its ư is just u, never a raw flagged code)
         
         return _unicodeTable[key][markElem] | CHAR_CODE_MASK;
     } else { //doesn't has mark
         if (_unicodeTable.find(key) == _unicodeTable.end())
-            return data; //not found
+            return data & ~STANDALONE_MASK; //not found (a standalone w that lost its ư is just u, never a raw flagged code)
         
         if (data & TONE_MASK) {
             return _unicodeTable[key][capsElem] | CHAR_CODE_MASK;
         } else if (data & TONEW_MASK) {
             return _unicodeTable[key][capsElem + 2] | CHAR_CODE_MASK;
         } else {
-            return data; //not found
+            return data & ~STANDALONE_MASK; //not found (a standalone w that lost its ư is just u, never a raw flagged code)
         }
     }
     
@@ -1336,6 +1336,9 @@ static bool asShouldRestoreToEnglish() {
     bool transformed;
     if (!asWordKey(word, transformed)) return false;
     if (!transformed) {
+        //no marks left, but Telex ate a key on the way ("seemed" -> "semed", "cheese" -> "chees"): put back an English word
+        if (asRawWord(KeyStates, _stateIndex, raw) && strcmp(raw, word) != 0 && asEnglishScore(raw) != AS_MISSING)
+            return true;
 #ifndef AS_PLAIN_AFTER_AMBIGUOUS
 #define AS_PLAIN_AFTER_AMBIGUOUS 1
 #endif
@@ -1741,9 +1744,19 @@ void vKeyHandleEvent(const vKeyEvent& event,
             //auto switch: the same tone key pressed twice undoes the tone, a strong sign of English
             if (hCode == vRestore && asEnabled() && IS_MARK_KEY(data)) {
                 vAutoSwitchRequest = 0;
+                //switching to English: put the whole word back to the keys typed, not just the undone tone
+                //("tomorr", not "tômrr"). The key itself is added after these by the caller (vRestore).
+                //Both presses stay ("err", not Telex's "er"): the first is in the keys, the caller adds the second.
+                bool rawRestored = false;
+                if (_stateIndex >= 1 && _stateIndex <= MAX_BUFF && _index <= MAX_BUFF) {
+                    hBPC = _index;
+                    hNCC = _stateIndex - 1;
+                    for (int x = 0; x < hNCC; x++) hData[hNCC - 1 - x] = KeyStates[x];
+                    rawRestored = true;
+                }
 #if AS_DOUBLE_KEEP
-                //switching to English: keep the first press of the key too ("err", not Telex's "er")
-                if (hNCC < MAX_BUFF - 1) {
+                //keep the first press of the key too ("err", not Telex's "er")
+                if (!rawRestored && hNCC < MAX_BUFF - 1) {
                     for (int x = hNCC; x > 0; x--) hData[x] = hData[x - 1];
                     hData[0] = data | (_isCaps ? CAPS_MASK : 0);
                     hNCC++;

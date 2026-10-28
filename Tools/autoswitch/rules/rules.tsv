@@ -59,3 +59,7 @@ D14	1	doesn't 	doesn't 	0	an apostrophe ends the word: a contraction stem (does+
 D14	1	it isn't 	it isn't 	0	is+n contraction stem switches
 D14	1	chuwx 'tieesng' nhes 	chữ 'tiếng' nhé 	1	a Vietnamese word in single quotes stays Vietnamese
 D14	1	tooi bans 'nhaf' 	tôi bán 'nhà' 	1	a common Vietnamese word before a quote stays Vietnamese
+D17	1	tomorrow 	tomorrow 	0	a doubled tone key puts the whole word back to the typed keys, not just the tone (was "tômrrow")
+D17	1	surprise 	surprise 	0	same: "surprrise" before
+D17	1	express 	express 	0	same: "êpss" before
+D17	1	weren't 	weren't 	0	a w-vowel that loses its ư is written as a letter, never an empty character (text vanished before)

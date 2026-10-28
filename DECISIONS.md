@@ -23,6 +23,17 @@ If every listed change is intended, accept them with `Tools/autoswitch/check.sh 
 
 ---
 
+## 17. Doubled tone key restores every key; no vanishing text
+
+**Status:** Done 2026-10-28, not released yet. Rule cases D17.
+
+**Found while counting tie cases for Tony's "let's mĩ" report.**
+- A doubled tone key that switches to English now puts back the whole word as typed. Before, only the tone was undone: "tômrrow", "surprrise", "êpss". Now: tomorrow, surprise, express. "err" still keeps both letters (D8).
+- A w-vowel (ư) that Telex turns back into u is written as a letter. Before, an empty character was sent and the text vanished ("were" + n).
+- A word that has no marks left but where Telex ate a key is put back if the typed keys are English. This only helps when the engine still has every key; the "eee" undo drops one ("seemed" → "semed"), which is still open.
+
+**Open with Tony:** how to resolve ties like mix/mĩ (end-of-word dictionary fix for doubled keys, and/or the previous English word as a hint).
+
 ## 16. Auto update
 
 **Status:** Done 2026-10-28 (1.0.4).
