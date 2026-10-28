@@ -45,7 +45,7 @@ struct DemoCard: View {
         guard let url = Bundle.main.url(forResource: "demo", withExtension: "json"),
               let data = try? Data(contentsOf: url),
               let s = try? JSONDecoder().decode([Scene].self, from: data) else { return }
-        scenes = s
+        scenes = s.shuffled()
         while !Task.isCancelled {
             for scene in scenes {
                 plain = ""; vikey = ""; vietnamese = scene.start == 1
