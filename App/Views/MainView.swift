@@ -12,6 +12,7 @@ struct MainView: View {
     @AppStorage(PrefKey.smartSwitchPerSite) private var perSite = true
     @State private var launchAtLogin = LaunchAtLogin.isEnabled
     @State private var browserDenied = false
+    @ObservedObject private var updater = Updater.shared
 
     var body: some View {
         VStack(spacing: 0) {
@@ -59,6 +60,9 @@ struct MainView: View {
                 Section {
                     Toggle(isOn: Binding(get: { launchAtLogin }, set: { LaunchAtLogin.set($0); launchAtLogin = LaunchAtLogin.isEnabled })) {
                         Tip("Mở Vikey khi đăng nhập", "Tự mở Vikey mỗi khi bạn đăng nhập vào máy Mac.")
+                    }
+                    Toggle(isOn: Binding(get: { updater.automatic }, set: { updater.automatic = $0 })) {
+                        Tip("Tự động cập nhật", "Mỗi ngày Vikey kiểm tra bản mới trên vikey.app, tự tải về và cài khi bạn thoát Vikey hoặc tắt máy.")
                     }
                 }
             }

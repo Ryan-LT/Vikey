@@ -52,6 +52,7 @@ def build():
         shutil.copytree(os.path.join(ROOT, "downloads"), os.path.join(DIST, "downloads"))
     shutil.copy(os.path.join(ROOT, "style.css"), DIST)
     if rel: shutil.copy(os.path.join(ROOT, "release.json"), DIST)
+    if os.path.exists(os.path.join(ROOT, "appcast.xml")): shutil.copy(os.path.join(ROOT, "appcast.xml"), DIST)   # Sparkle feed
     ver = str(int(os.path.getmtime(os.path.join(ROOT, "style.css"))))
     for name in sorted(os.listdir(PAGES)):
         if not name.endswith(".html"): continue

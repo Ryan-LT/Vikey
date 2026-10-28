@@ -25,6 +25,7 @@ struct MenuBarContent: View {
                 .disabled(logEnabled == 0)
         } }
         Divider()
+        Button("Kiểm tra cập nhật…") { Updater.shared.checkForUpdates() }
         Button("Giới thiệu Vikey") { AboutPanel.show() }
         Button("Thoát Vikey") { NSApp.terminate(nil) }
             .keyboardShortcut("q")

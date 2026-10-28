@@ -31,7 +31,14 @@ cp -R "$APP" dist/
 
 echo "==> sign + notarize app"
 security unlock-keychain -p "$KCP" "$KC"
-codesign --force --deep --options runtime --timestamp --entitlements App/Vikey.entitlements -s "$IDENT" dist/Vikey.app
+# Sparkle's helpers first (inside out, no --deep), then the app with its entitlements
+SPK=dist/Vikey.app/Contents/Frameworks/Sparkle.framework/Versions/B
+for x in $SPK/XPCServices/Installer.xpc $SPK/XPCServices/Downloader.xpc $SPK/Autoupdate $SPK/Updater.app; do
+  [ -e "$x" ] && codesign --force --options runtime --timestamp --preserve-metadata=entitlements -s "$IDENT" "$x"
+done
+codesign --force --options runtime --timestamp -s "$IDENT" dist/Vikey.app/Contents/Frameworks/Sparkle.framework
+codesign --force --options runtime --timestamp --entitlements App/Vikey.entitlements -s "$IDENT" dist/Vikey.app
+codesign --verify --deep --strict dist/Vikey.app
 ditto -c -k --keepParent dist/Vikey.app dist/Vikey.zip
 xcrun notarytool submit dist/Vikey.zip "${NOTARY[@]}" --wait | tail -1
 xcrun stapler staple dist/Vikey.app | tail -1
@@ -55,8 +62,29 @@ mkdir -p site/downloads
 cp "$DMG" site/downloads/
 SHA=$(shasum -a 256 "$DMG" | cut -d' ' -f1)
 printf '{"version": "%s", "download_url": "/downloads/Vikey-%s.dmg", "sha256": "%s"}\n' "$VER" "$VER" "$SHA" > site/release.json
+# Sparkle feed: EdDSA-signed DMG, notes from the changelog
+SIG=$(~/.tools/sparkle/bin/sign_update --ed-key-file ~/.secrets/vikey_sparkle_ed25519 "$DMG")
+NOTES=$(sed -n "/<!-- release $VER -->/,/<!-- \/release -->/p" site/pages/changelog.html | grep -v '<h2>\|<!--')
+cat > site/appcast.xml <<XML
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+<channel>
+<title>Vikey</title>
+<link>https://vikey.app</link>
+<item>
+<title>Vikey $VER</title>
+<pubDate>$(LC_ALL=C date -u "+%a, %d %b %Y %H:%M:%S +0000")</pubDate>
+<sparkle:version>$BUILD</sparkle:version>
+<sparkle:shortVersionString>$VER</sparkle:shortVersionString>
+<sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+<description><![CDATA[$NOTES]]></description>
+<enclosure url="https://vikey.app/downloads/Vikey-$VER.dmg" type="application/octet-stream" $SIG/>
+</item>
+</channel>
+</rss>
+XML
 setopt null_glob; for old in site/downloads/Vikey-*.dmg; do [ "$old" = "site/downloads/Vikey-$VER.dmg" ] || rm "$old"; done
-git add project.yml site/release.json && git commit -q -m "Release $VER" && git push -q origin main
+git add project.yml site/release.json site/appcast.xml && git commit -q -m "Release $VER" && git push -q origin main
 gh release create "v$VER" "$DMG" -R tonyminibot/Vikey --title "Vikey $VER" --notes-file <(sed -n "/<!-- release $VER -->/,/<!-- \/release -->/p" site/pages/changelog.html | sed 's/<li>/- /; s/<[^>]*>//g' | sed '/^\s*$/d') 2>/dev/null \
   || gh release create "v$VER" "$DMG" -R tonyminibot/Vikey --title "Vikey $VER" --notes "Vikey $VER"
 Tools/release/deploy_site.sh
