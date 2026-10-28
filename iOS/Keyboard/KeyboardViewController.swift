@@ -11,6 +11,8 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
     private var lastSpace: TimeInterval = 0
     private var fieldLanguage: Int?           // language to restore after a web/email field
     private let languageKey = "Language"
+    // settings, read once when the keyboard appears (reading shared defaults per key is slow)
+    private var webFieldsEnglish = true, autoCapitalize = true, doubleSpacePeriod = true
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -63,6 +65,9 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
         driver.modernOrthography = d.bool(forKey: VKSettings.Key.modernOrthography)
         driver.spelling = d.bool(forKey: VKSettings.Key.spelling)
         driver.restoreIfInvalid = d.bool(forKey: VKSettings.Key.restoreIfInvalid)
+        webFieldsEnglish = d.bool(forKey: VKSettings.Key.englishForWebFields)
+        autoCapitalize = d.bool(forKey: VKSettings.Key.autoCapitalize)
+        doubleSpacePeriod = d.bool(forKey: VKSettings.Key.doubleSpacePeriod)
     }
 
     /// A new text field: start fresh; web addresses and email start in English (and go back after).
@@ -70,7 +75,7 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
         driver.resetContext()
         let type = textDocumentProxy.keyboardType ?? .default
         let webField = type == .URL || type == .emailAddress || type == .webSearch
-        if webField && VKSettings.bool(VKSettings.Key.englishForWebFields) {
+        if webField && webFieldsEnglish {
             if fieldLanguage == nil { fieldLanguage = driver.language }
             driver.language = 0
         } else if let l = fieldLanguage {
@@ -78,7 +83,7 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
             fieldLanguage = nil
         }
         lastContext = textDocumentProxy.documentContextBeforeInput
-        updateAutoShift()
+        updateAutoShift(lastContext ?? "")
     }
 
     private var now: Double { ProcessInfo.processInfo.systemUptime }
@@ -111,20 +116,21 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
 
     override func textDidChange(_ textInput: UITextInput?) {
         super.textDidChange(textInput)
-        if textDocumentProxy.documentContextBeforeInput != lastContext {
-            driver.resetContext()
-            lastContext = textDocumentProxy.documentContextBeforeInput
-            updateAutoShift()
-        }
+        externalChange()
         refresh()
     }
 
     override func selectionDidChange(_ textInput: UITextInput?) {
         super.selectionDidChange(textInput)
-        if textDocumentProxy.documentContextBeforeInput != lastContext {
+        externalChange()
+    }
+
+    private func externalChange() {
+        let ctx = textDocumentProxy.documentContextBeforeInput
+        if ctx != lastContext {
             driver.resetContext()
-            lastContext = textDocumentProxy.documentContextBeforeInput
-            updateAutoShift()
+            lastContext = ctx
+            updateAutoShift(ctx ?? "")
         }
     }
 
@@ -166,8 +172,8 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
 
     private func spaceKey() {
         // double space: ". " like the system keyboard
-        let before = textDocumentProxy.documentContextBeforeInput ?? ""
-        if VKSettings.bool(VKSettings.Key.doubleSpacePeriod), now - lastSpace < 0.6, before.hasSuffix(" "),
+        let before = lastContext ?? ""
+        if doubleSpacePeriod, now - lastSpace < 0.6, before.hasSuffix(" "),
            let prev = before.dropLast().last, prev.isLetter || prev.isNumber {
             textDocumentProxy.deleteBackward()
             textDocumentProxy.insertText(". ")
@@ -198,20 +204,19 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
     }
 
     private func afterEdit() {
-        lastContext = textDocumentProxy.documentContextBeforeInput
-        updateAutoShift()
+        lastContext = textDocumentProxy.documentContextBeforeInput   // one text read per key
+        updateAutoShift(lastContext ?? "")
     }
 
     private func saveLanguage() { UserDefaults.standard.set(driver.language, forKey: languageKey) }
 
     /// Capital letter at the start of a sentence, like the system keyboard.
-    private func updateAutoShift() {
+    private func updateAutoShift(_ before: String) {
         guard keyboard.layer_ == .letters, keyboard.shift != .locked else { return }
-        guard VKSettings.bool(VKSettings.Key.autoCapitalize), (textDocumentProxy.autocapitalizationType ?? .sentences) != .none else {
+        guard autoCapitalize, (textDocumentProxy.autocapitalizationType ?? .sentences) != .none else {
             if keyboard.shift == .on { keyboard.shift = .off }
             return
         }
-        let before = textDocumentProxy.documentContextBeforeInput ?? ""
         let trimmed = before.replacingOccurrences(of: " ", with: "")
         var start = before.isEmpty || before.hasSuffix("\n")
         if !start, before.hasSuffix(" "), let last = trimmed.last { start = ".?!".contains(last) }

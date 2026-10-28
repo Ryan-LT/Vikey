@@ -163,7 +163,7 @@ final class KeyboardView: UIView {
             v.label.text = t; v.icon.image = img
             switch def.kind {
             case .char: v.label.font = .systemFont(ofSize: 25, weight: .regular)
-            case .space: v.label.font = .systemFont(ofSize: 15, weight: .regular)
+            case .space: v.label.font = .systemFont(ofSize: 15, weight: .regular); v.label.adjustsFontSizeToFitWidth = true; v.label.minimumScaleFactor = 0.6
             case .language: v.label.font = .systemFont(ofSize: 16, weight: .semibold)
             default: v.label.font = .systemFont(ofSize: 16, weight: .regular)
             }
@@ -282,8 +282,6 @@ final class KeyCap: UIView {
         layer.shadowRadius = 0
         layer.shadowOffset = CGSize(width: 0, height: 1)
         label.textAlignment = .center
-        label.adjustsFontSizeToFitWidth = true
-        label.minimumScaleFactor = 0.6
         icon.contentMode = .center
         addSubview(label); addSubview(icon)
     }
@@ -292,6 +290,8 @@ final class KeyCap: UIView {
         super.layoutSubviews()
         label.frame = bounds.insetBy(dx: 2, dy: 0)
         icon.frame = bounds
+        // an explicit shadow path: without it every key's shadow is rendered offscreen on each frame
+        layer.shadowPath = UIBezierPath(roundedRect: bounds, cornerRadius: layer.cornerRadius).cgPath
     }
 }
 
@@ -317,5 +317,6 @@ final class KeyPopup: UIView {
     override func layoutSubviews() {
         super.layoutSubviews()
         label.frame = CGRect(x: 0, y: 4, width: bounds.width, height: bounds.height * 0.55)
+        layer.shadowPath = UIBezierPath(roundedRect: bounds, cornerRadius: layer.cornerRadius).cgPath
     }
 }
