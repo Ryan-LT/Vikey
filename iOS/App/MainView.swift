@@ -10,6 +10,7 @@ struct MainView: View {
     @AppStorage(VKSettings.Key.restoreIfInvalid, store: VKSettings.defaults) private var restore = true
     @AppStorage(VKSettings.Key.autoCapitalize, store: VKSettings.defaults) private var autoCap = true
     @AppStorage(VKSettings.Key.doubleSpacePeriod, store: VKSettings.defaults) private var doubleSpace = true
+    @AppStorage(VKSettings.Key.markedText, store: VKSettings.defaults) private var marked = false
     @AppStorage("didOnboard") private var didOnboard = true
     @State private var added = KeyboardStatus.isAdded
     @State private var sample = ""
@@ -56,6 +57,9 @@ struct MainView: View {
                 Section("Bàn phím") {
                     Toggle(isOn: $autoCap) { Tip("Tự viết hoa đầu câu", "Chữ đầu tiên của câu được viết hoa, như bàn phím của iPhone.") }
                     Toggle(isOn: $doubleSpace) { Tip("Chạm hai lần phím cách để thêm dấu chấm", "Chạm nhanh hai lần phím cách để thêm dấu chấm và một khoảng trắng.") }
+                }
+                Section("Thử nghiệm") {
+                    Toggle(isOn: $marked) { Tip("Gõ dấu bằng chữ gạch chân", "Từ đang gõ được gạch chân và thay một lần mỗi phím, như bàn phím tiếng Trung, tiếng Nhật. Có thể mượt hơn ở một số ứng dụng. Từ được chốt khi bạn gõ dấu cách hoặc dấu câu.") }
                 }
                 Section {
                     Button("Xem lại hướng dẫn") { didOnboard = false }

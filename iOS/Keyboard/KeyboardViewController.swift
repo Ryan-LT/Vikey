@@ -14,7 +14,10 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
     /// The text field. Tests swap in a counting proxy (performance lock: one text read per key).
     lazy var proxy: UITextDocumentProxy = textDocumentProxy
     // settings, read once when the keyboard appears (reading shared defaults per key is slow)
-    private var webFieldsEnglish = true, autoCapitalize = true, doubleSpacePeriod = true
+    private var webFieldsEnglish = true, autoCapitalize = true, doubleSpacePeriod = true, markedText = false
+    /// Marked-text mode: the word being typed stays marked (like Chinese/Japanese keyboards) and each
+    /// key replaces it in one call; the word is committed at a word break. This is that word.
+    private var composing = ""
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -70,6 +73,7 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
         webFieldsEnglish = d.bool(forKey: VKSettings.Key.englishForWebFields)
         autoCapitalize = d.bool(forKey: VKSettings.Key.autoCapitalize)
         doubleSpacePeriod = d.bool(forKey: VKSettings.Key.doubleSpacePeriod)
+        markedText = d.bool(forKey: VKSettings.Key.markedText)
     }
 
     /// A new text field: start fresh; web addresses and email start in English (and go back after).
@@ -129,7 +133,12 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
 
     private func externalChange() {
         let ctx = proxy.documentContextBeforeInput
+        if markedText, !composing.isEmpty, (ctx ?? "").hasSuffix(composing) || (lastContext ?? "").hasSuffix(ctx ?? "\u{0}") {
+            lastContext = ctx      // the host caught up with our marked word
+            return
+        }
         if ctx != lastContext {
+            composing = ""
             driver.resetContext()
             lastContext = ctx
             updateAutoShift(ctx ?? "")
@@ -177,6 +186,7 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
         let before = lastContext ?? ""
         if doubleSpacePeriod, now - lastSpace < 0.6, before.hasSuffix(" "),
            let prev = before.dropLast().last, prev.isLetter || prev.isNumber {
+            commitMarked()
             proxy.deleteBackward()
             proxy.insertText(". ")
             driver.resetContext()
@@ -199,6 +209,7 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
     }
 
     private func apply(_ e: VKEditResult) {
+        if markedText { applyMarked(e); return }
         // Send only what changes: "toi" + s comes back as delete "oi", insert "ói"; the "o" is kept.
         // Every call is a message to the app being typed in, which lays its text out again.
         var deletes = e.deleteCount
@@ -214,6 +225,45 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
         if !insert.isEmpty { proxy.insertText(insert) }
         if e.languageChanged { saveLanguage(); refresh() }
         afterEdit()
+    }
+
+    /// Marked-text version of apply: edits inside the word being typed are one setMarkedText call.
+    private func applyMarked(_ e: VKEditResult) {
+        if e.deleteCount <= composing.count {
+            composing = String(composing.dropLast(e.deleteCount)) + e.text
+        } else {
+            // the edit reaches into text already committed (look-back fix, undo): plain delete + insert
+            let extra = e.deleteCount - composing.count
+            composing = ""
+            proxy.setMarkedText("", selectedRange: NSRange(location: 0, length: 0))
+            proxy.unmarkText()
+            for _ in 0..<extra { proxy.deleteBackward() }
+            composing = e.text
+        }
+        // everything up to the last word break is final; the rest is the word still being typed
+        if let i = composing.lastIndex(where: { !($0.isLetter || $0.isNumber) }) {
+            let done = String(composing[...i]), rest = String(composing[composing.index(after: i)...])
+            proxy.setMarkedText(done, selectedRange: NSRange(location: (done as NSString).length, length: 0))
+            proxy.unmarkText()
+            composing = rest
+        }
+        if !composing.isEmpty || e.deleteCount > 0 {
+            proxy.setMarkedText(composing, selectedRange: NSRange(location: (composing as NSString).length, length: 0))
+            if composing.isEmpty { proxy.unmarkText() }
+        }
+        if e.languageChanged { saveLanguage(); refresh() }
+        afterEdit()
+    }
+
+    private func commitMarked() {
+        guard markedText, !composing.isEmpty else { return }
+        proxy.unmarkText()
+        composing = ""
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        commitMarked()
+        super.viewWillDisappear(animated)
     }
 
     private func afterEdit() {
