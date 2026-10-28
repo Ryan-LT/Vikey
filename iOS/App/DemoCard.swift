@@ -1,0 +1,65 @@
+import SwiftUI
+import UIKit
+
+/// The website's demo: a normal input method vs Vikey, typed key by key. The frames come from
+/// the real engine (Tools: gen_demo), so what it shows is what the keyboard does.
+struct DemoCard: View {
+    struct Scene: Decodable { let start: Int; let frames: [[Frame]] }
+    enum Frame: Decodable {
+        case s(String), i(Int)
+        init(from d: Decoder) throws {
+            let c = try d.singleValueContainer()
+            if let v = try? c.decode(Int.self) { self = .i(v) } else { self = .s(try c.decode(String.self)) }
+        }
+        var string: String { if case .s(let v) = self { return v }; return "" }
+        var int: Int { if case .i(let v) = self { return v }; return 0 }
+    }
+
+    @State private var scenes: [Scene] = []
+    @State private var plain = ""
+    @State private var vikey = ""
+    @State private var vietnamese = true
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Bộ gõ thông thường").font(.caption.weight(.semibold)).foregroundStyle(.secondary).textCase(.uppercase)
+                Spacer()
+                Text(vietnamese ? "VI" : "EN")
+                    .font(.caption.weight(.bold)).foregroundStyle(.white)
+                    .padding(.horizontal, 7).padding(.vertical, 3)
+                    .background(vietnamese ? Color.brand : Color.gray, in: RoundedRectangle(cornerRadius: 5))
+            }
+            Text(plain.isEmpty ? " " : plain).font(.title3).foregroundStyle(.secondary).lineLimit(1)
+            Text("Vikey").font(.caption.weight(.semibold)).foregroundStyle(Color.brand).textCase(.uppercase)
+            Text(vikey.isEmpty ? " " : vikey).font(.title2.weight(.semibold)).lineLimit(1)
+        }
+        .padding(18)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.background, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .shadow(color: Color.brand.opacity(0.18), radius: 20, y: 8)
+        .task { await play() }
+    }
+
+    private func play() async {
+        guard let url = Bundle.main.url(forResource: "demo", withExtension: "json"),
+              let data = try? Data(contentsOf: url),
+              let s = try? JSONDecoder().decode([Scene].self, from: data) else { return }
+        scenes = s
+        while !Task.isCancelled {
+            for scene in scenes {
+                plain = ""; vikey = ""; vietnamese = scene.start == 1
+                try? await Task.sleep(nanoseconds: 500_000_000)
+                for f in scene.frames where f.count >= 4 {
+                    vikey = f[1].string; plain = f[3].string; vietnamese = f[2].int == 1
+                    try? await Task.sleep(nanoseconds: UInt64((f[0].string == " " ? 0.16 : 0.07) * 1e9))
+                }
+                try? await Task.sleep(nanoseconds: 1_800_000_000)
+            }
+        }
+    }
+}
+
+extension Color {
+    static let brand = Color(UIColor { $0.userInterfaceStyle == .dark ? UIColor(red: 0.55, green: 0.53, blue: 1, alpha: 1) : UIColor(red: 0.31, green: 0.27, blue: 0.90, alpha: 1) })
+}
