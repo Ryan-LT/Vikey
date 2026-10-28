@@ -50,7 +50,7 @@ If every listed change is intended, accept them with `Tools/autoswitch/check.sh 
 - issue → isue;
 - "this makes sense" → "thí makes sến";
 - version → veión;
-- English mode by mistake: "toois nay mifnh deploy leen production nhes".
+- test → tét. (Tony: every scene is English typed while in Vietnamese mode, since that is the convincing case.) Highlights appear as soon as a word diverges.
 
 **Known.** "pair" in Vietnamese mode stays "pải", because the subtitle word list contains the misspelling "pải" (of "phải") with a low score. The fix for later is cleaning typo-like rare syllables out of the Vietnamese list.
 

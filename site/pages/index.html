@@ -45,8 +45,8 @@ lb.addEventListener("click",closeLb);addEventListener("keydown",e=>{if(e.key==="
  const marked=(a,b,cls)=>{const wa=a.split(" "),wb=b.split(" ");return wa.map((w,i)=>w&&w!==wb[i]?`<mark class="${cls}">${esc(w)}</mark>`:esc(w)).join(" ")};
  const show=(f,done)=>{
   if(!f){out.innerHTML=caret;plain.innerHTML="";return}
-  out.innerHTML=(done?marked(f.v,f.p,"good"):esc(f.v))+(done?"":caret);
-  plain.innerHTML=done?marked(f.p,f.v,"bad"):esc(f.p)};
+  out.innerHTML=marked(f.v,f.p,"good")+(done?"":caret);
+  plain.innerHTML=marked(f.p,f.v,"bad")};
  const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
  if(reduce){const s=scenes[0],f=s.frames[s.frames.length-1];show({k:s.frames.map(x=>x[0]).join(""),v:f[1],p:f[3]},true);setLang(f[2],false);return}
  for(;;){for(const s of scenes){
