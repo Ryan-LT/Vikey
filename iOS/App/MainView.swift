@@ -11,6 +11,7 @@ struct MainView: View {
     @AppStorage(VKSettings.Key.autoCapitalize, store: VKSettings.defaults) private var autoCap = true
     @AppStorage(VKSettings.Key.doubleSpacePeriod, store: VKSettings.defaults) private var doubleSpace = true
     @AppStorage(VKSettings.Key.markedText, store: VKSettings.defaults) private var marked = false
+    @AppStorage(VKSettings.Key.haptics, store: VKSettings.defaults) private var haptics = true
     @AppStorage("didOnboard") private var didOnboard = true
     @State private var added = KeyboardStatus.isAdded
     @State private var sample = ""
@@ -56,6 +57,7 @@ struct MainView: View {
                 }
                 Section("Bàn phím") {
                     Toggle(isOn: $autoCap) { Tip("Tự viết hoa đầu câu", "Chữ đầu tiên của câu được viết hoa, như bàn phím của iPhone.") }
+                    Toggle(isOn: $haptics) { Tip("Rung khi gõ phím", "Rung nhẹ mỗi khi chạm phím, như bàn phím của iPhone. Cần bật Cho phép Truy cập đầy đủ: Cài đặt › Vikey › Bàn phím. Vikey chỉ dùng quyền này để rung, không bao giờ gửi gì ra khỏi máy.") }
                     Toggle(isOn: $doubleSpace) { Tip("Chạm hai lần phím cách để thêm dấu chấm", "Chạm nhanh hai lần phím cách để thêm dấu chấm và một khoảng trắng.") }
                 }
                 Section("Thử nghiệm") {

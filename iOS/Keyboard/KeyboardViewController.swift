@@ -2,6 +2,11 @@ import UIKit
 
 /// The Vikey keyboard: keys go through the same engine and driver as the Mac app
 /// (Engine/Driver), and its edits are applied to the text field.
+/// The keyboard's root view: adopting UIInputViewAudioFeedback is what makes playInputClick() click.
+final class KeyboardInputView: UIInputView, UIInputViewAudioFeedback {
+    var enableInputClicksWhenVisible: Bool { true }
+}
+
 final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate {
     private let driver = VKDriver()
     private var keyboard: KeyboardView!
@@ -14,10 +19,16 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
     /// The text field. Tests swap in a counting proxy (performance lock: one text read per key).
     lazy var proxy: UITextDocumentProxy = textDocumentProxy
     // settings, read once when the keyboard appears (reading shared defaults per key is slow)
-    private var webFieldsEnglish = true, autoCapitalize = true, doubleSpacePeriod = true, markedText = false
+    private var webFieldsEnglish = true, autoCapitalize = true, doubleSpacePeriod = true, markedText = false, haptics = true
     /// Marked-text mode: the word being typed stays marked (like Chinese/Japanese keyboards) and each
     /// key replaces it in one call; the word is committed at a word break. This is that word.
     private var composing = ""
+
+    override func loadView() {
+        let v = KeyboardInputView(frame: .zero, inputViewStyle: .keyboard)
+        v.allowsSelfSizing = true
+        inputView = v
+    }
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -74,6 +85,8 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
         autoCapitalize = d.bool(forKey: VKSettings.Key.autoCapitalize)
         doubleSpacePeriod = d.bool(forKey: VKSettings.Key.doubleSpacePeriod)
         markedText = d.bool(forKey: VKSettings.Key.markedText)
+        haptics = d.bool(forKey: VKSettings.Key.haptics)
+        keyboard?.haptics = haptics && hasFullAccess   // haptics need Full Access; without it keys click
     }
 
     /// A new text field: start fresh; web addresses and email start in English (and go back after).
@@ -179,7 +192,35 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
         }
     }
 
-    func keyboardBackspaceRepeat(_ view: KeyboardView) { backspace() }
+    func keyboardBackspaceRepeat(_ view: KeyboardView, count n: Int) {
+        // like the system keyboard: characters first, whole words after ~2 seconds of holding
+        guard n > 20 else { backspace(); return }
+        commitMarked()
+        let before = lastContext ?? ""
+        guard !before.isEmpty else { return }
+        var chars = Array(before), k = 0
+        while let last = chars.last, last == " " { chars.removeLast(); k += 1 }
+        while let last = chars.last, last != " " && last != "\n" { chars.removeLast(); k += 1 }
+        for _ in 0..<max(k, 1) { proxy.deleteBackward() }
+        driver.resetContext()
+        afterEdit()
+    }
+
+    func keyboard(_ view: KeyboardView, insertAlternate text: String) {
+        type(text)      // a character the engine doesn't know passes through and starts a new word
+        if keyboard.shift == .on { keyboard.shift = .off }
+    }
+
+    func keyboard(_ view: KeyboardView, moveCursorBy offset: Int) {
+        commitMarked()
+        proxy.adjustTextPosition(byCharacterOffset: offset)
+    }
+
+    func keyboardCursorModeEnded(_ view: KeyboardView) {
+        driver.resetContext()
+        lastContext = proxy.documentContextBeforeInput
+        updateAutoShift(lastContext ?? "")
+    }
 
     private func spaceKey() {
         // double space: ". " like the system keyboard

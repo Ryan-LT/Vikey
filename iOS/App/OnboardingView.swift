@@ -66,6 +66,7 @@ struct OnboardingView: View {
                 Step(n: 1, text: "Mở Cài đặt của Vikey")
                 Step(n: 2, text: "Chọn Bàn phím")
                 Step(n: 3, text: "Bật Vikey")
+                Step(n: 4, text: "Bật Cho phép Truy cập đầy đủ để rung khi gõ (không bắt buộc)")
             }
             Button { KeyboardStatus.openSettings() } label: {
                 Label("Mở Cài đặt", systemImage: "gear").font(.headline)
@@ -74,7 +75,7 @@ struct OnboardingView: View {
             if added {
                 Label("Đã thêm Vikey", systemImage: "checkmark.circle.fill").foregroundStyle(.green).font(.headline)
             }
-            Text("Vikey không cần Truy cập đầy đủ. Những gì bạn gõ không rời khỏi máy.")
+            Text("Vikey chỉ dùng Truy cập đầy đủ để rung khi gõ phím. Bàn phím không kết nối mạng, những gì bạn gõ không rời khỏi máy.")
                 .font(.footnote).foregroundStyle(.secondary)
             Spacer(); Spacer()
         }
