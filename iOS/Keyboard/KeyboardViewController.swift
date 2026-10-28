@@ -163,7 +163,7 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
     private func externalChange() {
         let r0 = CACurrentMediaTime()
         let ctx = proxy.documentContextBeforeInput
-        if Diag.on { KBLog.add(String(format: "text read (iOS said the text changed): %.2fms", (CACurrentMediaTime() - r0) * 1000)) }
+        if Diag.on { KBLog.add("text read (iOS said the text changed): \(Self.time((CACurrentMediaTime() - r0) * 1000))") }
         if let c = ctx, c != lastContext, recentContexts.contains(c) { return }   // the app is catching up with our edits
         if ctx != lastContext, !Self.sameEnding(ctx ?? "", lastContext ?? "") {
             if Diag.on { KBLog.add("reset: text changed outside the keyboard (cursor moved, or the app changed it)") }
@@ -290,6 +290,11 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
     }
 
     /// The app's text before the cursor only shows a window of the document: compare what both have.
+    /// Milliseconds as text; under 0.1 ms in nanoseconds (Tony).
+    static func time(_ ms: Double) -> String {
+        ms < 0.1 ? String(format: "%.0f ns", ms * 1_000_000) : String(format: "%.2f ms", ms)
+    }
+
     private static func sameEnding(_ a: String, _ b: String) -> Bool {
         let n = min(a.count, b.count, 40)
         return n > 0 && a.suffix(n) == b.suffix(n) && abs(a.count - b.count) < 2000 && (a.count == b.count || n == 40)
@@ -307,8 +312,9 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
         if Diag.on {
             let end = CACurrentMediaTime()
             let hold = max(0, Diag.touchUp - Diag.touchStart) * 1000, work = max(0, end - Diag.touchUp) * 1000
-            keyboard.diagnostics = String(format: "finger down %.0f ms · lift→text %.2f ms · read %.2f ms\nvibrations %d · touches %d · edits %d", hold, work, Diag.readMs, Diag.haptics, Diag.touches, Diag.edits)
-            KBLog.add(String(format: "key=%@ hold=%.0fms work=%.2fms read=%.2fms vib=%d touches=%d edits=%d lang=%d", Diag.lastKind, hold, work, Diag.readMs, Diag.haptics, Diag.touches, Diag.edits, driver.language))
+            keyboard.diagnostics = "finger down \(Self.time(hold)) · lift→text \(Self.time(work)) · read \(Self.time(Diag.readMs))\n"
+                + "vibrations \(Diag.haptics) · touches \(Diag.touches) · edits \(Diag.edits)"
+            KBLog.add("key=\(Diag.lastKind) hold=\(Self.time(hold)) work=\(Self.time(work)) read=\(Self.time(Diag.readMs)) vib=\(Diag.haptics) touches=\(Diag.touches) edits=\(Diag.edits) lang=\(driver.language)")
             Diag.haptics = 0; Diag.touches = 0; Diag.edits = 0
         }
     }
