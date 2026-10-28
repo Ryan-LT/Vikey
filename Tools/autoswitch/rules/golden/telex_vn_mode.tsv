@@ -329,7 +329,7 @@ bayaut	bayaut 	0	1
 bayf	bày 	0	1
 bayou	bayou 	0	1
 bayr	bảy 	0	1
-bays	báy 	0	1
+bays	bays 	1	0
 bayx	bãy 	0	1
 be	be 	0	1
 bea	bea 	0	1
@@ -583,7 +583,7 @@ boosp	bốp 	0	1
 boost	bốt 	0	1
 boot	boot 	1	0
 bootj	bột 	0	1
-boots	bốt 	0	1
+boots	boots 	1	0
 booxng	bỗng 	0	1
 bop	bop 	0	1
 bops	bóp 	0	1
@@ -1916,7 +1916,7 @@ daoj	dạo 	0	1
 daps	dáp 	0	1
 dar	dả 	0	1
 dari	dải 	0	1
-das	dá 	0	1
+das	das 	1	0
 dasch	dách 	0	1
 dasi	dái 	0	1
 dasin	dasin 	0	1
@@ -2522,7 +2522,7 @@ deef	dề 	0	1
 deefu	dều 	0	1
 deei	deei 	0	1
 deejt	dệt 	0	1
-deem	dêm 	0	1
+deem	deem 	1	0
 deens	dến 	0	1
 deep	deep 	1	0
 deer	dể 	0	1
@@ -3787,7 +3787,7 @@ hongs	hóng 	0	1
 honr	hỏn 	0	1
 honx	hõn 	0	1
 hoo	hô 	0	1
-hooch	hôch 	0	1
+hooch	hooch 	1	0
 hoocj	hộc 	0	1
 hoocs	hốc 	0	1
 hoof	hồ 	0	1
@@ -3815,7 +3815,7 @@ hoongr	hổng 	0	1
 hoongs	hống 	0	1
 hoonr	hổn 	0	1
 hoonx	hỗn 	0	1
-hoop	hôp 	0	1
+hoop	hoop 	1	0
 hoopj	hộp 	0	1
 hoor	hổ 	0	1
 hoori	hổi 	0	1
@@ -4135,7 +4135,7 @@ keej	kệ 	0	1
 keejch	kệch 	0	1
 keemf	kềm 	0	1
 keems	kếm 	0	1
-keen	kên 	0	1
+keen	keen 	1	0
 keenf	kền 	0	1
 keenh	kênh 	0	1
 keenhf	kềnh 	0	1
@@ -4829,7 +4829,7 @@ leach	leach 	0	1
 lean	lean 	0	1
 lecs	léc 	0	1
 lee	lê 	0	1
-leech	lêch 	0	1
+leech	leech 	1	0
 leechj	lệch 	0	1
 leechs	lếch 	0	1
 leef	lề 	0	1
@@ -5456,7 +5456,7 @@ mauch	mauch 	0	1
 mauf	màu 	0	1
 maui	maui 	0	1
 maus	máu 	0	1
-maw	mă 	0	1
+maw	maw 	1	0
 mawc	măc 	0	1
 mawcj	mặc 	0	1
 mawcs	mắc 	0	1
@@ -5968,7 +5968,7 @@ naor	nảo 	0	1
 naos	náo 	0	1
 naox	não 	0	1
 napj	nạp 	0	1
-naps	náp 	0	1
+naps	naps 	1	0
 nar	nả 	0	1
 nari	nải 	0	1
 narn	nản 	0	1
@@ -7036,7 +7036,7 @@ noif	nòi 	0	1
 noifi	noifi 	0	1
 noiif	noiif 	0	1
 noij	nọi 	0	1
-noir	nỏi 	0	1
+noir	noir 	1	0
 nois	nói 	0	1
 noix	nõi 	0	1
 noj	nọ 	0	1
@@ -7322,7 +7322,7 @@ paan	pân 	0	1
 pac	pac 	0	1
 pai	pai 	0	1
 pain	pain 	0	1
-pair	pải 	0	1
+pair	pair 	1	0
 pam	pam 	0	1
 pan	pan 	0	1
 panh	panh 	0	1

@@ -78,9 +78,10 @@ if INF_SHARE > 0 and os.path.exists(os.path.join(INF, 'vi_informal.txt')):
         if not k or (plain and plain[-1] in 'srx'): continue
         if (len(w) <= 7 and c >= 5 and SYL.match(k)) or (SHORTHAND.match(k) and c >= 50):
             inf[k] = inf.get(k, 0) + c
-# Bulk web Vietnamese (vikey-data/bulk: FineWeb-2, HPLT, MADLAD; experiment): mixed into the formal base
+# Bulk web Vietnamese (vikey-data/bulk: FineWeb-2, HPLT, MADLAD, spam-filtered; D28): like the chat crawl it can only
+# lower a subtitle word or add a new one (raising them hurt mixed typing)
 BULK = os.path.expanduser('~/Work/vikey-data/bulk/merged')
-BULK_SHARE = float(os.environ.get('VIKEY_BULK_SHARE', '0'))
+BULK_SHARE = float(os.environ.get('VIKEY_BULK_SHARE', '0.5'))   # D28: tuned on all eval sets
 if BULK_SHARE > 0 and os.path.exists(os.path.join(BULK, 'vi_counts.txt')):
     import json
     btot = json.load(open(os.path.join(BULK, 'sources.json')))['totals']['tokens_vi']
@@ -91,7 +92,10 @@ if BULK_SHARE > 0 and os.path.exists(os.path.join(BULK, 'vi_counts.txt')):
         if k and not (plain and plain[-1] in 'srx') and len(w) <= 7 and c >= 20 and SYL.match(k):
             bulk[k] = bulk.get(k, 0) + c
     # rewrite vn as counts on the subtitle scale: (1-b)*subtitle rate + b*bulk rate
-    vn = {k: ((1 - BULK_SHARE) * vn.get(k, 0) / vi_total + BULK_SHARE * bulk.get(k, 0) / btot) * vi_total for k in set(vn) | set(bulk)}
+    def brate(k):
+        sub, mixed = vn.get(k, 0) / vi_total, (1 - BULK_SHARE) * vn.get(k, 0) / vi_total + BULK_SHARE * bulk.get(k, 0) / btot
+        return min(sub, mixed) if sub > 0 and os.environ.get('VIKEY_BULK_LOWER_ONLY', '1') == '1' else mixed
+    vn = {k: brate(k) * vi_total for k in set(vn) | set(bulk)}
     vn = {k: c for k, c in vn.items() if c > 0}
 if inf_total:
     for w, c in vi:   # shorthand the subtitles have too
@@ -126,6 +130,15 @@ if inf_total and os.environ.get('VIKEY_EN_IN_VI', '1') == '1':
         w, c = line.split(); c = int(c)
         if c >= 5 and w in en and vn_key(w) not in vn:
             en[w] = max(en[w], score(c, inf_total))
+
+# The same from the bulk web Vietnamese (experiment, VIKEY_BULK_EN=1)
+if os.environ.get('VIKEY_BULK_EN', '1') == '1' and os.path.exists(os.path.join(BULK, 'en_in_vi_counts.txt')):
+    import json
+    btot = json.load(open(os.path.join(BULK, 'sources.json')))['totals']['tokens_vi']
+    for line in open(os.path.join(BULK, 'en_in_vi_counts.txt'), encoding='utf-8'):
+        w, c = line.split(); c = int(c)
+        if c >= 20 and w in en and vn_key(w) not in vn:
+            en[w] = max(en[w], score(c, btot))
 
 # Chat shorthand, programming words and identifier words mined from code: always English, high score.
 for name in ('en_extra.txt', 'en_code.txt'):

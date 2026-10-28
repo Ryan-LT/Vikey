@@ -23,6 +23,17 @@ If every listed change is intended, accept them with `Tools/autoswitch/check.sh 
 
 ---
 
+## 28. Web Vietnamese data; Early Switch rejected
+
+**Asked by Tony.** "we need about 10 times data both vietnamese and english"; "Early Switch: if we detect 3 words in a row that are clearly in VN/EN, switch right away".
+
+**Decided.**
+- 93M words of spam-filtered web Vietnamese (FineWeb-2 incl. a forum/chatty slice, HPLT 2, MADLAD-400; ODC-By/CC0; `vikey-data/bulk`) mixed half and half into the Vietnamese frequencies, lower-only like the chat crawl (D27). English used inside that Vietnamese text raises those English words. Lazy wrong words vs 1.0.13: chat 0.26 → 0.25%, everyday mixed 0.23 → 0.22%, Vietnamese-only 0.05 → 0.04%, VietMix 0.69 → 0.65%, others equal; fewer manual switches.
+- "aj", "ej", "oj", "ix" are not English words (subtitle junk): "aj" is ạ, also right after English ("esports ạ"). Contraction stems (didn, wasn…) are English.
+- **Early Switch rejected (Tony, after the numbers):** switching after 3 words that can only be one language. To-Vietnamese never fires (the first Vietnamese-only word already switches); to-English helped synthetic chat (0.23 → 0.21%) but broke real code-mixed text, where English phrases are followed by Vietnamese again ("predict stock price v ạ"): ViLexNorm 14 words broken, 0 fixed. Kept in the simulator only (`SIM_EARLY=N`).
+
+**Status:** Built 2026-10-29, not in a release yet.
+
 ## 27. Chat frequencies and VietMix fixes (Mac + iOS engine)
 
 **Asked by Tony.** "see if anything we can improve (which can apply to both macOS + iOS app)" after the VietMix dataset (real Vietnamese–English code-mixed posts, held out).
