@@ -5,6 +5,22 @@ Each entry records what was asked, what was decided, and its status. Newest firs
 
 Status values: **Shipped** (in a build Tony has), **Agreed** (decided, not built yet), **Rejected**.
 
+## How behavior is locked down
+
+Every engine rule decided here has test cases in `Tools/autoswitch/rules/rules.tsv`, tagged with its decision (D5.2, D8.1, ...). Run before and after any rule change:
+
+```sh
+Tools/autoswitch/check.sh
+```
+
+It checks:
+1. **Rule cases.** A failure names the decision it breaks, e.g. "FAIL D5.2: common Vietnamese word (tô) is never switched away from".
+2. **Golden snapshot of typing.** The chat corpus, with and without typos, is typed with no manual switching. Every changed line is printed: intended, before, now.
+3. **Telex lock.** Every Vietnamese syllable, typed in 3 tone orders in Vietnamese mode, must keep its output.
+4. **Metrics.** Manual switches and wrong words must not get worse.
+
+If every listed change is intended, accept them with `Tools/autoswitch/check.sh update`. Add a case for the new decision to `rules.tsv`. GitHub Actions runs the same check on every push.
+
 ---
 
 ## 9. Typos must not flip the language
@@ -30,6 +46,8 @@ Status values: **Shipped** (in a build Tony has), **Agreed** (decided, not built
 | Viblo: wrong words | 0.55% | 0.24% |
 
 On typo-free text the guard costs a little (chat 0.95 → 1.04), but real typing has typos.
+
+**Refined 2026-10-28.** The rule-lock suite caught a conflict: the guard broke D8.2, because "analytics" Telexes to "ânlytics" and the â looked like a Vietnamese mark. The guard now applies only to words whose keys have a single vowel group, since no Vietnamese syllable has more. Result: all 49 rule cases pass; clean chat is back to 0.95 manual switches per 100 words, Viblo 1.02, chat with typos 1.18, Viblo with typos 1.37.
 
 **Also in this build.** The typing log records which shortcut ended a word (⌥⌫, ⌘A…) instead of just "shortcut".
 

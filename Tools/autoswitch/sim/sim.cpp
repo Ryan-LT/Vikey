@@ -203,8 +203,12 @@ int main(int argc, char** argv) {
     fclose(f);
 
     long words = 0, manual = 0, errors = 0, wordsVn = 0, wordsEn = 0;
-    bool lazy = false; int showLazy = 0;
-    for (int i = 2; i < argc; i++) { if (!strcmp(argv[i], "--lazy")) lazy = true; if (!strcmp(argv[i], "--show-lazy") && i + 1 < argc) showLazy = atoi(argv[++i]); }
+    bool lazy = false; int showLazy = 0; FILE* dump = NULL;
+    for (int i = 2; i < argc; i++) {
+        if (!strcmp(argv[i], "--lazy")) lazy = true;
+        if (!strcmp(argv[i], "--show-lazy") && i + 1 < argc) showLazy = atoi(argv[++i]);
+        if (!strcmp(argv[i], "--dump") && i + 1 < argc) dump = fopen(argv[++i], "w");   // one "got<TAB>want" line per message
+    }
     if (lazy) {   // never switch by hand: type each message, count wrong words, then fix them by hand
         U line, want; long wrong = 0, lines = 0, perfect = 0;
         for (const Unit& u : units) {
@@ -213,10 +217,13 @@ int main(int argc, char** argv) {
             if (u.word) { words++; if (u.isvn) wordsVn++; else wordsEn++; }
             if (u.seps.find('\n') != std::string::npos) {
                 int w = wrongWords(P.screen, want); wrong += w; lines++; if (!w) perfect++;
+                if (dump) { U g = P.screen, t = want; if (!g.empty() && g.back() == u'\n') g.pop_back(); if (!t.empty() && t.back() == u'\n') t.pop_back();
+                            fprintf(dump, "%s\t%s\n", utf8(g).c_str(), utf8(t).c_str()); }
                 if (w && showLazy > 0) { showLazy--; fprintf(stderr, "GOT  %s\nWANT %s\n", utf8(P.screen).c_str(), utf8(want).c_str()); }
                 P.screen.clear(); want.clear();
             }
         }
+        if (dump) fclose(dump);
         printf("%s lazy  words %ld  wrong words %ld (%.2f%%)  messages %ld, perfect %ld (%.1f%%)\n", vAutoSwitchByTyping ? "auto ON " : "auto OFF",
                words, wrong, 100.0 * wrong / words, lines, perfect, 100.0 * perfect / lines);
         return 0;

@@ -1,0 +1,13 @@
+name: Engine rules
+# Locks down the typing engine: every decided rule (DECISIONS.md) has tagged test cases,
+# plus golden snapshots of typing a mixed Vietnamese/English corpus and every syllable.
+on:
+  push:
+  pull_request:
+jobs:
+  check:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Rules, golden snapshots, Telex lock, metrics
+        run: zsh Tools/autoswitch/check.sh

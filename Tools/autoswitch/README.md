@@ -29,3 +29,14 @@ python3 bulk.py        # accuracy over the 20k English / 3.4k Vietnamese word li
 ```
 
 `harness.cpp` drives the real engine and mirrors what `macOS/ModernKey/OpenKey.mm` does with its output.
+
+## Lock down behavior (run before and after any rule change)
+
+```sh
+Tools/autoswitch/check.sh            # rule cases + golden snapshots + Telex lock + metrics
+Tools/autoswitch/check.sh update     # accept the current behavior after reviewing the diffs
+EXTRA="-DAS_VN_FLOOR=30" Tools/autoswitch/check.sh   # try a tweak without editing code
+```
+
+- `rules/rules.tsv`: every decided rule with tagged cases (see DECISIONS.md).
+- `rules/golden/`: snapshots of typing the chat corpus (with and without typos), every syllable in Vietnamese mode, and the metrics.
