@@ -41,14 +41,11 @@ struct MainView: View {
                 }
                 Section {
                     Toggle("Mở Vikey khi đăng nhập", isOn: Binding(get: { launchAtLogin }, set: { LaunchAtLogin.set($0); launchAtLogin = LaunchAtLogin.isEnabled }))
-                    LabeledContent("Nhật ký gõ") {
-                        Button("Xem…") { Windows.history.show() }
-                    }
                 }
             }
             .formStyle(.grouped)
             .scrollDisabled(true)
-            footer
+            .padding(.bottom, 8)
         }
         .frame(width: 460)
         .fixedSize(horizontal: false, vertical: true)
@@ -83,24 +80,6 @@ struct MainView: View {
         .padding(.bottom, 4)
     }
 
-    private var footer: some View {
-        VStack(spacing: 3) {
-            Text("Vikey \(version) · Tony Dinh")
-            HStack(spacing: 4) {
-                Text("Dựa trên OpenKey của Tuyen Mai · GPL-3.0 ·")
-                Link("vikey.app", destination: URL(string: "https://vikey.app")!)
-                Text("·")
-                Link("GitHub", destination: URL(string: "https://github.com/tonyminibot/Vikey")!)
-            }
-        }
-        .font(.caption)
-        .foregroundStyle(.secondary)
-        .padding(.bottom, 16)
-    }
-
-    private var version: String {
-        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
-    }
 }
 
 /// Binds an Int (0/1) preference used by the C core to a Toggle, applying it on change.

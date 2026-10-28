@@ -23,6 +23,23 @@ If every listed change is intended, accept them with `Tools/autoswitch/check.sh 
 
 ---
 
+## 12. Typing log is an opt-in debug feature; credits in the About window
+
+**Status:** Done 2026-10-28 and released as 1.0.1.
+
+**Asked by Tony.**
+- "Nhật ký gõ is only a debug feature. Make it opt-in from the app and remove mention of it on the website."
+- Move the credit line from the main window into the standard macOS About window.
+
+**Decisions**
+- **Typing log off by default.** With the log off, nothing is counted or recorded: every log entry point returns immediately, so the log costs nothing on the typing path.
+- **Where it lives now:** the menu bar submenu "Gỡ lỗi" → "Ghi nhật ký gõ" turns it on. "Xem nhật ký gõ…" opens the window and is disabled while logging is off. The main window no longer has a log row.
+- **Website:** every mention is removed (changelog, FAQ, privacy). The README documents it under "Debug typing log".
+- **Credits:** the main window footer is gone. The standard About panel ("Giới thiệu Vikey" in the menu) shows Tony Dinh, the OpenKey/Tuyen Mai credit, GPL-3.0, and links to vikey.app and GitHub. The Info.plist copyright is "© 2026 Tony Dinh".
+- **Repo:** the GitHub repo's website is set to https://vikey.app.
+
+---
+
 ## 11. vikey.app, open-source release, compact window
 
 **Status:** Done 2026-10-28. Vikey 1.0.0 is public at https://vikey.app and on GitHub Releases.

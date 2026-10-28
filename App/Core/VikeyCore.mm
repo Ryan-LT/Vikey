@@ -107,6 +107,7 @@ extern "C" {
     static bool UndoAutoFixWithBackspace();
     static void TLUndo();
     int vTypingLogKeys = 1;                     // record the keys of each word in the typing log
+    int vTypingLogEnabled = 0;                  // the typing log is a debug feature: off unless turned on
     static NSString* _tlApp = @"";              // bundle id of the app being typed in, for the log
     void TLFlush();
     void TLEndWord(NSString* reason);
@@ -271,6 +272,7 @@ extern "C" {
                 vUseSmartSwitchKey = get(@"UseSmartSwitchKey", 1);
         vAutoSwitchByTyping = get(@"AutoSwitchByTyping", 1);
         vTypingLogKeys = get(@"TypingLogKeys", 1);
+        vTypingLogEnabled = get(@"TypingLogEnabled", 0);
         int hotkey = get(@"SwitchKeyStatus", 0);
         vSwitchKeyStatus = hotkey ? hotkey : 0x7A000206;  // default ⌥Z
         VKUpdateLayoutCompat();
@@ -575,6 +577,7 @@ extern "C" {
     }
 
     static void TLCount(NSString* name) {
+        if (!vTypingLogEnabled) return;
         if (!_tlStats) {
             NSDictionary* saved = [[NSUserDefaults standardUserDefaults] dictionaryForKey:@"TypingLogStats"];
             _tlStats = [NSMutableDictionary dictionary];
@@ -640,6 +643,7 @@ extern "C" {
     }
 
     static void TLWrite(NSMutableDictionary* d) {
+        if (!vTypingLogEnabled) return;
         d[@"t"] = TLTime();
         d[@"app"] = _tlApp ?: @"";
         if (_siteHost.length > 0) d[@"site"] = _siteHost;
@@ -688,6 +692,7 @@ extern "C" {
 
     /// Every key the user presses (not our own synthesized ones, not the switch hotkey).
     void TLNoteKey(CGKeyCode key, CGEventFlags flags) {
+        if (!vTypingLogEnabled) return;
         _tlSinceAuto = false;
         bool shift = flags & kCGEventFlagMaskShift;
         if (flags & (kCGEventFlagMaskCommand | kCGEventFlagMaskControl | kCGEventFlagMaskAlternate)) {

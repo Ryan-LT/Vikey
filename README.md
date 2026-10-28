@@ -17,7 +17,6 @@ Type Telex as usual. When you type an English word in Vietnamese mode, or a Viet
 - **Undo:** press Delete right after an automatic fix to undo it.
 - **Remembers the language** for each app, and for each website in Chrome, Safari, Arc, Brave, Edge, Vivaldi and Opera.
 - **Switch hotkey:** a key with modifiers, or modifiers alone (⌃⇧), with an optional beep.
-- **Typing log:** see how often you switch by hand versus how often Vikey switches for you. It's stored on your Mac only, and never records password fields, password managers or terminals.
 - **Works with Dvorak and other layouts:** Vikey steps aside automatically for other input languages (Japanese, Chinese…).
 
 ## Build
@@ -30,6 +29,10 @@ xcodebuild -project Vikey.xcodeproj -scheme Vikey -configuration Release build
 ```
 
 Vikey needs Accessibility permission (to read and rewrite keystrokes). On first launch it walks you through granting it.
+
+## Debug typing log
+
+For tuning auto switch, turn on Gỡ lỗi → Ghi nhật ký gõ in the menu bar. It counts manual vs automatic switches and (optionally) records the keys of each word to `~/Library/Application Support/Vikey/typing-log.jsonl`, never in password fields, password managers or terminals. Off by default. Analyze with `Tools/autoswitch/analyze_log.py`.
 
 ## Engine tests
 

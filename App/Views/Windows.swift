@@ -70,3 +70,27 @@ enum WindowFocus {
         }
     }
 }
+
+/// The standard macOS About window, with the author and the OpenKey credit.
+enum AboutPanel {
+    @MainActor static func show() {
+        WindowFocus.bringForward()
+        let credits = NSMutableAttributedString()
+        let center = NSMutableParagraphStyle()
+        center.alignment = .center
+        let base: [NSAttributedString.Key: Any] = [.font: NSFont.systemFont(ofSize: 11), .foregroundColor: NSColor.secondaryLabelColor, .paragraphStyle: center]
+        func add(_ text: String, link: String? = nil) {
+            var attrs = base
+            if let link { attrs[.link] = URL(string: link) }
+            credits.append(NSAttributedString(string: text, attributes: attrs))
+        }
+        add("Tony Dinh\n")
+        add("Dựa trên ")
+        add("OpenKey", link: "https://github.com/tuyenvm/OpenKey")
+        add(" của Tuyen Mai\nMã nguồn mở theo giấy phép GPL-3.0\n\n")
+        add("vikey.app", link: "https://vikey.app")
+        add("  ·  ")
+        add("GitHub", link: "https://github.com/tonyminibot/Vikey")
+        NSApp.orderFrontStandardAboutPanel(options: [.credits: credits, .applicationName: "Vikey"])
+    }
+}
