@@ -23,6 +23,18 @@ If every listed change is intended, accept them with `Tools/autoswitch/check.sh 
 
 ---
 
+## 16. Auto update
+
+**Status:** Done 2026-10-28 (1.0.4).
+
+**Asked by Tony.** "Add auto update and check for update feature to the app."
+
+**Decided.**
+- Sparkle 2. Feed at vikey.app/appcast.xml, written by `release.sh`. Updates are EdDSA-signed; the private key is `~/.secrets/vikey_sparkle_ed25519`, the public key is in Info.plist.
+- On by default: checks daily, downloads in the background, installs when Vikey quits (or after the user confirms). The "Tự động cập nhật" toggle in the main window turns it off.
+- Menu: "Kiểm tra cập nhật…" checks now and shows Sparkle's window (in Vietnamese).
+- Tested end to end with a local 1.0.5 test build: automatic install on quit, and the manual check → install → relaunch.
+
 ## 15. Per-site memory off by default, (?) on every option, debug menu hidden
 
 **Status:** Done 2026-10-28.
