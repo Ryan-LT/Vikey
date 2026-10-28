@@ -9,6 +9,7 @@ struct MainView: View {
     @AppStorage(PrefKey.restoreIfInvalid) private var restore = 1
     @AppStorage(PrefKey.autoSwitch) private var autoSwitch = 1
     @AppStorage(PrefKey.smartSwitch) private var smartSwitch = 1
+    @AppStorage(PrefKey.pauseAfterManual) private var pauseAfterManual = 1
     @AppStorage(PrefKey.smartSwitchPerSite) private var perSite = true
     @State private var launchAtLogin = LaunchAtLogin.isEnabled
     @State private var browserDenied = false
@@ -34,6 +35,10 @@ struct MainView: View {
                     Toggle(isOn: flag($autoSwitch)) {
                         Tip("Tự chuyển Anh/Việt khi gõ", "Gõ một từ tiếng Anh khi đang ở tiếng Việt (hoặc ngược lại), Vikey tự sửa từ đó và chuyển chế độ. Bấm Xoá ngay sau đó để hoàn tác.")
                     }
+                    Toggle(isOn: flag($pauseAfterManual)) {
+                        Tip("Tạm dừng 15 giây sau khi chuyển tay", "Khi bạn tự bấm chuyển Anh/Việt, Vikey không tự chuyển trong 15 giây, để giữ đúng lựa chọn của bạn.")
+                    }
+                    .disabled(autoSwitch == 0)
                     Toggle(isOn: flag($smartSwitch)) {
                         Tip("Nhớ ngôn ngữ cho từng ứng dụng", "Vikey nhớ bạn dùng tiếng Anh hay tiếng Việt ở mỗi ứng dụng và tự chuyển lại khi bạn quay về ứng dụng đó.")
                     }

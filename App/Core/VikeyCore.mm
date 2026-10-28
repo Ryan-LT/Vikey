@@ -261,6 +261,25 @@ extern "C" {
     }
 
     /// Reads Vikey's settings into the engine. Called at start and whenever a setting changes.
+    // ---- Pause auto switch after a manual switch ----------------------------------------
+    // The user just chose the language by hand: for 15 s auto switch stays out of the way (D21).
+    static CFAbsoluteTime _autoPauseUntil = 0;
+
+    static bool AutoSwitchPaused() { return CFAbsoluteTimeGetCurrent() < _autoPauseUntil; }
+
+    void PauseAutoSwitchAfterManual() {
+        id v = [[NSUserDefaults standardUserDefaults] objectForKey:@"PauseAutoAfterManual"];
+        if (v != nil && ![v boolValue]) return;
+        _autoPauseUntil = CFAbsoluteTimeGetCurrent() + 15;
+        vAutoSwitchByTyping = 0;
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(15.05 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+            if (AutoSwitchPaused()) return;   // a later manual switch extended it
+            id on = [[NSUserDefaults standardUserDefaults] objectForKey:@"AutoSwitchByTyping"];
+            vAutoSwitchByTyping = on == nil ? 1 : [on intValue];
+            StartEnglishWord(false);          // the word being typed now wasn't followed from its start
+        });
+    }
+
     void VKLoadSettings() {
         NSUserDefaults* d = [NSUserDefaults standardUserDefaults];
         int (^get)(NSString*, int) = ^int(NSString* key, int fallback) {
@@ -273,7 +292,7 @@ extern "C" {
         vRestoreIfWrongSpelling = get(@"RestoreIfInvalidWord", 1);
         vUseModernOrthography = get(@"ModernOrthography", 1);
                 vUseSmartSwitchKey = get(@"UseSmartSwitchKey", 1);
-        vAutoSwitchByTyping = get(@"AutoSwitchByTyping", 1);
+        vAutoSwitchByTyping = AutoSwitchPaused() ? 0 : get(@"AutoSwitchByTyping", 1);
         vTypingLogKeys = get(@"TypingLogKeys", 1);
         vTypingLogEnabled = get(@"TypingLogEnabled", 0);
         int hotkey = get(@"SwitchKeyStatus", 0);
@@ -492,6 +511,7 @@ extern "C" {
     }
     
     void switchLanguage() {
+        PauseAutoSwitchAfterManual();
         _autoFixUndo.active = false;
         ResetEnglishWord(true);
         if (vLanguage == 0)
@@ -1071,6 +1091,7 @@ extern "C" {
     CGEventRef VikeyEventCallback(CGEventTapProxy proxy, CGEventType type, CGEventRef event, void* refcon);
     void TLAppChanged(void);
     void TLManual(NSString* via, int to);
+    void PauseAutoSwitchAfterManual(void);
     void TLFlush(void);
     void TLClear(void);
     NSString* TLLogPath(void);
@@ -1168,6 +1189,7 @@ static NSTimer* _watchdog = nil;
 + (void)setLanguageByUser:(int)language {
     if (vLanguage == language) return;
     vLanguage = language;
+    PauseAutoSwitchAfterManual();
     TLManual(@"menu", language);
     VKLanguageChanged(YES);
     startNewSession();
