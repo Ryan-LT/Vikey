@@ -12,6 +12,8 @@ struct MainView: View {
     @AppStorage(VKSettings.Key.doubleSpacePeriod, store: VKSettings.defaults) private var doubleSpace = true
     @AppStorage(VKSettings.Key.haptics, store: VKSettings.defaults) private var haptics = true
     @AppStorage(VKSettings.Key.diagnostics, store: VKSettings.defaults) private var diagnostics = false
+    @AppStorage(VKSettings.Key.suggestions, store: VKSettings.defaults) private var suggestions = true
+    @AppStorage(VKSettings.Key.autoCorrect, store: VKSettings.defaults) private var autoCorrect = true
     @AppStorage("didOnboard") private var didOnboard = true
     @State private var added = KeyboardStatus.isAdded
     @State private var sample = ""
@@ -57,6 +59,8 @@ struct MainView: View {
                         .disabled(!spelling)
                 }
                 Section("Bàn phím") {
+                    Toggle(isOn: $suggestions) { Tip("Gợi ý từ", "Hiện các từ gợi ý phía trên bàn phím, cả tiếng Việt lẫn tiếng Anh. Chạm vào một từ để dùng nó.") }
+                    Toggle(isOn: $autoCorrect) { Tip("Tự sửa lỗi gõ", "Khi bạn chạm lệch phím (\"teh\" thay vì \"the\"), Vikey sửa từ đó khi bạn bấm phím cách. Bấm xoá ngay sau đó để giữ lại từ bạn gõ.") }
                     Toggle(isOn: $autoCap) { Tip("Tự viết hoa đầu câu", "Chữ đầu tiên của câu được viết hoa, như bàn phím của iPhone.") }
                     Toggle(isOn: $haptics) { Tip("Rung khi gõ phím", "Rung nhẹ mỗi khi chạm phím, như bàn phím của iPhone. Cần bật Cho phép Truy cập đầy đủ: Cài đặt › Vikey › Bàn phím. Vikey chỉ dùng quyền này để rung, không bao giờ gửi gì ra khỏi máy.") }
                     Toggle(isOn: $doubleSpace) { Tip("Chạm hai lần phím cách để thêm dấu chấm", "Chạm nhanh hai lần phím cách để thêm dấu chấm và một khoảng trắng.") }

@@ -18,12 +18,15 @@ enum VKSettings {
         static let doubleSpacePeriod = "DoubleSpacePeriod"
         static let haptics = "Haptics"
         static let diagnostics = "KeyboardDiagnostics"
+        static let suggestions = "Suggestions"
+        static let autoCorrect = "AutoCorrect"
     }
 
     static let defaultValues: [String: Any] = [
         Key.autoSwitch: true, Key.pauseAfterManual: true, Key.modernOrthography: true, Key.spelling: true,
         Key.restoreIfInvalid: true, Key.englishForWebFields: true,
         Key.autoCapitalize: true, Key.doubleSpacePeriod: true, Key.haptics: true, Key.diagnostics: false,
+        Key.suggestions: true, Key.autoCorrect: true,
     ]
 
     static func register() { defaults.register(defaults: defaultValues) }

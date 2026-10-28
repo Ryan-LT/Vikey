@@ -30,7 +30,10 @@ final class KeyboardPerformanceTests: XCTestCase {
         let p = CountingProxy()
         vc.proxy = p
         vc.loadViewIfNeeded()
+        vc.view.frame = CGRect(x: 0, y: 0, width: 402, height: 300)   // lays the keys out (auto-correct needs them)
+        vc.view.layoutIfNeeded()
         vc.viewWillAppear(false)
+        vc.setLanguageForTests(1)
         return (vc, p)
     }
 
@@ -78,6 +81,37 @@ final class KeyboardPerformanceTests: XCTestCase {
         XCTAssertEqual(p.text, "Tôi đi học sorry em ")
     }
 
+    func testAutoCorrectAtSpaceAndBackspaceUndo() {
+        let (vc, p) = makeKeyboard()
+        vc.setLanguageForTests(0)
+        type("i love teh ", into: vc)
+        XCTAssertTrue(p.text.hasSuffix("the "), "auto-correct: \(p.text)")
+        vc.keyboard(sender, didTap: .backspace)          // right after: put back what was typed
+        XCTAssertTrue(p.text.hasSuffix("teh"), "undo: \(p.text)")
+        vc.keyboard(sender, didTap: .space)              // and keep it this time
+        XCTAssertTrue(p.text.hasSuffix("teh "), "kept: \(p.text)")
+    }
+
+    func testAutoCorrectLeavesRealWordsAndShorthand() {
+        let (vc, p) = makeKeyboard()
+        // clean mixed typing must come out exactly as typed: no correction of real words / VN shorthand
+        type("tooi ddi hocj sorry em ", into: vc)
+        XCTAssertEqual(p.text, "Tôi đi học sorry em ")
+    }
+
+    func testSuggestionStrip() {
+        let (vc, _) = makeKeyboard()
+        vc.setLanguageForTests(0)
+        type("helo", into: vc)
+        RunLoop.main.run(until: Date().addingTimeInterval(0.05))   // the strip updates right after the key
+        let cells = vc.keyboardViewForTests.suggestions.map(\.text)
+        XCTAssertEqual(cells.first, "Helo")                         // start of the field: capital
+        XCTAssertTrue(cells.contains("Hello"), "suggestions: \(cells)")
+        type(" ", into: vc)
+        RunLoop.main.run(until: Date().addingTimeInterval(0.05))
+        XCTAssertTrue(vc.keyboardViewForTests.suggestions.isEmpty)
+    }
+
     func testAtMostOneTextReadPerKey() {
         let (vc, p) = makeKeyboard()
         let readsBefore = p.reads
@@ -113,6 +147,19 @@ final class KeyboardPerformanceTests: XCTestCase {
         XCTAssertLessThan(perKeyUs, 300, "keyboard logic takes \(Int(perKeyUs)) µs per key")
     }
 
+    func testSuggestionTimePerKey() {
+        // the strip runs after each key's text is sent; it still has to keep up with fast typing
+        let (vc, _) = makeKeyboard()
+        var total = 0.0, n = 0
+        for ch in Self.sample.prefix(600) {
+            if ch == " " { vc.keyboard(sender, didTap: .space) } else { vc.keyboard(sender, didTap: .char(String(ch))) }
+            let t = CFAbsoluteTimeGetCurrent(); vc.updateSuggestions(); total += CFAbsoluteTimeGetCurrent() - t; n += 1
+        }
+        let us = total / Double(n) * 1e6
+        print("keyboard: suggestions \(Int(us)) µs per key")
+        XCTAssertLessThan(us, 2000, "suggestion strip takes \(Int(us)) µs per key")
+    }
+
     func testGapsBetweenKeysReceiveTouches() {
         // iOS drops touches on fully transparent parts of a keyboard: the view must never be clear
         let kb = KeyboardView(frame: CGRect(x: 0, y: 0, width: 402, height: 265))
@@ -132,6 +179,20 @@ final class KeyboardPerformanceTests: XCTestCase {
         let img = UIGraphicsImageRenderer(bounds: kb.bounds).image { ctx in kb.layer.render(in: ctx.cgContext) }
         try? img.pngData()?.write(to: URL(fileURLWithPath: "/tmp/claude-501/popup_test.png"))
         XCTAssertGreaterThanOrEqual(pop1.frame.minY, 0)
+    }
+
+    func testRenderSuggestionStrip() {
+        KeyboardView.barOn = true
+        for dark in [false, true] {
+            let kb = KeyboardView(frame: CGRect(x: 0, y: 0, width: 402, height: KeyboardView.keyboardHeight(compactHeight: false)))
+            kb.backgroundColor = dark ? UIColor(white: 0.17, alpha: 1) : UIColor(red: 0.82, green: 0.83, blue: 0.86, alpha: 1)
+            kb.dark = dark
+            kb.suggestions = [Suggestion(text: "teh", quoted: true), Suggestion(text: "the", highlighted: true), Suggestion(text: "tech")]
+            kb.layoutIfNeeded()
+            let img = UIGraphicsImageRenderer(bounds: kb.bounds).image { ctx in kb.layer.render(in: ctx.cgContext) }
+            try? img.pngData()?.write(to: URL(fileURLWithPath: "/tmp/claude-501/strip_\(dark ? "dark" : "light").png"))
+        }
+        XCTAssertGreaterThan(KeyboardView.keyboardHeight(compactHeight: false), 250)
     }
 
     func testKeyShadowsHaveFixedPaths() {

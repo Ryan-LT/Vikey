@@ -31,6 +31,8 @@ protocol KeyboardViewDelegate: AnyObject {
     /// Space held down and dragged: move the cursor by this many characters.
     func keyboard(_ view: KeyboardView, moveCursorBy offset: Int)
     func keyboardCursorModeEnded(_ view: KeyboardView)
+    /// A tap on the suggestion strip (index into `suggestions`).
+    func keyboard(_ view: KeyboardView, pickSuggestion index: Int)
 }
 
 /// The iOS 26 system keyboard, measured from the simulator (iPhone 17 Pro, 402 pt wide) and copied:
@@ -56,11 +58,17 @@ final class KeyboardView: UIView {
     /// The letters typed so far in the current word and the mode, for the fat-finger model.
     var wordContext: (() -> (prefix: String, vietnamese: Bool))?
     private var letterRects: [VKKeyRect] = []
+    var keyRects: [VKKeyRect] { letterRects }
     private var letterCaps: [Character: KeyCap] = [:]
     private let diagLabel = UILabel()
     var diagnostics: String? {
         didSet { diagLabel.text = diagnostics; diagLabel.isHidden = diagnostics == nil }
     }
+    /// Where the last typed key was touched (the auto-correct model weighs letters by it).
+    /// Taken (set to nil) by the controller; nil when a key wasn't typed by a touch.
+    var lastTapPoint: CGPoint?
+    let bar = SuggestionBar()
+    var suggestions: [Suggestion] = [] { didSet { if suggestions != oldValue { bar.show(suggestions) } } }
 
     private var keys: [(def: KeyDef, view: KeyCap)] = []
     private var touch: UITouch?                 // the touch that owns the current key
@@ -76,11 +84,15 @@ final class KeyboardView: UIView {
     private let feedback = UIImpactFeedbackGenerator(style: .light)
 
     // geometry (portrait iPhone; scaled for other widths; landscape rows are shorter)
-    /// No suggestion strip on top for now (Tony): the keys start right away. With diagnostics on, the
-    /// strip comes back to show the readout.
+    /// The suggestion strip is shown when suggestions or auto-correct are on; without it the keys
+    /// start right away (Tony: no empty strip). Diagnostics add a readout line above it.
+    static var barOn = false
+    static let barH: CGFloat = 44
+    static func diagH(compactHeight: Bool) -> CGFloat { Diag.on ? (compactHeight ? 30 : 40) : 0 }
     static func metrics(compactHeight: Bool) -> (top: CGFloat, keyH: CGFloat, pitch: CGFloat, bottom: CGFloat) {
-        if compactHeight { return (top: 8, keyH: 34, pitch: 40, bottom: 4) }
-        return (top: Diag.on ? 57 : 11, keyH: 43, pitch: 54, bottom: 3)
+        let extra = diagH(compactHeight: compactHeight) + (barOn ? barH : 0)
+        if compactHeight { return (top: 8 + extra, keyH: 34, pitch: 40, bottom: 4) }
+        return (top: 11 + extra - (barOn ? 3 : 0), keyH: 43, pitch: 54, bottom: 3)
     }
     static func keyboardHeight(compactHeight: Bool) -> CGFloat {
         let m = metrics(compactHeight: compactHeight)
@@ -131,6 +143,8 @@ final class KeyboardView: UIView {
         diagLabel.numberOfLines = 2
         addSubview(diagLabel)
         diagLabel.isHidden = diagnostics == nil
+        addSubview(bar)
+        bar.onPick = { [unowned self] i in self.delegate?.keyboard(self, pickSuggestion: i) }
         addSubview(popup); popup.isHidden = true
         addSubview(alternates); alternates.isHidden = true
         setFonts()
@@ -189,7 +203,10 @@ final class KeyboardView: UIView {
                 }
             }
         }
-        diagLabel.frame = CGRect(x: 8, y: 2, width: W - 16, height: max(m.top - 6, 20))
+        let dh = Self.diagH(compactHeight: compactHeight)
+        diagLabel.frame = CGRect(x: 8, y: 2, width: W - 16, height: max(dh - 4, 20))
+        bar.isHidden = !Self.barOn
+        bar.frame = CGRect(x: side, y: dh + 2, width: W - 2 * side, height: Self.barH - 4)
         letterRects = []; letterCaps = [:]
         for i in keys.indices where i < frames.count {
             keys[i].def.frame = frames[i]
@@ -242,6 +259,7 @@ final class KeyboardView: UIView {
     }
 
     private func refreshColors() {
+        bar.dark = dark
         let fg: UIColor = dark ? .white : .black
         let key: UIColor = dark ? UIColor(white: 0.42, alpha: 1) : .white
         let pressed: UIColor = dark ? UIColor(white: 0.58, alpha: 1) : UIColor(red: 0.74, green: 0.76, blue: 0.80, alpha: 1)
@@ -382,6 +400,7 @@ final class KeyboardView: UIView {
             switch k {
             case .backspace, .shift, .layer: break   // handled on touch-down
             default:
+                lastTapPoint = touchStart
                 delegate?.keyboard(self, didTap: k)
                 if wasSlide, case .char = k { delegate?.keyboard(self, didTap: .layer(.letters)) }
             }
@@ -587,5 +606,65 @@ final class AlternatesView: UIView {
         selected = labels[i].text
         highlight.frame = labels[i].frame.insetBy(dx: 1, dy: 5)
         for (j, l) in labels.enumerated() { l.textColor = j == i ? .white : (dark ? .white : .black) }
+    }
+}
+
+/// One cell of the suggestion strip.
+struct Suggestion: Equatable {
+    var text: String
+    var quoted = false        // the word as typed, when something else is offered
+    var highlighted = false   // what the space bar will put in (auto-correct)
+}
+
+/// The strip above the keys: up to three words, like the system keyboard's.
+final class SuggestionBar: UIView {
+    var onPick: ((Int) -> Void)?
+    var dark = false { didSet { if dark != oldValue { restyle() } } }
+    private var cells: [UIButton] = []
+    private var lines: [UIView] = []
+    private var items: [Suggestion] = []
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        for i in 0..<3 {
+            let b = UIButton(type: .custom)
+            b.tag = i
+            b.titleLabel?.font = .systemFont(ofSize: 17)
+            b.titleLabel?.lineBreakMode = .byTruncatingMiddle
+            b.layer.cornerRadius = 8
+            b.layer.cornerCurve = .continuous
+            b.addTarget(self, action: #selector(tap(_:)), for: .touchUpInside)
+            addSubview(b); cells.append(b)
+        }
+        for _ in 0..<2 { let l = UIView(); addSubview(l); lines.append(l) }
+        restyle()
+    }
+    required init?(coder: NSCoder) { fatalError() }
+
+    @objc private func tap(_ b: UIButton) { if b.tag < items.count { onPick?(b.tag) } }
+
+    func show(_ s: [Suggestion]) { items = s; restyle() }
+
+    private func restyle() {
+        let fg: UIColor = dark ? .white : .black
+        for (i, b) in cells.enumerated() {
+            let it = i < items.count ? items[i] : nil
+            b.setTitle(it.map { $0.quoted ? "\u{201C}\($0.text)\u{201D}" : $0.text }, for: .normal)
+            b.setTitleColor(fg, for: .normal)
+            b.backgroundColor = it?.highlighted == true ? (dark ? UIColor(white: 0.42, alpha: 1) : .white) : .clear
+            b.isEnabled = it != nil
+        }
+        for (i, l) in lines.enumerated() {
+            l.backgroundColor = fg.withAlphaComponent(0.18)
+            // no line next to a highlighted cell, like the system strip
+            l.isHidden = items.count < 2 || items.indices.contains(i) && items[i].highlighted || items.indices.contains(i + 1) && items[i + 1].highlighted
+        }
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        let w = bounds.width / 3
+        for (i, b) in cells.enumerated() { b.frame = CGRect(x: CGFloat(i) * w + 2, y: 2, width: w - 4, height: bounds.height - 4) }
+        for (i, l) in lines.enumerated() { l.frame = CGRect(x: CGFloat(i + 1) * w - 0.5, y: bounds.height * 0.28, width: 1, height: bounds.height * 0.44) }
     }
 }

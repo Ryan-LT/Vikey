@@ -34,4 +34,15 @@ typedef struct { char letter; float x, y, w, h; } VKKeyRect;
 /// and the current mode (Engine/TouchModel: closeness × how likely each key is next).
 FOUNDATION_EXTERN char VKPickLetter(float x, float y, const char *prefix, int vietnamese, const VKKeyRect *keys, int n);
 
+/// A suggestion / auto-correct candidate.
+typedef struct { char letters[32]; unichar text[48]; int textLen; int vietnamese; double score; } VKCandidate;
+
+/// Candidates for the word typed so far (edits of one key, scored by frequency + where keys were touched).
+FOUNDATION_EXTERN int VKCandidates(const char *typed, const float *_Nullable xs, const float *_Nullable ys, int vietnamese,
+                                   const VKKeyRect *keys, int n, VKCandidate *out, int max);
+/// Whether to replace the typed word with out[0] at the space.
+FOUNDATION_EXTERN bool VKShouldCorrect(const char *typed, const VKCandidate *c, int count);
+/// The most common words starting with prefix, both languages, current mode first.
+FOUNDATION_EXTERN int VKCompletions(const char *prefix, int vietnamese, VKCandidate *out, int max);
+
 NS_ASSUME_NONNULL_END

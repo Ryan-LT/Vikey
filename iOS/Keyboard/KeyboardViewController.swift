@@ -10,6 +10,8 @@ final class KeyboardInputView: UIInputView, UIInputViewAudioFeedback {
 final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate {
     private let driver = VKDriver()
     private var keyboard: KeyboardView!
+    var keyboardViewForTests: KeyboardView { keyboard }
+    func setLanguageForTests(_ l: Int) { driver.language = l; driver.resetContext() }
     private var heightConstraint: NSLayoutConstraint?
     /// Our own copy of the text before the cursor, kept up to date from our edits. Asking the app for it
     /// is a synchronous cross-process call, so it's only read when iOS says the text changed.
@@ -19,12 +21,21 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
     private var lastSpace: TimeInterval = 0
     private var fieldLanguage: Int?           // language to restore after a web/email field
     private let languageKey = "Language"
-    /// Letters typed so far in the current word (for the fat-finger model).
+    /// Letters typed so far in the current word (for the fat-finger model and auto-correct), with
+    /// where each was touched and how many were capitals.
     private var wordPrefix = ""
+    private var wordXs: [Float] = [], wordYs: [Float] = []
+    private var wordCaps = 0
+    private var candidates: [VKCandidate] = []     // for the strip; [0] is what auto-correct would use
+    private var willCorrect = false
+    /// The last auto-correct, so the next backspace can put the typed word back.
+    private var lastCorrection: (typed: String, inserted: String)?
+    private var keepWord: String?                  // a word put back by backspace: don't correct it again
     /// The text field. Tests swap in a counting proxy (performance lock: one text read per key).
     lazy var proxy: UITextDocumentProxy = textDocumentProxy
     // settings, read once when the keyboard appears (reading shared defaults per key is slow)
     private var webFieldsEnglish = true, autoCapitalize = true, doubleSpacePeriod = true, haptics = true
+    private var suggestionsOn = true, autoCorrectOn = true
 
     override func loadView() {
         let v = KeyboardInputView(frame: .zero, inputViewStyle: .keyboard)
@@ -101,6 +112,9 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
         autoCapitalize = d.bool(forKey: VKSettings.Key.autoCapitalize)
         doubleSpacePeriod = d.bool(forKey: VKSettings.Key.doubleSpacePeriod)
         haptics = d.bool(forKey: VKSettings.Key.haptics)
+        suggestionsOn = d.bool(forKey: VKSettings.Key.suggestions)
+        autoCorrectOn = d.bool(forKey: VKSettings.Key.autoCorrect)
+        KeyboardView.barOn = suggestionsOn || autoCorrectOn
         Diag.on = d.bool(forKey: VKSettings.Key.diagnostics)
         keyboard?.diagnostics = Diag.on ? String(localized: "Gõ để xem thông số") : nil
         heightConstraint?.constant = KeyboardView.keyboardHeight(compactHeight: traitCollection.verticalSizeClass == .compact)
@@ -121,7 +135,15 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
             fieldLanguage = nil
         }
         lastContext = proxy.documentContextBeforeInput
+        clearWord()
         updateAutoShift(lastContext ?? "")
+    }
+
+    /// Auto-correct and suggestions only where the system keyboard offers them.
+    private var correctsHere: Bool {
+        if proxy.autocorrectionType == .no || proxy.spellCheckingType == .no { return false }
+        let t = proxy.keyboardType ?? .default
+        return !(t == .URL || t == .emailAddress || t == .webSearch || t == .numberPad || t == .decimalPad || t == .asciiCapableNumberPad)
     }
 
     private var now: Double { ProcessInfo.processInfo.systemUptime }
@@ -171,7 +193,7 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
         if ctx != lastContext, !Self.sameEnding(ctx ?? "", lastContext ?? "") {
             if Diag.on { KBLog.add("reset: text changed outside the keyboard (cursor moved, or the app changed it)") }
             driver.resetContext()
-            wordPrefix = ""
+            clearWord()
             lastContext = ctx
             updateAutoShift(ctx ?? "")
         }
@@ -191,20 +213,31 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
         }
         switch kind {
         case .char(let c):
-            if let ch = c.first, ch.isLetter, ch.isASCII { wordPrefix.append(ch) } else { wordPrefix = "" }
+            lastCorrection = nil
+            if let ch = c.first, ch.isLetter, ch.isASCII, wordPrefix.count < 30 {
+                wordPrefix.append(ch)
+                let t = keyboard.lastTapPoint ?? CGPoint(x: CGFloat.nan, y: .nan)
+                keyboard.lastTapPoint = nil
+                wordXs.append(Float(t.x)); wordYs.append(Float(t.y))
+                if keyboard.layer_ == .letters && keyboard.shift != .off { wordCaps += 1 }
+            } else { clearWord() }
             var s = c
             if keyboard.layer_ == .letters && keyboard.shift != .off { s = c.uppercased() }
             type(s)
             if keyboard.shift == .on { keyboard.shift = .off }
             if keyboard.layer_ != .letters && (c == "'" ) { keyboard.layer_ = .letters }
         case .space:
-            wordPrefix = ""
-            spaceKey()
+            if !autoCorrectAtBreak() { spaceKey() }
+            clearWord()
         case .returnKey:
-            wordPrefix = ""
+            clearWord()
             type("\n")
         case .backspace:
-            if !wordPrefix.isEmpty { wordPrefix.removeLast() }
+            if undoCorrection() { break }
+            if !wordPrefix.isEmpty {
+                wordPrefix.removeLast(); wordXs.removeLast(); wordYs.removeLast()
+                wordCaps = min(wordCaps, wordPrefix.count)
+            }
             backspace()
         case .shift:
             let t = now
@@ -215,6 +248,7 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
         case .layer(let l):
             keyboard.layer_ = l
         case .language:
+            lastCorrection = nil
             driver.manualSwitch(at: now)
             fieldLanguage = nil
             saveLanguage()
@@ -234,11 +268,12 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
         while let last = chars.last, last != " " && last != "\n" { chars.removeLast(); k += 1 }
         for _ in 0..<max(k, 1) { proxy.deleteBackward() }
         driver.resetContext()
+        clearWord()
         afterEdit(deleted: max(k, 1), inserted: "")
     }
 
     func keyboard(_ view: KeyboardView, insertAlternate text: String) {
-        wordPrefix = ""
+        clearWord()
         type(text)      // a character the engine doesn't know passes through and starts a new word
         if keyboard.shift == .on { keyboard.shift = .off }
     }
@@ -249,7 +284,7 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
 
     func keyboardCursorModeEnded(_ view: KeyboardView) {
         driver.resetContext()
-        wordPrefix = ""
+        clearWord()
         lastContext = proxy.documentContextBeforeInput
         updateAutoShift(lastContext ?? "")
     }
@@ -319,6 +354,7 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
         if recentContexts.count > 12 { recentContexts.removeFirst(recentContexts.count - 12) }
         Diag.readMs = 0
         updateAutoShift(c)
+        scheduleSuggestions()
         if Diag.on {
             let end = CACurrentMediaTime()
             let hold = max(0, Diag.touchUp - Diag.touchStart) * 1000, work = max(0, end - Diag.touchUp) * 1000
@@ -327,6 +363,150 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
             KBLog.add("key=\(Diag.lastKind) hold=\(Self.time(hold)) work=\(Self.time(work)) read=\(Self.time(Diag.readMs)) vib=\(Diag.haptics) touches=\(Diag.touches) edits=\(Diag.edits) lang=\(driver.language)")
             Diag.haptics = 0; Diag.touches = 0; Diag.edits = 0
         }
+    }
+
+    // MARK: suggestions and auto-correct
+
+    private func clearWord() {
+        wordPrefix = ""; wordXs = []; wordYs = []; wordCaps = 0
+        candidates = []; willCorrect = false
+        keyboard?.suggestions = []
+    }
+
+    /// The word before the cursor as it shows in the field (after Telex: "tôi" for "tooi").
+    private var shownWord: String {
+        let c = lastContext ?? ""
+        return String(c.reversed().prefix { $0.isLetter }.reversed())
+    }
+
+    private static func text(of c: VKCandidate) -> String {
+        var c = c
+        let n = Int(c.textLen)
+        return withUnsafeBytes(of: &c.text) { raw in
+            String(utf16CodeUnits: raw.bindMemory(to: unichar.self).baseAddress!, count: n)
+        }
+    }
+
+    /// Capitalised like the typed word ("Teh" → "The").
+    private func cased(_ s: String) -> String {
+        shownWord.first?.isUppercase == true ? s.prefix(1).uppercased() + s.dropFirst() : s
+    }
+
+    /// The strip is worked out after the key's text has gone to the app, so it never delays typing;
+    /// keys typed faster than that skip the in-between words.
+    private var suggestionsDirty = false
+    private func scheduleSuggestions() {
+        guard !suggestionsDirty else { return }
+        suggestionsDirty = true
+        DispatchQueue.main.async { [weak self] in self?.updateSuggestionsIfNeeded() }
+    }
+    private func updateSuggestionsIfNeeded() {
+        guard suggestionsDirty else { return }
+        updateSuggestions()
+    }
+
+    func updateSuggestions() {
+        suggestionsDirty = false
+        guard KeyboardView.barOn, correctsHere, !wordPrefix.isEmpty, !shownWord.isEmpty else {
+            if !candidates.isEmpty || !(keyboard?.suggestions.isEmpty ?? true) { candidates = []; willCorrect = false; keyboard.suggestions = [] }
+            return
+        }
+        let typed = wordPrefix.lowercased()
+        let vi: Int32 = driver.language == 1 ? 1 : 0
+        let rects = keyboard.keyRects
+        guard !rects.isEmpty else { return }
+        var out = [VKCandidate](repeating: VKCandidate(), count: 6)
+        let touched = !wordXs.contains { $0.isNaN }    // keys typed without a touch (tests): key centres only
+        let n = typed.withCString { t in
+            touched ? VKCandidates(t, wordXs, wordYs, vi, rects, Int32(rects.count), &out, 6)
+                    : VKCandidates(t, nil, nil, vi, rects, Int32(rects.count), &out, 6)
+        }
+        candidates = Array(out.prefix(Int(n)))
+        // never auto-correct acronyms / names typed with capitals inside, or a word put back by backspace
+        willCorrect = autoCorrectOn && wordCaps < 2 && keepWord != typed && wordPrefix.count >= 3
+            && typed.withCString { t in candidates.withUnsafeBufferPointer { VKShouldCorrect(t, $0.baseAddress!, n) } }
+        var comp = [VKCandidate](repeating: VKCandidate(), count: 6)
+        let m = suggestionsOn ? typed.withCString { VKCompletions($0, vi, &comp, 6) } : 0
+        let shown = shownWord
+        var cells: [Suggestion] = [Suggestion(text: shown, quoted: true)]
+        var seen: Set<String> = [shown.lowercased()]
+        func add(_ c: VKCandidate, highlight: Bool = false) {
+            let t = cased(Self.text(of: c))
+            guard cells.count < 3, !seen.contains(t.lowercased()) else { return }
+            seen.insert(t.lowercased()); cells.append(Suggestion(text: t, highlighted: highlight))
+        }
+        if willCorrect, let best = candidates.first { add(best, highlight: true) }
+        if suggestionsOn {
+            // a typed word that isn't a word: fixes first; otherwise ways to finish it
+            let isWord = candidates.contains { String(cString: withUnsafeBytes(of: $0.letters) { Array($0.bindMemory(to: CChar.self)) + [0] }) == typed }
+            let fixes = candidates.filter { $0.score > -9 }
+            for c in isWord ? Array(comp.prefix(Int(m))) + fixes : fixes + Array(comp.prefix(Int(m))) { add(c) }
+        }
+        if cells.count == 1 { cells[0].quoted = false }
+        if !suggestionsOn && !willCorrect { cells = [] }
+        keyboard.suggestions = cells
+    }
+
+    /// Space after a word: put in the correction (like the system keyboard). Returns true when it typed the space itself.
+    private func autoCorrectAtBreak() -> Bool {
+        updateSuggestionsIfNeeded()       // typed faster than the strip: decide on the whole word now
+        guard willCorrect, let best = candidates.first else { return false }
+        replaceWord(with: cased(Self.text(of: best)), vietnamese: best.vietnamese == 1, recordUndo: true)
+        return true
+    }
+
+    /// Replace the word before the cursor with `word` + a space, in the word's language.
+    private func replaceWord(with word: String, vietnamese: Bool, recordUndo: Bool) {
+        let old = shownWord
+        let insert = word + " "
+        for _ in 0..<old.count { proxy.deleteBackward() }
+        proxy.insertText(insert)
+        Diag.edits += old.count + 1
+        driver.resetContext()
+        if (driver.language == 1) != vietnamese && driver.autoSwitch {
+            driver.language = vietnamese ? 1 : 0
+            saveLanguage(); refresh()
+        }
+        lastCorrection = recordUndo ? (old, insert) : nil
+        lastSpace = now
+        clearWord()
+        afterEdit(deleted: old.count, inserted: insert)
+    }
+
+    /// Backspace right after an auto-correct puts the typed word back (and keeps it this time).
+    private func undoCorrection() -> Bool {
+        guard let c = lastCorrection, (lastContext ?? "").hasSuffix(c.inserted) else { lastCorrection = nil; return false }
+        lastCorrection = nil
+        for _ in 0..<c.inserted.count { proxy.deleteBackward() }
+        proxy.insertText(c.typed)
+        driver.resetContext()
+        keepWord = c.typed.lowercased()
+        clearWord()
+        afterEdit(deleted: c.inserted.count, inserted: c.typed)
+        return true
+    }
+
+    func keyboard(_ view: KeyboardView, pickSuggestion index: Int) {
+        let cells = keyboard.suggestions
+        guard index < cells.count else { return }
+        let cell = cells[index]
+        lastCorrection = nil
+        if cell.quoted || cell.text == shownWord {
+            // keep what was typed: a space, and don't correct it
+            keepWord = wordPrefix.lowercased()
+            willCorrect = false
+            spaceKey()
+            clearWord()
+            return
+        }
+        let c = candidates.first { cased(Self.text(of: $0)) == cell.text }
+        var vi = driver.language == 1
+        if let c { vi = c.vietnamese == 1 } else {
+            var comp = [VKCandidate](repeating: VKCandidate(), count: 6)
+            let m = wordPrefix.lowercased().withCString { VKCompletions($0, driver.language == 1 ? 1 : 0, &comp, 6) }
+            if let hit = comp.prefix(Int(m)).first(where: { cased(Self.text(of: $0)) == cell.text }) { vi = hit.vietnamese == 1 }
+        }
+        replaceWord(with: cell.text, vietnamese: vi, recordUndo: false)
     }
 
     private func saveLanguage() { UserDefaults.standard.set(driver.language, forKey: languageKey) }

@@ -23,6 +23,24 @@ If every listed change is intended, accept them with `Tools/autoswitch/check.sh 
 
 ---
 
+## 26. Auto-correct and the suggestion strip on iOS
+
+**Story:** As someone typing fast on the phone, I want a word I mistyped by one key fixed when I press space, and words to pick from above the keys, in both Vietnamese and English.
+
+**Decided:**
+- A strip of three words above the keys, like the system keyboard: the word as typed (in quotes), the correction (highlighted when space will put it in), then other fixes or ways to finish the word. Fixes come first when the typed word isn't a word.
+- Candidates are one-key edits (a nearby key, an extra, a missing or two swapped keys), scored by word frequency, by where each key was actually touched, and by mode (the other language costs a bit). `Engine/TouchModel::candidates`.
+- Auto-correct is conservative: never on a real word (either language), valid Vietnamese spelling, English inflections, words under 3 letters, or words with 2+ capitals. The correction must clearly win.
+- Backspace right after a correction puts the typed word back and keeps it. Tapping the quoted word keeps it too.
+- The correction's language becomes the mode (when auto switch is on).
+- Off in web address, email and number fields, and wherever the app turns off autocorrection.
+- Settings: "Gợi ý từ" and "Tự sửa lỗi gõ", both on by default. The strip only shows when one of them is on.
+- The strip is worked out after the key's text is sent, so it never delays typing.
+
+**Locked by:** check.sh auto-correct runs (clean typing ≤ 0.10% false fixes; sloppy typing errors cut by ≥ 25%); iOS tests: teh→the plus Backspace undo, clean mixed text unchanged, strip contents, strip time per key, key time per key.
+
+**Status:** Agreed (built, not in a TestFlight build yet).
+
 ## 25. Fat-finger model on iOS
 
 **Status:** Built 2026-10-28, not shipped yet. Locked in `check.sh` (touchsim) and iOS tests.

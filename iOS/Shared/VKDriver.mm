@@ -2,6 +2,7 @@
 #include "Driver.h"
 #include "TouchModel.h"
 #include <vector>
+#include <cstring>
 
 // Engine settings (the macOS app defines these in VikeyCore.mm)
 int vLanguage = 1, vSwitchKeyStatus = 0, vCheckSpelling = 1, vUseModernOrthography = 1, vRestoreIfWrongSpelling = 1,
@@ -88,4 +89,52 @@ char VKPickLetter(float x, float y, const char *prefix, int vietnamese, const VK
     std::vector<TMKey> k((size_t)n);
     for (int i = 0; i < n; i++) k[i] = {keys[i].letter, keys[i].x, keys[i].y, keys[i].w, keys[i].h};
     return TouchModel::pick(x, y, prefix, vietnamese, k.data(), n);
+}
+
+static std::vector<TMKey> TMKeys(const VKKeyRect *keys, int n) {
+    std::vector<TMKey> k((size_t)n);
+    for (int i = 0; i < n; i++) k[i] = {keys[i].letter, keys[i].x, keys[i].y, keys[i].w, keys[i].h};
+    return k;
+}
+
+int VKCandidates(const char *typed, const float *xs, const float *ys, int vietnamese, const VKKeyRect *keys, int n, VKCandidate *out, int max) {
+    std::vector<TMKey> k = TMKeys(keys, n);
+    std::vector<TMCandidate> c((size_t)max);
+    int count = TouchModel::candidates(typed, xs, ys, vietnamese, k.data(), n, c.data(), max);
+    for (int i = 0; i < count; i++) {
+        memcpy(out[i].letters, c[i].letters, 32);
+        memcpy(out[i].text, c[i].text, sizeof(out[i].text));
+        out[i].textLen = c[i].textLen; out[i].vietnamese = c[i].vietnamese; out[i].score = c[i].score;
+    }
+    return count;
+}
+
+bool VKShouldCorrect(const char *typed, const VKCandidate *c, int count) {
+    std::vector<TMCandidate> t((size_t)count);
+    for (int i = 0; i < count; i++) {
+        memcpy(t[i].letters, c[i].letters, 32); memcpy(t[i].text, c[i].text, sizeof(t[i].text));
+        t[i].textLen = c[i].textLen; t[i].vietnamese = c[i].vietnamese; t[i].score = c[i].score;
+    }
+    return TouchModel::shouldCorrect(typed, t.data(), count);
+}
+
+int VKCompletions(const char *prefix, int vietnamese, VKCandidate *out, int max) {
+    int count = 0;
+    for (int pass = 0; pass < 2; pass++) {
+        int lang = pass == 0 ? vietnamese : !vietnamese;
+        char words[8][32]; int scores[8];
+        int n = vAutoSwitchCompletions(lang, prefix, words, scores, 8);
+        for (int i = 0; i < n && count < max; i++) {
+            VKCandidate c = {};
+            strncpy(c.letters, words[i], 31);
+            int len = 0;
+            if (vAutoSwitchWordScore(lang, words[i], (Uint16 *)c.text, &len) <= -1000 || len <= 0) continue;
+            c.textLen = len; c.vietnamese = lang; c.score = scores[i] / 10.0 * 2.302585 + (pass == 0 ? 0 : -1.5);
+            bool dup = false;
+            for (int j = 0; j < count; j++) if (out[j].textLen == len && !memcmp(out[j].text, c.text, len * 2)) dup = true;
+            if (!dup) out[count++] = c;
+        }
+    }
+    for (int i = 1; i < count; i++) for (int j = i; j > 0 && out[j].score > out[j - 1].score; j--) { VKCandidate t = out[j]; out[j] = out[j - 1]; out[j - 1] = t; }
+    return count;
 }
