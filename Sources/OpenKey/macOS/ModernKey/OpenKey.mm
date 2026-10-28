@@ -985,11 +985,18 @@ extern "C" {
     /// Every key the user presses (not our own synthesized ones, not the switch hotkey).
     void TLNoteKey(CGKeyCode key, CGEventFlags flags) {
         _tlSinceAuto = false;
+        bool shift = flags & kCGEventFlagMaskShift;
         if (flags & (kCGEventFlagMaskCommand | kCGEventFlagMaskControl | kCGEventFlagMaskAlternate)) {
-            TLEndWord(@"shortcut");
+            // record which shortcut ended the word, e.g. ⌥⌫ (delete word) is a correction signal
+            NSMutableString* combo = [NSMutableString string];
+            if (flags & kCGEventFlagMaskControl) [combo appendString:@"⌃"];
+            if (flags & kCGEventFlagMaskAlternate) [combo appendString:@"⌥"];
+            if (shift) [combo appendString:@"⇧"];
+            if (flags & kCGEventFlagMaskCommand) [combo appendString:@"⌘"];
+            [combo appendString:key == KEY_DELETE ? @"⌫" : [TLKeyName(key, false) uppercaseString]];
+            TLEndWord(combo);
             return;
         }
-        bool shift = flags & kCGEventFlagMaskShift;
         bool caps = shift || (flags & kCGEventFlagMaskAlphaShift);
         if (key == KEY_DELETE) { TLAppendChar(0x232B); return; } // ⌫
         if (IsLetterKey(key) || (IS_NUMBER_KEY(key) && !shift)) {
