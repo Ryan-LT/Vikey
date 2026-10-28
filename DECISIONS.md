@@ -67,7 +67,7 @@ If every listed change is intended, accept them with `Tools/autoswitch/check.sh 
 **Decided.**
 - Per-site memory starts off. Turning it on reads the active tab of every running supported browser once, which shows macOS's Automation prompt right away. If the user refuses, the option turns back off and an alert links to System Settings › Automation.
 - Every setting in the main window has a (?) after its title: tooltip on hover, popover on click.
-- The Gỡ lỗi (typing log) menu is hidden. It shows only while the log is on, or with `defaults write com.devuap.vikey DebugMenu -bool YES`.
+- The Gỡ lỗi (typing log) menu is not in the menu bar icon's menu. It lives in the Vikey app menu (shown while a Vikey window is open), always visible there (Tony 2026-10-28).
 
 ## 14. Quotes and apostrophes end a word
 
