@@ -27,4 +27,11 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)resetContext;
 @end
 
+/// A letter key's frame, for the fat-finger model.
+typedef struct { char letter; float x, y, w, h; } VKKeyRect;
+
+/// Which letter a touch at (x, y) meant, given the letters typed so far in this word (lowercase)
+/// and the current mode (Engine/TouchModel: closeness × how likely each key is next).
+FOUNDATION_EXTERN char VKPickLetter(float x, float y, const char *prefix, int vietnamese, const VKKeyRect *keys, int n);
+
 NS_ASSUME_NONNULL_END

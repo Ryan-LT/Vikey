@@ -53,6 +53,10 @@ final class KeyboardView: UIView {
     var returnIsBlue = false { didSet { if returnIsBlue != oldValue { refreshColors() } } }
     var haptics = false
     var globeButton: UIButton?
+    /// The letters typed so far in the current word and the mode, for the fat-finger model.
+    var wordContext: (() -> (prefix: String, vietnamese: Bool))?
+    private var letterRects: [VKKeyRect] = []
+    private var letterCaps: [Character: KeyCap] = [:]
     private let diagLabel = UILabel()
     var diagnostics: String? {
         didSet { diagLabel.text = diagnostics; diagLabel.isHidden = diagnostics == nil }
@@ -186,10 +190,16 @@ final class KeyboardView: UIView {
             }
         }
         diagLabel.frame = CGRect(x: 8, y: 2, width: W - 16, height: max(m.top - 6, 20))
+        letterRects = []; letterCaps = [:]
         for i in keys.indices where i < frames.count {
             keys[i].def.frame = frames[i]
             keys[i].view.frame = frames[i]
             if keys[i].def.kind == .globe { globeButton?.frame = frames[i].insetBy(dx: -gap / 2, dy: -6) }
+            if layer_ == .letters, case .char(let c) = keys[i].def.kind, let ch = c.first, let a = ch.asciiValue, ch.isLetter {
+                let f = frames[i]
+                letterRects.append(VKKeyRect(letter: CChar(bitPattern: a), x: Float(f.minX), y: Float(f.minY), w: Float(f.width), h: Float(f.height)))
+                letterCaps[ch] = keys[i].view
+            }
         }
     }
 
@@ -286,7 +296,12 @@ final class KeyboardView: UIView {
             let p = t.location(in: self)
             Diag.touches += 1
             Diag.touchStart = CACurrentMediaTime()
-            guard let c = cap(at: p), let k = kind(of: c), k != .globe else { continue }
+            guard var c = cap(at: p), var k = kind(of: c), k != .globe else { continue }
+            // fat-finger: a touch near a letter's border goes to the letter most likely next in this word
+            if case .char = k, layer_ == .letters, let ctx = wordContext?(), !letterRects.isEmpty {
+                let picked = ctx.prefix.lowercased().withCString { VKPickLetter(Float(p.x), Float(p.y), $0, ctx.vietnamese ? 1 : 0, letterRects, Int32(letterRects.count)) }
+                if picked != 0, let pc = letterCaps[Character(UnicodeScalar(UInt8(bitPattern: picked)))], let pk = kind(of: pc) { c = pc; k = pk }
+            }
             // a new touch while another is down: the earlier key is typed now (fast two-thumb typing)
             if let prev = touch, let pk = touchKey { finish(prev, on: pk) }
             touch = t; touchKey = c; touchStart = p; slideFromLayer = false

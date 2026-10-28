@@ -1,5 +1,7 @@
 #import "VKDriver.h"
 #include "Driver.h"
+#include "TouchModel.h"
+#include <vector>
 
 // Engine settings (the macOS app defines these in VikeyCore.mm)
 int vLanguage = 1, vSwitchKeyStatus = 0, vCheckSpelling = 1, vUseModernOrthography = 1, vRestoreIfWrongSpelling = 1,
@@ -81,3 +83,9 @@ static bool KeyFor(unichar c, Uint16 &key, bool &shift) {
 - (void)manualSwitchAt:(double)now { _d->manualSwitch(now); }
 - (void)resetContext { _d->resetContext(); }
 @end
+
+char VKPickLetter(float x, float y, const char *prefix, int vietnamese, const VKKeyRect *keys, int n) {
+    std::vector<TMKey> k((size_t)n);
+    for (int i = 0; i < n; i++) k[i] = {keys[i].letter, keys[i].x, keys[i].y, keys[i].w, keys[i].h};
+    return TouchModel::pick(x, y, prefix, vietnamese, k.data(), n);
+}

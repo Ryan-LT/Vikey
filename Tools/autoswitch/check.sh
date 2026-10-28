@@ -20,4 +20,17 @@ python3 sim/prep.py sim/corpus/chat_messages.txt > $U
 (cd driver && ./cmp.sh $U | grep -q "whole text equal: True") && echo "driver == simulator: ok" || { echo "FAIL driver output differs from the simulator"; rc=1; }
 # budget: ~6x the M-series Mac mini numbers (avg ~155 ns, p99.9 ~1.8 us), so slower CI machines still pass
 driver/bench $U 1000 20000 && echo "performance: ok" || { echo "FAIL performance budget (Engine/Driver per key)"; rc=1; }
+# fat-finger model (iOS keyboard): simulated sloppy taps must stay this much better than nearest-key
+clang++ -std=c++17 -O2 -w ${=EXTRA} -I$E -I$E/platforms -o touch/touchsim touch/touchsim.cpp $E/TouchModel.cpp $E/Driver.cpp $SRC
+out=$(touch/touchsim $U 0.30)
+echo "$out" | sed 's/^/  /'
+python3 - "$out" <<'PY' || rc=1
+import re, sys
+s = sys.argv[1]
+near, model = map(float, re.search(r'nearest ([\d.]+)% wrong, model ([\d.]+)% wrong', s).groups())
+ns = float(re.search(r'pick: (\d+) ns', s).group(1))
+ok = model <= 15.0 and model < near * 0.6 and ns < 20000
+print(("fat-finger: ok" if ok else "FAIL fat-finger") + f" (wrong words {near}% -> {model}%, {ns:.0f} ns per touch)")
+sys.exit(0 if ok else 1)
+PY
 exit $rc

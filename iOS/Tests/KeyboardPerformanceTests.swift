@@ -42,6 +42,36 @@ final class KeyboardPerformanceTests: XCTestCase {
         }
     }
 
+    /// The letter keys of the 402 pt layout (same geometry as KeyboardView).
+    static func letterRects() -> [VKKeyRect] {
+        let W: Float = 402, side: Float = 6.67, gap: Float = 6, key = (W - 2 * side - 9 * gap) / 10
+        let rows = ["qwertyuiop", "asdfghjkl", "zxcvbnm"], x0: [Float] = [side, side + (key + gap) / 2, side + (key + gap) * 1.5]
+        var r: [VKKeyRect] = []
+        for (i, row) in rows.enumerated() {
+            for (j, ch) in row.enumerated() {
+                r.append(VKKeyRect(letter: CChar(ch.asciiValue!), x: x0[i] + Float(j) * (key + gap), y: Float(i) * 54, w: key, h: 43))
+            }
+        }
+        return r
+    }
+
+    func testFatFingerPicksLikelyLetterAtBorder() {
+        let keys = Self.letterRects()
+        func pick(_ prefix: String, _ vn: Bool, between a: Character, _ b: Character) -> Character {
+            let ka = keys.first { $0.letter == CChar(a.asciiValue!) }!, kb = keys.first { $0.letter == CChar(b.asciiValue!) }!
+            let x = ((ka.x + ka.w / 2) + (kb.x + kb.w / 2)) / 2, y = ka.y + ka.h / 2
+            let c = prefix.withCString { VKPickLetter(x, y, $0, vn ? 1 : 0, keys, Int32(keys.count)) }
+            return Character(UnicodeScalar(UInt8(bitPattern: c)))
+        }
+        XCTAssertEqual(pick("kh", true, between: "o", "p"), "o")      // "kho…", never "khp"
+        XCTAssertEqual(pick("th", false, between: "e", "r"), "e")     // "the"
+        XCTAssertEqual(pick("ng", true, between: "u", "y"), "u")      // "ngu…"
+        // a clear tap in the middle of a key always types that key, however unlikely
+        let p = keys.first { $0.letter == CChar(Character("p").asciiValue!) }!
+        let c = "kh".withCString { VKPickLetter(p.x + p.w / 2, p.y + p.h / 2, $0, 1, keys, Int32(keys.count)) }
+        XCTAssertEqual(Character(UnicodeScalar(UInt8(bitPattern: c))), "p")
+    }
+
     func testTypesCorrectly() {
         let (vc, p) = makeKeyboard()
         type("tooi ddi hocj sorry em ", into: vc)

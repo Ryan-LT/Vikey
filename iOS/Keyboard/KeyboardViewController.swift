@@ -19,6 +19,8 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
     private var lastSpace: TimeInterval = 0
     private var fieldLanguage: Int?           // language to restore after a web/email field
     private let languageKey = "Language"
+    /// Letters typed so far in the current word (for the fat-finger model).
+    private var wordPrefix = ""
     /// The text field. Tests swap in a counting proxy (performance lock: one text read per key).
     lazy var proxy: UITextDocumentProxy = textDocumentProxy
     // settings, read once when the keyboard appears (reading shared defaults per key is slow)
@@ -34,6 +36,7 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
         super.viewDidLoad()
         keyboard = KeyboardView(frame: view.bounds)
         keyboard.delegate = self
+        keyboard.wordContext = { [unowned self] in (self.wordPrefix, self.driver.language == 1) }
         keyboard.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(keyboard)
         NSLayoutConstraint.activate([
@@ -168,6 +171,7 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
         if ctx != lastContext, !Self.sameEnding(ctx ?? "", lastContext ?? "") {
             if Diag.on { KBLog.add("reset: text changed outside the keyboard (cursor moved, or the app changed it)") }
             driver.resetContext()
+            wordPrefix = ""
             lastContext = ctx
             updateAutoShift(ctx ?? "")
         }
@@ -187,16 +191,20 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
         }
         switch kind {
         case .char(let c):
+            if let ch = c.first, ch.isLetter, ch.isASCII { wordPrefix.append(ch) } else { wordPrefix = "" }
             var s = c
             if keyboard.layer_ == .letters && keyboard.shift != .off { s = c.uppercased() }
             type(s)
             if keyboard.shift == .on { keyboard.shift = .off }
             if keyboard.layer_ != .letters && (c == "'" ) { keyboard.layer_ = .letters }
         case .space:
+            wordPrefix = ""
             spaceKey()
         case .returnKey:
+            wordPrefix = ""
             type("\n")
         case .backspace:
+            if !wordPrefix.isEmpty { wordPrefix.removeLast() }
             backspace()
         case .shift:
             let t = now
@@ -230,6 +238,7 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
     }
 
     func keyboard(_ view: KeyboardView, insertAlternate text: String) {
+        wordPrefix = ""
         type(text)      // a character the engine doesn't know passes through and starts a new word
         if keyboard.shift == .on { keyboard.shift = .off }
     }
@@ -240,6 +249,7 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
 
     func keyboardCursorModeEnded(_ view: KeyboardView) {
         driver.resetContext()
+        wordPrefix = ""
         lastContext = proxy.documentContextBeforeInput
         updateAutoShift(lastContext ?? "")
     }

@@ -9,6 +9,7 @@
 #include <algorithm>
 #include "Engine.h"
 #include <string.h>
+#include <cmath>
 #include <list>
 #include "AutoSwitchData.h"
 
@@ -1926,4 +1927,56 @@ bool vAutoSwitchFixDoubledKey(const Uint32* keys, const int& count) {
     hExt = 3;
     for (int x = 0; x < fixedCount; x++) hData[fixedCount - 1 - x] = fixed[x];
     return true;
+}
+
+// ---- Next-key probabilities for touch keyboards (fat-finger model, D25) ---------------------------
+// The dictionaries are sorted, so the words starting with a prefix are one contiguous range; with a
+// running sum of word weights, the mass of every next letter is two binary searches.
+
+static double* asCumulative(const signed char* scores, int count) {
+    double* cum = new double[count + 1];
+    cum[0] = 0;
+    for (int i = 0; i < count; i++) cum[i + 1] = cum[i] + pow(10.0, scores[i] / 10.0);
+    return cum;
+}
+
+static int asLowerBound(const char* words, const unsigned int* offsets, int count, const char* key, int keyLen) {
+    int lo = 0, hi = count;
+    while (lo < hi) {
+        int mid = (lo + hi) >> 1;
+        if (strcmp(words + offsets[mid], key) < 0) lo = mid + 1; else hi = mid;
+    }
+    return lo;
+}
+
+/** Words of the list that start with prefix: [first, last). */
+static void asPrefixRange(const char* words, const unsigned int* offsets, int count, const char* prefix, int len, int& first, int& last) {
+    char hiKey[AS_KEY_LEN + 2];
+    first = asLowerBound(words, offsets, count, prefix, len);
+    memcpy(hiKey, prefix, len);
+    hiKey[len] = '\x7f'; hiKey[len + 1] = 0;           //just after every word with this prefix
+    last = asLowerBound(words, offsets, count, hiKey, len + 1);
+}
+
+void vAutoSwitchNextKeyMass(const int& vietnamese, const char* prefix, double out[27]) {
+    static double* enCum = asCumulative(kAutoSwitchEnScores, kAutoSwitchEnCount);
+    static double* vnCum = asCumulative(kAutoSwitchVnScores, kAutoSwitchVnCount);
+    const char* words = vietnamese ? kAutoSwitchVnWords : kAutoSwitchEnWords;
+    const unsigned int* offsets = vietnamese ? kAutoSwitchVnOffsets : kAutoSwitchEnOffsets;
+    const signed char* scores = vietnamese ? kAutoSwitchVnScores : kAutoSwitchEnScores;
+    int count = vietnamese ? kAutoSwitchVnCount : kAutoSwitchEnCount;
+    double* cum = vietnamese ? vnCum : enCum;
+    int len = (int)strlen(prefix);
+    for (int i = 0; i < 27; i++) out[i] = 0;
+    if (len >= AS_KEY_LEN - 2) return;
+    char key[AS_KEY_LEN + 2];
+    memcpy(key, prefix, len);
+    for (int c = 0; c < 26; c++) {
+        key[len] = 'a' + c; key[len + 1] = 0;
+        int a, b;
+        asPrefixRange(words, offsets, count, key, len + 1, a, b);
+        out[c] = cum[b] - cum[a];
+    }
+    int s = asLookup(words, offsets, scores, count, prefix);   //the prefix is a whole word: the word can end here
+    out[26] = s == AS_MISSING ? 0 : pow(10.0, s / 10.0);
 }

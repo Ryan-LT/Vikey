@@ -142,6 +142,13 @@ void vAutoSwitchForget();
 bool vAutoSwitchFixDoubledKey(const Uint32* keys, const int& count);
 
 /**
+ * For touch keyboards (fat-finger model): how likely each next key is after these letters of the
+ * current word, from the dictionaries. out[0..25] = a..z, out[26] = the word ends here. Unnormalized
+ * weights (occurrences per million). vietnamese: the Telex key list, else English. prefix: lowercase.
+ */
+void vAutoSwitchNextKeyMass(const int& vietnamese, const char* prefix, double out[27]);
+
+/**
  * Call this function first to receive data pointer
  */
 void* vKeyInit();
