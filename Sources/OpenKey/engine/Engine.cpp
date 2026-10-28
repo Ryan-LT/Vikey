@@ -1472,6 +1472,10 @@ static bool asShouldRestoreToEnglish() {
     //not a Vietnamese syllable and not a known English word either: a foreign word (TestFlight, analytics)
     if (en == AS_MISSING) {
         if (vn != AS_MISSING || _stateIndex < AS_RESTORE_UNKNOWN) return false;
+#ifndef AS_UNKNOWN_ALLOW_MODIFIERS
+        //Vietnamese-only modifiers (â ê ô ă ơ ư đ) mean the user was writing Vietnamese: a typo, not a foreign word
+        for (int x = 0; x < _index; x++) if (TypingWord[x] & (TONE_MASK | TONEW_MASK)) return false;
+#endif
         //rare but valid syllables (riệt, chịt) are not in the list: require the spelling rules to fail too
         bool savedTemp = tempDisableKey;
         checkSpelling(true);

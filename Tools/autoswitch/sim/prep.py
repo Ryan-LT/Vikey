@@ -47,7 +47,26 @@ def telex(word):
     return ''.join(keys)
 
 VN_CHARS = re.compile(r'[^\x00-\x7f]')
-for path in sys.argv[1:]:
+TYPO_RATE = float(sys.argv[sys.argv.index('--typos') + 1]) if '--typos' in sys.argv else 0.0
+NEIGHBORS = {c: n for row in ['qwertyuiop', 'asdfghjkl', 'zxcvbnm'] for i, c in enumerate(row)
+             for n in [row[max(0, i - 1):i] + row[i + 1:i + 2]]}
+
+def typo(keys):
+    """One realistic slip: a neighbouring key instead of the right one, a dropped or a doubled letter."""
+    i = random.randrange(len(keys))
+    c = keys[i]
+    if not c.isalpha(): return keys
+    r = random.random()
+    if r < 0.6:
+        n = NEIGHBORS.get(c.lower(), '')
+        if not n: return keys
+        rep = random.choice(n)
+        return keys[:i] + (rep.upper() if c.isupper() else rep) + keys[i + 1:]
+    if r < 0.8 and len(keys) > 2:
+        return keys[:i] + keys[i + 1:]
+    return keys[:i] + c + keys[i:]
+files = [a for i, a in enumerate(sys.argv[1:], 1) if not a.startswith('--') and sys.argv[i - 1] != '--typos']
+for path in files:
     for line in open(path, encoding='utf-8'):
         line = unicodedata.normalize('NFC', line.strip())
         if not line: continue
@@ -56,6 +75,8 @@ for path in sys.argv[1:]:
                 if VN_CHARS.search(tok):
                     k = telex(tok)
                     if k is None or not k.isascii(): print('S\t '); continue
+                    if TYPO_RATE and random.random() < TYPO_RATE:
+                        k = typo(k)      # the user meant this as Vietnamese; it should stay Vietnamese
                     print(f'W\t{k}\t1')
                 else:
                     print(f'W\t{tok}\t0')

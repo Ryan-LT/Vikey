@@ -7,6 +7,34 @@ Status values: **Shipped** (in a build Tony has), **Agreed** (decided, not built
 
 ---
 
+## 9. Typos must not flip the language
+
+**Status:** Fixed 2026-10-28 and sent as OpenKey-2.0.4-typo.
+
+**Reported by Tony.** He meant "lắm" but typed "lanwm": "I guess this will happen a lot."
+
+**Findings**
+
+- **EN mode, fixed inside the word:** fine. "lan⌫wsm" converts to "lắm", because the word buffer follows Backspace.
+- **VN mode, a typo at the word end:** the "unknown foreign word" rule from decision 8 restored "lănm" to "lanwm" and switched to English. Backspace undo recovers it, but it's wrong.
+
+**Decision.** A word that uses Vietnamese-only modifiers (â ê ô ă ơ ư đ) is never treated as an unknown foreign word. It's a Vietnamese typo and stays in Vietnamese mode. Foreign words like TestFlight and analytics only pick up tone marks, so they still restore.
+
+**Measured.** The simulator now injects realistic typos into 3% of Vietnamese words: a neighbouring key, a dropped letter or a doubled letter.
+
+| Corpus with typos | No guard | Guard |
+|---|---|---|
+| Chat: manual switches per 100 words | 1.32 | 1.20 |
+| Chat: wrong words | 0.33% | 0.13% |
+| Viblo: manual switches per 100 words | 1.60 | 1.39 |
+| Viblo: wrong words | 0.55% | 0.24% |
+
+On typo-free text the guard costs a little (chat 0.95 → 1.04), but real typing has typos.
+
+**Also in this build.** The typing log records which shortcut ended a word (⌥⌫, ⌘A…) instead of just "shortcut".
+
+---
+
 ## 8. Tuning with a mixed-text typing simulation
 
 **Status:** Built 2026-10-28 and sent as OpenKey-2.0.4-lookback. The double-key change was approved by Tony the same day and shipped in OpenKey-2.0.4-err.
