@@ -4,16 +4,15 @@
 <title>Vikey</title>
 <link>https://vikey.app</link>
 <item>
-<title>Vikey 1.0.8</title>
-<pubDate>Wed, 28 Oct 2026 09:29:05 +0000</pubDate>
-<sparkle:version>10</sparkle:version>
-<sparkle:shortVersionString>1.0.8</sparkle:shortVersionString>
+<title>Vikey 1.0.9</title>
+<pubDate>Wed, 28 Oct 2026 09:35:22 +0000</pubDate>
+<sparkle:version>11</sparkle:version>
+<sparkle:shortVersionString>1.0.9</sparkle:shortVersionString>
 <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
 <description><![CDATA[<ul>
-<li>Từ sau dấu ( hoặc " cũng được tự sửa: "(thí create" thành "(this create".</li>
-<li>Bấm Xoá sau khi Vikey sửa nhiều từ cùng lúc chỉ xoá một ký tự, không hoàn tác.</li>
+<li>Sau khi bạn tự chuyển Anh/Việt, Vikey không tự chuyển trong 15 giây. Có thể tắt trong cửa sổ Vikey.</li>
 </ul>]]></description>
-<enclosure url="https://vikey.app/downloads/Vikey-1.0.8.dmg" type="application/octet-stream" sparkle:edSignature="IxgZQ+rl8DwNkllCCru4B5RjN8UsasQqLS6hSjm2IvVbyja/Iy182i9k9+v0XXjiVKr15b7KIq//KilLis3mBw==" length="2131595"/>
+<enclosure url="https://vikey.app/downloads/Vikey-1.0.9.dmg" type="application/octet-stream" sparkle:edSignature="PoigkTuqU9XA7FnnpnKMg+x3OGSqc58F72hoMq241bSVrSczl8MtEiVF22UegyeDTc8KLEAIUJzsQi/Vy//7AA==" length="2130357"/>
 </item>
 </channel>
 </rss>
