@@ -23,6 +23,28 @@ If every listed change is intended, accept them with `Tools/autoswitch/check.sh 
 
 ---
 
+## 15. Per-site memory off by default, (?) on every option, debug menu hidden
+
+**Status:** Done 2026-10-28.
+
+**Asked by Tony.** "Disable 'nhớ riêng cho từng trang web' by default, upon enable, ask for the permission right away. Add (?) icon and tooltip to explain each option." Then: "hide the Nhật ký gõ menu, normal people aren't supposed to see that."
+
+**Decided.**
+- Per-site memory starts off. Turning it on reads the active tab of every running supported browser once, which shows macOS's Automation prompt right away. If the user refuses, the option turns back off and an alert links to System Settings › Automation.
+- Every setting in the main window has a (?) after its title: tooltip on hover, popover on click.
+- The Gỡ lỗi (typing log) menu is hidden. It shows only while the log is on, or with `defaults write com.devuap.vikey DebugMenu -bool YES`.
+
+## 14. Quotes and apostrophes end a word
+
+**Status:** Done 2026-10-28. Rule cases D14 in `rules.tsv`.
+
+**Asked by Tony.** "trang ưeb" (typed inside double quotes) and "doén't" didn't change automatically.
+
+**Decided.**
+- A closing `"` or `)` ends a word like a comma does, in both modes: an English word typed in Vietnamese mode is put back before it.
+- An apostrophe also ends the word. For contractions, the stem without its final n counts as English: does+n't, is+n't, was+n't. So "doesn't" switches to English at the apostrophe.
+- A Vietnamese word in single quotes stays Vietnamese ('tiếng', 'nhà').
+
 ## 13. Catch "thí makes" one word sooner
 
 **Status:** Done 2026-10-28. In the engine and on the website demo.

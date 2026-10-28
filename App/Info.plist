@@ -27,7 +27,7 @@
 	<key>LSUIElement</key>
 	<true/>
 	<key>NSAppleEventsUsageDescription</key>
-	<string>Vikey reads the address of the current browser tab so it can remember your typing language for each website. Nothing leaves your Mac.</string>
+	<string>Vikey đọc địa chỉ tab đang mở để nhớ tiếng Anh hay tiếng Việt cho từng trang web. Địa chỉ chỉ dùng trên máy bạn.</string>
 	<key>NSHumanReadableCopyright</key>
 	<string>© 2026 Tony Dinh</string>
 </dict>

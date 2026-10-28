@@ -25,6 +25,7 @@ static Uint16 keyOf(char c) {
         case 'u': return KEY_U; case 'v': return KEY_V; case 'w': return KEY_W; case 'x': return KEY_X; case 'y': return KEY_Y;
         case 'z': return KEY_Z; case ' ': return KEY_SPACE; case ',': return KEY_COMMA; case '.': return KEY_DOT;
         case '\n': return KEY_RETURN; case '<': return KEY_DELETE; case '_': return KEY_MINUS; case '/': return KEY_SLASH; case '1': return KEY_1; case '2': return KEY_2;
+        case '\'': return KEY_QUOTE; case '"': return KEY_QUOTE; case ')': return KEY_0; case ';': return KEY_SEMICOLON; case '?': return KEY_SLASH;
     }
     return 0xFFFF;
 }
@@ -42,8 +43,9 @@ static void applyOutput(Uint16 key, bool caps) {
 }
 
 static void press(char c) {
-    bool caps = c >= 'A' && c <= 'Z';
-    char lc = caps ? c + 32 : c;
+    bool shifted = c == '"' || c == ')' || c == '?';
+    bool caps = (c >= 'A' && c <= 'Z') || shifted;
+    char lc = (c >= 'A' && c <= 'Z') ? c + 32 : c;
     Uint16 key = keyOf(lc);
     if (vLanguage == 1) {
         vAutoSwitchRequest = -1;

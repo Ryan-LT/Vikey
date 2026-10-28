@@ -165,7 +165,7 @@ extern "C" {
 
     static BOOL PerSiteEnabled() {
         id v = [[NSUserDefaults standardUserDefaults] objectForKey:@"SmartSwitchPerSite"];
-        return v == nil ? YES : [v boolValue];
+        return v == nil ? NO : [v boolValue];   // off by default: it needs the Automation permission
     }
 
     /// The key smart switch uses: bundle id, plus "|host" for a browser tab with a website open.
@@ -858,7 +858,7 @@ extern "C" {
             return false;
         }
         bool wordEnd = _keycode == KEY_SPACE || _keycode == KEY_COMMA || _keycode == KEY_DOT || _keycode == KEY_SEMICOLON ||
-                       _keycode == KEY_RETURN || _keycode == KEY_ENTER || (shift && (_keycode == KEY_SLASH || _keycode == KEY_1));
+                       _keycode == KEY_RETURN || _keycode == KEY_ENTER || (shift && (_keycode == KEY_SLASH || _keycode == KEY_1 || _keycode == KEY_QUOTE || _keycode == KEY_0));
         int count = _enCount;
         bool valid = _enValid;
         // the next word is whole only after whitespace; after . _ - / ( etc. it's part of an identifier or path
@@ -1068,6 +1068,23 @@ static void VKLanguageChanged(BOOL rememberForContext) {
 }
 
 @implementation VikeyCore
+
++ (void)requestBrowserAccess:(void (^)(BOOL denied))done {
+    NSMutableArray<NSString*>* running = [NSMutableArray array];
+    for (NSRunningApplication* a in [[NSWorkspace sharedWorkspace] runningApplications])
+        if (a.bundleIdentifier && BrowserScripts()[a.bundleIdentifier]) [running addObject:a.bundleIdentifier];
+    dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+        BOOL denied = NO;
+        for (NSString* b in running) {
+            // the same read per-site memory does: shows the system prompt the first time
+            NSDictionary* err = nil;
+            [[[NSAppleScript alloc] initWithSource:BrowserScripts()[b]] executeAndReturnError:&err];
+            int st = [err[NSAppleScriptErrorNumber] intValue];
+            if (st == errAEEventNotPermitted) denied = YES;
+        }
+        dispatch_async(dispatch_get_main_queue(), ^{ done(denied); });
+    });
+}
 
 static BOOL _inited = NO;
 static CFMachPortRef _eventTap = NULL;

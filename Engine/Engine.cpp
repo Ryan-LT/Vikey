@@ -1326,6 +1326,8 @@ static void asRememberWord() {
 }
 
 /** Vietnamese mode, at a word break: are the raw keys an English word the user clearly meant? */
+static bool _asApostrophe = false;   //the word ends at an apostrophe: allow contraction stems
+
 static bool asShouldRestoreToEnglish() {
     if (!asEnabled() || !_asWordStartOk) return false;
     asInitLetters();
@@ -1351,6 +1353,10 @@ static bool asShouldRestoreToEnglish() {
     if (!asRawWord(KeyStates, _stateIndex, raw)) return false;
     int en = asEnglishScore(raw);
     int vn = asVietnameseScore(word);
+    if (en == AS_MISSING && _asApostrophe) {             //a contraction stem: doesn't, isn't, wasn't -> is it "does" + n?
+        size_t n = strlen(raw);
+        if (n >= 3 && raw[n - 1] == 'n') { raw[n - 1] = 0; en = asEnglishScore(raw); raw[n - 1] = 'n'; }
+    }
 #ifndef AS_DOUBLE_KEEP
 #define AS_DOUBLE_KEEP 1       //a doubled tone key that switches to English keeps both letters: e r r -> "err" (Tony 2026-10-28)
 #endif
@@ -1433,7 +1439,8 @@ static void asRestoreToEnglish(const int& handleCode) {
 static bool asIsSwitchBreak(const vKeyEvent& event, const Uint16& data, const Uint8& capsStatus, const bool& otherControlKey) {
     if (event != vKeyEvent::Keyboard || otherControlKey) return false;
     return data == KEY_COMMA || data == KEY_DOT || data == KEY_SEMICOLON || data == KEY_ENTER || data == KEY_RETURN ||
-           (data == KEY_SLASH && capsStatus == 1) || (data == KEY_1 && capsStatus == 1);
+           data == KEY_QUOTE ||                                 //closing quote, or an apostrophe: doesn't, we're
+           (data == KEY_SLASH && capsStatus == 1) || (data == KEY_1 && capsStatus == 1) || (data == KEY_0 && capsStatus == 1);
 }
 
 /** Everything the engine keeps between keys, so a word can be replayed on a scratch session. */
@@ -1598,7 +1605,10 @@ void vKeyHandleEvent(const vKeyEvent& event,
         hNCC = 0;
         hExt = 1; //word break
         
-        if (asIsSwitchBreak(event, data, capsStatus, otherControlKey) && asShouldRestoreToEnglish()) {
+        _asApostrophe = data == KEY_QUOTE && capsStatus != 1;
+        bool asSwitch = asIsSwitchBreak(event, data, capsStatus, otherControlKey) && asShouldRestoreToEnglish();
+        _asApostrophe = false;
+        if (asSwitch) {
             asRestoreToEnglish(vRestoreAndStartNewSession); //auto switch: an English word typed in Vietnamese mode
         } else if (vRestoreIfWrongSpelling && isWordBreak(event, state, data)) { //restore key if wrong spelling with break-key
             if (!tempDisableKey && vCheckSpelling) {

@@ -30,6 +30,10 @@ extern NSNotificationName const VikeyLanguageDidChangeNotification;
 /// Re-reads settings from UserDefaults into the engine after the UI changed one.
 + (void)reloadSettings;
 
+/// Asks macOS for permission to read the tab address of every running browser (per-site memory).
+/// Calls back on the main thread with YES when the user has refused it for at least one browser.
++ (void)requestBrowserAccess:(void (^)(BOOL denied))done;
+
 /// App and space changes, forwarded from NSWorkspace notifications.
 + (void)frontmostAppChanged;
 + (void)activeSpaceChanged;

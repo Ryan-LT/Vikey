@@ -23,7 +23,7 @@ enum Preferences {
         UserDefaults.standard.register(defaults: [
             PrefKey.spelling: 1, PrefKey.restoreIfInvalid: 1, PrefKey.modernOrthography: 1,
             PrefKey.useMacro: 1, PrefKey.macroInEnglish: 1, PrefKey.autoCapsMacro: 0,
-            PrefKey.smartSwitch: 1, PrefKey.smartSwitchPerSite: true, PrefKey.autoSwitch: 1,
+            PrefKey.smartSwitch: 1, PrefKey.smartSwitchPerSite: false, PrefKey.autoSwitch: 1,
             PrefKey.typingLogKeys: 1, PrefKey.typingLogEnabled: 0, PrefKey.hotkey: Hotkey.defaultValue,
         ])
     }
