@@ -38,6 +38,7 @@ final class KeyboardView: UIView {
 
     private var keyViews: [(def: KeyDef, view: KeyCap)] = []
     private var activeTouches: [UITouch: KeyCap] = [:]
+    private var touchStart: [UITouch: CGPoint] = [:]
     private let popup = KeyPopup()
     private var repeatTimer: Timer?
 
@@ -182,7 +183,7 @@ final class KeyboardView: UIView {
     private func refreshColors() {
         let fg: UIColor = dark ? .white : .black
         let normal: UIColor = dark ? UIColor(white: 0.42, alpha: 1) : .white
-        let special: UIColor = dark ? UIColor(white: 0.26, alpha: 1) : UIColor(red: 0.67, green: 0.70, blue: 0.74, alpha: 1)
+        let special: UIColor = dark ? UIColor(white: 0.30, alpha: 1) : .white   // iOS 26: function keys look like letter keys
         for (def, v) in keyViews {
             var bg = isSpecial(def.kind) ? special : normal
             var tint = fg
@@ -190,7 +191,7 @@ final class KeyboardView: UIView {
             if def.kind == .shift && shift != .off { bg = normal }
             if def.kind == .language { tint = UIColor(red: 0.31, green: 0.27, blue: 0.90, alpha: 1); if dark { tint = UIColor(red: 0.62, green: 0.60, blue: 1, alpha: 1) } }
             v.normalColor = bg
-            v.pressedColor = isSpecial(def.kind) ? normal : special
+            v.pressedColor = dark ? UIColor(white: 0.55, alpha: 1) : UIColor(red: 0.74, green: 0.76, blue: 0.80, alpha: 1)
             if v.backgroundColor != bg { v.backgroundColor = bg }
             if v.label.textColor != tint { v.label.textColor = tint; v.icon.tintColor = tint }
         }
@@ -208,7 +209,7 @@ final class KeyboardView: UIView {
             let d = dx * dx + dy * dy
             if d < bestD { bestD = d; best = v }
         }
-        return bestD < 400 ? best : nil
+        return bestD < 44 * 44 ? best : nil   // edges and gaps belong to the nearest key, like the system keyboard
     }
     private func def(of cap: KeyCap) -> KeyDef? { keyViews.first { $0.view === cap }?.def }
 
@@ -217,6 +218,7 @@ final class KeyboardView: UIView {
             guard let c = cap(at: t.location(in: self)), let d = def(of: c) else { continue }
             if d.kind == .globe { continue }
             activeTouches[t] = c
+            touchStart[t] = t.location(in: self)
             c.backgroundColor = c.pressedColor
             UIDevice.current.playInputClick()
             if case .char = d.kind, traitCollection.horizontalSizeClass == .compact { showPopup(for: c) }
@@ -237,7 +239,10 @@ final class KeyboardView: UIView {
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
         for t in touches {
             guard let old = activeTouches[t], let od = def(of: old), od.kind != .backspace, od.kind != .shift else { continue }
-            guard let c = cap(at: t.location(in: self)), c !== old, let d = def(of: c), d.kind != .globe, d.kind != .backspace, d.kind != .shift else { continue }
+            // a tap wobbles: keep the key it started on unless the finger really slid onto another one
+            let p = t.location(in: self), start = touchStart[t] ?? p
+            guard hypot(p.x - start.x, p.y - start.y) > 14 else { continue }
+            guard let c = cap(at: p), c !== old, c.frame.insetBy(dx: 2, dy: 2).contains(p), let d = def(of: c), d.kind != .globe, d.kind != .backspace, d.kind != .shift else { continue }
             old.backgroundColor = old.normalColor
             activeTouches[t] = c
             c.backgroundColor = c.pressedColor
@@ -247,6 +252,7 @@ final class KeyboardView: UIView {
 
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
         for t in touches {
+            touchStart.removeValue(forKey: t)
             guard let c = activeTouches.removeValue(forKey: t), let d = def(of: c) else { continue }
             c.backgroundColor = c.normalColor
             popup.isHidden = true
@@ -259,7 +265,7 @@ final class KeyboardView: UIView {
     }
 
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
-        for t in touches { activeTouches.removeValue(forKey: t)?.backgroundColor = .clear }
+        for t in touches { touchStart.removeValue(forKey: t); activeTouches.removeValue(forKey: t)?.backgroundColor = .clear }
         repeatTimer?.invalidate(); repeatTimer = nil
         popup.isHidden = true
         refreshColors()
