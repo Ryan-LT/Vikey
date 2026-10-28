@@ -108,6 +108,13 @@ extern "C" {
     static AutoFixUndo _autoFixUndo = {};
 
     static void UndoAutoFixIfAny();
+    int vTypingLogKeys = 1;                     // record the keys of each word in the typing log
+    static NSString* _tlApp = @"";              // bundle id of the app being typed in, for the log
+    void TLFlush();
+    void TLEndWord(NSString* reason);
+    static void TLContext(int to);
+    static void TLAuto(NSString* rule, int to);
+    void TLManual(NSString* via, int to);
 
     static void ResetEnglishWord(bool valid) {
         _enCount = 0;
@@ -240,6 +247,10 @@ extern "C" {
         LOAD_DATA(vPerformLayoutCompat, vPerformLayoutCompat);
         id autoSwitch = [[NSUserDefaults standardUserDefaults] objectForKey:@"AutoSwitchByTyping"];
         vAutoSwitchByTyping = autoSwitch == nil ? 1 : [autoSwitch intValue]; // on by default
+        id logKeys = [[NSUserDefaults standardUserDefaults] objectForKey:@"TypingLogKeys"];
+        vTypingLogKeys = logKeys == nil ? 1 : [logKeys intValue];
+        _tlApp = [[NSWorkspace sharedWorkspace] frontmostApplication].bundleIdentifier ?: ([[NSWorkspace sharedWorkspace] frontmostApplication].localizedName ?: @"");
+        [NSTimer scheduledTimerWithTimeInterval:10 repeats:YES block:^(NSTimer* t) { TLFlush(); }];
         
         myEventSource = CGEventSourceCreate(kCGEventSourceStatePrivate);
         pData = (vKeyHookState*)vKeyInit();
@@ -357,6 +368,7 @@ extern "C" {
             if (_languageTemp != -1) {
                 vLanguage = _languageTemp & 0x01;
                 [appDelegate onImputMethodChanged:NO];
+                TLContext(vLanguage);
                 startNewSession();
             } else {
                 saveSmartSwitchKeyData();
@@ -705,6 +717,7 @@ extern "C" {
             vLanguage = 1;
         else
             vLanguage = 0;
+        TLManual(@"hotkey", vLanguage);
         if (HAS_BEEP(vSwitchKeyStatus))
             NSBeep();
         [appDelegate onImputMethodChanged:YES];
@@ -802,6 +815,202 @@ extern "C" {
         return false;
     }
 
+    // ---- Typing log ---------------------------------------------------------------------
+    // Records manual vs automatic language switches and, when allowed, the keys of each word,
+    // so auto switch can be tuned on real typing. Words are kept in a small buffer; lines are
+    // written to disk on a background queue. Nothing is recorded during secure input
+    // (password fields), in password managers or in terminals (sudo prompts).
+    static dispatch_queue_t _tlQueue;
+    static NSMutableString* _tlPending;
+    static NSMutableDictionary* _tlStats;      // day -> counter name -> count
+    static UniChar _tlWord[64];
+    static int _tlWordLen = 0;
+    static int _tlWordLang = 1;
+    static bool _tlWordTruncated = false;
+    static bool _tlSinceAuto = false;          // no key or click since the last automatic switch
+
+    NSString* TLLogPath() {
+        NSString* dir = [NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES).firstObject
+                         stringByAppendingPathComponent:@"OpenKey"];
+        [[NSFileManager defaultManager] createDirectoryAtPath:dir withIntermediateDirectories:YES attributes:nil error:nil];
+        return [dir stringByAppendingPathComponent:@"typing-log.jsonl"];
+    }
+
+    static NSString* TLToday() {
+        static NSDateFormatter* f;
+        if (!f) { f = [NSDateFormatter new]; f.dateFormat = @"yyyy-MM-dd"; f.locale = [NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"]; }
+        return [f stringFromDate:[NSDate date]];
+    }
+
+    static NSString* TLTime() {
+        static NSDateFormatter* f;
+        if (!f) { f = [NSDateFormatter new]; f.dateFormat = @"yyyy-MM-dd'T'HH:mm:ss.SSSZZZZZ"; f.locale = [NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"]; }
+        return [f stringFromDate:[NSDate date]];
+    }
+
+    static void TLCount(NSString* name) {
+        if (!_tlStats) {
+            NSDictionary* saved = [[NSUserDefaults standardUserDefaults] dictionaryForKey:@"TypingLogStats"];
+            _tlStats = [NSMutableDictionary dictionary];
+            for (NSString* day in saved) _tlStats[day] = [saved[day] mutableCopy];
+        }
+        NSString* day = TLToday();
+        NSMutableDictionary* d = _tlStats[day];
+        if (!d) { d = [NSMutableDictionary dictionary]; _tlStats[day] = d; }
+        d[name] = @([d[name] integerValue] + 1);
+    }
+
+    void TLFlush() {
+        if (_tlStats) [[NSUserDefaults standardUserDefaults] setObject:_tlStats forKey:@"TypingLogStats"];
+        if (_tlPending.length == 0) return;
+        NSString* chunk = _tlPending;
+        _tlPending = [NSMutableString new];
+        if (!_tlQueue) _tlQueue = dispatch_queue_create("openkey.typinglog", DISPATCH_QUEUE_SERIAL);
+        NSString* path = TLLogPath();
+        dispatch_async(_tlQueue, ^{
+            NSFileManager* fm = [NSFileManager defaultManager];
+            NSDictionary* attrs = [fm attributesOfItemAtPath:path error:nil];
+            if (attrs && [attrs fileSize] > 20 * 1024 * 1024) { // keep one previous file
+                NSString* old = [[path stringByDeletingPathExtension] stringByAppendingString:@".1.jsonl"];
+                [fm removeItemAtPath:old error:nil];
+                [fm moveItemAtPath:path toPath:old error:nil];
+            }
+            if (![fm fileExistsAtPath:path]) [fm createFileAtPath:path contents:nil attributes:@{NSFilePosixPermissions: @0600}];
+            NSFileHandle* h = [NSFileHandle fileHandleForWritingAtPath:path];
+            [h seekToEndOfFile];
+            [h writeData:[chunk dataUsingEncoding:NSUTF8StringEncoding]];
+            [h closeFile];
+        });
+    }
+
+    void TLClear() {
+        _tlPending = [NSMutableString new];
+        _tlStats = [NSMutableDictionary dictionary];
+        [[NSUserDefaults standardUserDefaults] removeObjectForKey:@"TypingLogStats"];
+        NSString* path = TLLogPath();
+        if (!_tlQueue) _tlQueue = dispatch_queue_create("openkey.typinglog", DISPATCH_QUEUE_SERIAL);
+        dispatch_async(_tlQueue, ^{
+            [[NSFileManager defaultManager] removeItemAtPath:path error:nil];
+            [[NSFileManager defaultManager] removeItemAtPath:[[path stringByDeletingPathExtension] stringByAppendingString:@".1.jsonl"] error:nil];
+        });
+    }
+
+    NSDictionary* TLStatsSnapshot() {
+        TLCount(@"_touch"); // loads saved stats
+        return [_tlStats copy];
+    }
+
+    static bool TLKeysAllowed() {
+        static NSSet* excluded;
+        if (!excluded) excluded = [NSSet setWithArray:@[
+            // password managers
+            @"com.1password.1password", @"com.agilebits.onepassword7", @"com.bitwarden.desktop", @"com.apple.Passwords",
+            @"com.apple.keychainaccess", @"com.lastpass.LastPass", @"com.dashlane.dashlanephonefinal", @"in.sinew.Enpass-Desktop",
+            @"com.keepassxc.keepassxc", @"com.sinew.Enpass-Desktop", @"com.nordpass.macos.NordPass",
+            // terminals (sudo and ssh passwords are typed in plain view of the event tap)
+            @"com.apple.Terminal", @"com.googlecode.iterm2", @"dev.warp.Warp-Stable", @"com.mitchellh.ghostty",
+            @"io.alacritty", @"net.kovidgoyal.kitty", @"com.github.wez.wezterm", @"co.zeit.hyper", @"com.termius-dmg.mac"]];
+        return vTypingLogKeys && !IsSecureEventInputEnabled() && ![excluded containsObject:_tlApp];
+    }
+
+    static void TLWrite(NSMutableDictionary* d) {
+        d[@"t"] = TLTime();
+        d[@"app"] = _tlApp ?: @"";
+        if (_siteHost.length > 0) d[@"site"] = _siteHost;
+        NSData* data = [NSJSONSerialization dataWithJSONObject:d options:0 error:nil];
+        if (!data) return;
+        if (!_tlPending) _tlPending = [NSMutableString new];
+        [_tlPending appendString:[[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding]];
+        [_tlPending appendString:@"\n"];
+        if (_tlPending.length > 8192) TLFlush();
+    }
+
+    static inline NSString* TLLang(int lang) { return lang ? @"vi" : @"en"; }
+
+    /// Ends the word being typed and logs it. reason: the key or action that ended it.
+    void TLEndWord(NSString* reason) {
+        if (_tlWordLen == 0) return;
+        bool hasLetter = false;
+        for (int x = 0; x < _tlWordLen; x++) if (_tlWord[x] != 0x232B) { hasLetter = true; break; }
+        if (hasLetter) TLCount(_tlWordLang ? @"words_vi" : @"words_en");
+        if (hasLetter && TLKeysAllowed()) {
+            NSMutableDictionary* d = [@{@"e": @"word", @"lang": TLLang(_tlWordLang),
+                                        @"keys": [NSString stringWithCharacters:_tlWord length:_tlWordLen], @"end": reason} mutableCopy];
+            if (_tlWordTruncated) d[@"truncated"] = @YES;
+            TLWrite(d);
+        }
+        _tlWordLen = 0;
+        _tlWordTruncated = false;
+    }
+
+    static void TLAppendChar(UniChar c) {
+        if (_tlWordLen == 0) _tlWordLang = vLanguage;
+        if (_tlWordLen < 64) _tlWord[_tlWordLen++] = c; else _tlWordTruncated = true;
+    }
+
+    static NSString* TLKeyName(CGKeyCode key, bool shift) {
+        switch (key) {
+            case KEY_SPACE: return @"space";
+            case KEY_RETURN: case KEY_ENTER: return @"enter";
+            case KEY_TAB: return @"tab";
+            case KEY_ESC: return @"esc";
+            case KEY_LEFT: case KEY_RIGHT: case KEY_UP: case KEY_DOWN: return @"arrow";
+        }
+        Uint16 ch = keyCodeToCharacter(key | (shift ? CAPS_MASK : 0));
+        return ch ? [NSString stringWithCharacters:&ch length:1] : @"other";
+    }
+
+    /// Every key the user presses (not our own synthesized ones, not the switch hotkey).
+    void TLNoteKey(CGKeyCode key, CGEventFlags flags) {
+        _tlSinceAuto = false;
+        if (flags & (kCGEventFlagMaskCommand | kCGEventFlagMaskControl | kCGEventFlagMaskAlternate)) {
+            TLEndWord(@"shortcut");
+            return;
+        }
+        bool shift = flags & kCGEventFlagMaskShift;
+        bool caps = shift || (flags & kCGEventFlagMaskAlphaShift);
+        if (key == KEY_DELETE) { TLAppendChar(0x232B); return; } // ⌫
+        if (IsLetterKey(key) || (IS_NUMBER_KEY(key) && !shift)) {
+            Uint16 ch = keyCodeToCharacter(key | (caps ? CAPS_MASK : 0));
+            if (ch) TLAppendChar(ch);
+            return;
+        }
+        TLEndWord(TLKeyName(key, shift));
+    }
+
+    void TLNoteClick() {
+        _tlSinceAuto = false;
+        TLEndWord(@"click");
+    }
+
+    void TLAppChanged() {
+        TLEndWord(@"app");
+        NSRunningApplication* front = [[NSWorkspace sharedWorkspace] frontmostApplication];
+        NSString* b = front.bundleIdentifier ?: front.localizedName;
+        if (b) _tlApp = b;
+    }
+
+    static void TLAuto(NSString* rule, int to) {
+        TLCount([@"auto_" stringByAppendingString:rule]);
+        TLWrite([@{@"e": @"auto", @"rule": rule, @"to": TLLang(to)} mutableCopy]);
+        _tlSinceAuto = true;
+    }
+
+    /// The user switched language: right after an automatic switch it counts as an undo.
+    void TLManual(NSString* via, int to) {
+        TLEndWord(@"switch");
+        bool undo = _tlSinceAuto;
+        _tlSinceAuto = false;
+        TLCount(undo ? @"undo" : @"manual");
+        TLWrite([@{@"e": undo ? @"undo" : @"manual", @"via": via, @"to": TLLang(to)} mutableCopy]);
+    }
+
+    static void TLContext(int to) {
+        TLEndWord(@"context");
+        TLCount(@"context");
+        TLWrite([@{@"e": @"context", @"to": TLLang(to)} mutableCopy]);
+    }
+
     static void SendUnicodeText(const UniChar* text, int count) {
         for (int start = 0; start < count; start += 16) {
             int n = MIN(16, count - start);
@@ -858,8 +1067,9 @@ extern "C" {
         SendUnicodeText(_autoFixUndo.text, _autoFixUndo.textCount);
     }
 
-    static void AutoSwitchTo(int language) {
+    static void AutoSwitchTo(int language, NSString* rule) {
         if (vLanguage == language) return;
+        TLAuto(rule, language);
         vLanguage = language;
         [appDelegate onImputMethodChanged:YES]; // updates the menu bar and the per-app/per-site memory
         startNewSession();
@@ -868,7 +1078,7 @@ extern "C" {
     static void ApplyAutoSwitchToEnglish(int correctedCount, bool atWordBreak) {
         vAutoSwitchRequest = -1;
         if (atWordBreak) RememberAutoFix(correctedCount); else _autoFixUndo.active = false;
-        AutoSwitchTo(0);
+        AutoSwitchTo(0, atWordBreak ? @"vi_word_to_en" : @"double_key");
         ResetEnglishWord(atWordBreak && IsWhitespaceKey(_keycode)); // mid-word: the rest of this word is not a whole word
     }
 
@@ -927,7 +1137,7 @@ extern "C" {
         int correctedCount = pData->newCharCount;
         SendEngineOutput();
         RememberAutoFix(correctedCount);
-        AutoSwitchTo(1);
+        AutoSwitchTo(1, @"en_word_to_vi");
         return true;
     }
 
@@ -1036,6 +1246,7 @@ extern "C" {
         // any key or click other than the switch hotkey ends the chance to undo an auto correction
         if (type == kCGEventKeyDown || type == kCGEventLeftMouseDown || type == kCGEventRightMouseDown) {
             _autoFixUndo.active = false;
+            if (type == kCGEventKeyDown) TLNoteKey(_keycode, _flag); else TLNoteClick();
         }
 
         // Also check correct event hooked

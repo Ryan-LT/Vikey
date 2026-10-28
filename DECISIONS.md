@@ -7,6 +7,44 @@ Status values: **Shipped** (in a build Tony has), **Agreed** (decided, not built
 
 ---
 
+## 7. Typing log to measure and tune auto-switch
+
+**Status:** Built 2026-10-28 and sent as OpenKey-2.0.4-log. Tony uses it and sends the log for tuning.
+
+**User story.** As the user, I want OpenKey to record how often I switch language by hand versus how often it switches for me, plus what I typed, so the engine can be tuned. The goal is the fewest manual switches.
+
+**What is recorded.** The log is `~/Library/Application Support/OpenKey/typing-log.jsonl`, one JSON object per line. The file is user-only (0600) and rotates at 20 MB, keeping one old file.
+
+| Event | When | Fields |
+|---|---|---|
+| word | each word | raw keys as typed (⌫ = Backspace), starting language, the key that ended it, app, website |
+| auto | automatic switch | rule: vi_word_to_en, en_word_to_vi or double_key |
+| manual | switch hotkey or menu | — |
+| undo | the switch hotkey pressed right after an automatic switch, with no other key in between | counted separately from manual |
+| context | smart switch changed the language for an app or website | — |
+
+- Words are logged as raw keys, not output. Replaying the keys through the test harness reproduces exactly what the engine did, so new rules can be evaluated on real typing.
+- Daily counters cover words (VN or EN), manual switches, each auto rule, undos and context switches.
+
+**Privacy.** Switch counts are always kept. Word keys are never recorded:
+- while macOS secure input is on (password fields);
+- in password managers: 1Password, Bitwarden, Apple Passwords, Keychain Access, LastPass, Dashlane, Enpass, KeePassXC, NordPass;
+- in terminals: Terminal, iTerm2, Warp, Ghostty, Alacritty, kitty, WezTerm, Hyper, Termius. sudo and ssh passwords there are typed without secure input.
+
+Word recording can be turned off in the log window. Nothing leaves the Mac; Tony sends the file himself.
+
+**Screen.** The status menu gets "Nhật ký gõ...". The window shows:
+- counts for today, 7 days and all time, including manual switches per 100 words;
+- the latest 300 events, with manual switches and undos in orange;
+- the word-recording checkbox;
+- Refresh, Open log file and Clear log buttons.
+
+**Performance.** Each key appends one character to an in-memory buffer. Each word creates one JSON line in memory. The file is written on a background queue every 10 s or every 8 KB.
+
+**Analysis.** `Tools/autoswitch/analyze_log.py` prints the counts and every manual switch or undo with the words around it. Those are the cases to fix.
+
+---
+
 ## 6. Auto-switch must not touch programming words
 
 **Status:** Fixed 2026-10-28 and sent as OpenKey-2.0.4-autoswitch2.

@@ -23,6 +23,237 @@ extern void OnTableCodeChange(void);
 extern void OnInputMethodChanged(void);
 extern void RequestNewSession(void);
 extern void OnActiveAppChanged(void);
+extern void TLAppChanged(void);
+extern void TLManual(NSString* via, int to);
+extern void TLFlush(void);
+extern void TLClear(void);
+extern NSString* TLLogPath(void);
+extern NSDictionary* TLStatsSnapshot(void);
+extern int vTypingLogKeys;
+
+#pragma mark - Typing log window
+/// Shows manual vs automatic switch counts and the latest log lines.
+@interface TypingLogWindowController : NSWindowController <NSTableViewDataSource, NSTableViewDelegate>
+@end
+
+@implementation TypingLogWindowController {
+    NSGridView* _grid;
+    NSTableView* _table;
+    NSArray<NSDictionary*>* _rows;
+    NSButton* _recordKeys;
+    NSTextField* _summary;
+}
+
+- (instancetype)init {
+    NSWindow* w = [[NSWindow alloc] initWithContentRect:NSMakeRect(0, 0, 820, 620)
+                                              styleMask:NSWindowStyleMaskTitled | NSWindowStyleMaskClosable | NSWindowStyleMaskResizable
+                                                backing:NSBackingStoreBuffered defer:NO];
+    w.title = @"Nhật ký gõ";
+    w.minSize = NSMakeSize(720, 480);
+    self = [super initWithWindow:w];
+    [self build];
+    return self;
+}
+
+- (NSTextField*)label:(NSString*)text bold:(BOOL)bold {
+    NSTextField* l = [NSTextField labelWithString:text];
+    l.font = bold ? [NSFont boldSystemFontOfSize:13] : [NSFont systemFontOfSize:13];
+    return l;
+}
+
+- (void)build {
+    NSView* root = self.window.contentView;
+
+    _summary = [NSTextField wrappingLabelWithString:@""];
+    _summary.font = [NSFont systemFontOfSize:15 weight:NSFontWeightSemibold];
+
+    _grid = [NSGridView gridViewWithNumberOfColumns:4 rows:0];
+    _grid.rowSpacing = 6;
+    _grid.columnSpacing = 24;
+
+    _recordKeys = [NSButton checkboxWithTitle:@"Ghi lại phím gõ của từng từ (không ghi trong ô mật khẩu, trình quản lý mật khẩu và Terminal)"
+                                       target:self action:@selector(toggleRecord:)];
+    _recordKeys.state = vTypingLogKeys ? NSControlStateValueOn : NSControlStateValueOff;
+
+    _table = [[NSTableView alloc] init];
+    _table.usesAlternatingRowBackgroundColors = YES;
+    _table.columnAutoresizingStyle = NSTableViewLastColumnOnlyAutoresizingStyle;
+    NSArray* cols = @[@[@"time", @"Thời gian", @150], @[@"app", @"Ứng dụng / trang", @220], @[@"event", @"Sự kiện", @150], @[@"detail", @"Chi tiết", @240]];
+    for (NSArray* c in cols) {
+        NSTableColumn* col = [[NSTableColumn alloc] initWithIdentifier:c[0]];
+        col.title = c[1];
+        col.width = [c[2] doubleValue];
+        [_table addTableColumn:col];
+    }
+    _table.dataSource = self;
+    _table.delegate = self;
+    NSScrollView* scroll = [[NSScrollView alloc] init];
+    scroll.documentView = _table;
+    scroll.hasVerticalScroller = YES;
+    scroll.borderType = NSBezelBorder;
+
+    NSButton* refresh = [NSButton buttonWithTitle:@"Làm mới" target:self action:@selector(reload)];
+    NSButton* reveal = [NSButton buttonWithTitle:@"Mở file log" target:self action:@selector(reveal)];
+    NSButton* clear = [NSButton buttonWithTitle:@"Xoá log…" target:self action:@selector(clearLog)];
+    NSStackView* buttons = [NSStackView stackViewWithViews:@[refresh, reveal, [NSView new], clear]];
+    [buttons setHuggingPriority:NSLayoutPriorityDefaultLow forOrientation:NSLayoutConstraintOrientationHorizontal];
+
+    NSTextField* recent = [self label:@"Sự kiện gần đây" bold:YES];
+    NSStackView* stack = [NSStackView stackViewWithViews:@[_summary, _grid, _recordKeys, recent, scroll, buttons]];
+    stack.orientation = NSUserInterfaceLayoutOrientationVertical;
+    stack.alignment = NSLayoutAttributeLeading;
+    stack.spacing = 14;
+    stack.edgeInsets = NSEdgeInsetsMake(20, 20, 20, 20);
+    [stack setCustomSpacing:20 afterView:_grid];
+    stack.translatesAutoresizingMaskIntoConstraints = NO;
+    [root addSubview:stack];
+    [NSLayoutConstraint activateConstraints:@[
+        [stack.leadingAnchor constraintEqualToAnchor:root.leadingAnchor],
+        [stack.trailingAnchor constraintEqualToAnchor:root.trailingAnchor],
+        [stack.topAnchor constraintEqualToAnchor:root.topAnchor],
+        [stack.bottomAnchor constraintEqualToAnchor:root.bottomAnchor],
+        [scroll.leadingAnchor constraintEqualToAnchor:stack.leadingAnchor constant:20],
+        [scroll.trailingAnchor constraintEqualToAnchor:stack.trailingAnchor constant:-20],
+        [buttons.leadingAnchor constraintEqualToAnchor:stack.leadingAnchor constant:20],
+        [buttons.trailingAnchor constraintEqualToAnchor:stack.trailingAnchor constant:-20],
+        [_summary.trailingAnchor constraintLessThanOrEqualToAnchor:stack.trailingAnchor constant:-20],
+        [scroll.heightAnchor constraintGreaterThanOrEqualToConstant:200],
+    ]];
+}
+
+- (NSDictionary*)sumStats:(NSDictionary*)stats days:(NSInteger)days {
+    NSMutableDictionary* total = [NSMutableDictionary dictionary];
+    NSDateFormatter* f = [NSDateFormatter new];
+    f.dateFormat = @"yyyy-MM-dd";
+    f.locale = [NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"];
+    NSString* from = days > 0 ? [f stringFromDate:[NSDate dateWithTimeIntervalSinceNow:-(days - 1) * 86400]] : @"0000";
+    for (NSString* day in stats) {
+        if ([day compare:from] == NSOrderedAscending) continue;
+        NSDictionary* d = stats[day];
+        for (NSString* k in d) total[k] = @([total[k] integerValue] + [d[k] integerValue]);
+    }
+    return total;
+}
+
+- (void)reload {
+    TLFlush();
+    NSDictionary* stats = TLStatsSnapshot();
+    NSArray* periods = @[[self sumStats:stats days:1], [self sumStats:stats days:7], [self sumStats:stats days:0]];
+
+    while (_grid.numberOfRows > 0) [_grid removeRowAtIndex:0];
+    [_grid addRowWithViews:@[[self label:@"" bold:NO], [self label:@"Hôm nay" bold:YES], [self label:@"7 ngày" bold:YES], [self label:@"Tất cả" bold:YES]]];
+    NSArray* rows = @[@[@"Từ đã gõ", @"words"], @[@"Chuyển tay", @"manual"], @[@"Tự chuyển", @"auto"],
+                      @[@"    Tiếng Việt → Anh (cả từ)", @"auto_vi_word_to_en"], @[@"    Anh → Tiếng Việt (cả từ)", @"auto_en_word_to_vi"],
+                      @[@"    Gõ dấu hai lần → Anh", @"auto_double_key"], @[@"Hoàn tác tự chuyển", @"undo"],
+                      @[@"Đổi theo ứng dụng / trang web", @"context"], @[@"Chuyển tay mỗi 100 từ", @"rate"]];
+    for (NSArray* r in rows) {
+        NSMutableArray* views = [NSMutableArray arrayWithObject:[self label:r[0] bold:NO]];
+        for (NSDictionary* p in periods) {
+            NSInteger words = [p[@"words_vi"] integerValue] + [p[@"words_en"] integerValue];
+            NSInteger autoTotal = [p[@"auto_vi_word_to_en"] integerValue] + [p[@"auto_en_word_to_vi"] integerValue] + [p[@"auto_double_key"] integerValue];
+            NSString* v;
+            if ([r[1] isEqualToString:@"words"]) v = [NSString stringWithFormat:@"%ld", (long)words];
+            else if ([r[1] isEqualToString:@"auto"]) v = [NSString stringWithFormat:@"%ld", (long)autoTotal];
+            else if ([r[1] isEqualToString:@"rate"]) v = words > 0 ? [NSString stringWithFormat:@"%.1f", 100.0 * [p[@"manual"] integerValue] / words] : @"–";
+            else v = [NSString stringWithFormat:@"%ld", (long)[p[r[1]] integerValue]];
+            NSTextField* l = [self label:v bold:NO];
+            l.alignment = NSTextAlignmentRight;
+            l.font = [NSFont monospacedDigitSystemFontOfSize:13 weight:NSFontWeightRegular];
+            [views addObject:l];
+        }
+        [_grid addRowWithViews:views];
+    }
+    for (NSInteger c = 1; c < 4; c++) [_grid columnAtIndex:c].xPlacement = NSGridCellPlacementTrailing;
+
+    NSDictionary* today = periods[0];
+    NSInteger manual = [today[@"manual"] integerValue];
+    NSInteger autoToday = [today[@"auto_vi_word_to_en"] integerValue] + [today[@"auto_en_word_to_vi"] integerValue] + [today[@"auto_double_key"] integerValue];
+    _summary.stringValue = [NSString stringWithFormat:@"Hôm nay: %ld lần chuyển tay, %ld lần tự chuyển", (long)manual, (long)autoToday];
+
+    // last 300 lines of the log, newest first
+    NSMutableArray* rowsOut = [NSMutableArray array];
+    NSString* content = [NSString stringWithContentsOfFile:TLLogPath() encoding:NSUTF8StringEncoding error:nil];
+    NSArray* lines = [content componentsSeparatedByString:@"\n"];
+    for (NSInteger i = (NSInteger)lines.count - 1; i >= 0 && rowsOut.count < 300; i--) {
+        NSData* data = [lines[i] dataUsingEncoding:NSUTF8StringEncoding];
+        if (data.length == 0) continue;
+        NSDictionary* d = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+        if ([d isKindOfClass:[NSDictionary class]]) [rowsOut addObject:d];
+    }
+    _rows = rowsOut;
+    [_table reloadData];
+}
+
+- (NSInteger)numberOfRowsInTableView:(NSTableView*)tableView { return _rows.count; }
+
+- (NSView*)tableView:(NSTableView*)tableView viewForTableColumn:(NSTableColumn*)col row:(NSInteger)row {
+    NSDictionary* d = _rows[row];
+    NSString* e = d[@"e"];
+    NSString* to = [d[@"to"] isEqualToString:@"vi"] ? @"Tiếng Việt" : @"Anh";
+    NSString* text = @"";
+    NSString* ident = col.identifier;
+    if ([ident isEqualToString:@"time"]) {
+        NSString* t = d[@"t"] ?: @"";
+        text = t.length >= 19 ? [[t substringWithRange:NSMakeRange(5, 14)] stringByReplacingOccurrencesOfString:@"T" withString:@"  "] : t;
+    } else if ([ident isEqualToString:@"app"]) {
+        text = d[@"site"] ? [NSString stringWithFormat:@"%@ · %@", d[@"app"], d[@"site"]] : (d[@"app"] ?: @"");
+    } else if ([ident isEqualToString:@"event"]) {
+        if ([e isEqualToString:@"word"]) text = [d[@"lang"] isEqualToString:@"vi"] ? @"Từ (Việt)" : @"Từ (Anh)";
+        else if ([e isEqualToString:@"auto"]) text = [@"Tự chuyển → " stringByAppendingString:to];
+        else if ([e isEqualToString:@"manual"]) text = [@"Chuyển tay → " stringByAppendingString:to];
+        else if ([e isEqualToString:@"undo"]) text = [@"Hoàn tác → " stringByAppendingString:to];
+        else if ([e isEqualToString:@"context"]) text = [@"Theo app/web → " stringByAppendingString:to];
+        else text = e ?: @"";
+    } else {
+        if ([e isEqualToString:@"word"]) text = [NSString stringWithFormat:@"%@   [%@]", d[@"keys"] ?: @"", d[@"end"] ?: @""];
+        else if ([e isEqualToString:@"auto"]) {
+            NSDictionary* names = @{@"vi_word_to_en": @"từ tiếng Anh gõ khi đang ở Tiếng Việt",
+                                    @"en_word_to_vi": @"từ tiếng Việt gõ khi đang ở Anh",
+                                    @"double_key": @"gõ dấu hai lần"};
+            text = names[d[@"rule"]] ?: (d[@"rule"] ?: @"");
+        } else if ([e isEqualToString:@"manual"] || [e isEqualToString:@"undo"]) {
+            text = [d[@"via"] isEqualToString:@"menu"] ? @"bằng menu" : @"bằng phím tắt";
+        }
+    }
+    NSTextField* cell = [tableView makeViewWithIdentifier:ident owner:self];
+    if (!cell) {
+        cell = [NSTextField labelWithString:@""];
+        cell.identifier = ident;
+        cell.lineBreakMode = NSLineBreakByTruncatingTail;
+    }
+    cell.stringValue = text;
+    BOOL highlight = [e isEqualToString:@"manual"] || [e isEqualToString:@"undo"];
+    cell.textColor = highlight ? [NSColor systemOrangeColor] : ([e isEqualToString:@"word"] ? [NSColor labelColor] : [NSColor systemBlueColor]);
+    return cell;
+}
+
+- (void)toggleRecord:(NSButton*)b {
+    vTypingLogKeys = b.state == NSControlStateValueOn ? 1 : 0;
+    [[NSUserDefaults standardUserDefaults] setInteger:vTypingLogKeys forKey:@"TypingLogKeys"];
+}
+
+- (void)reveal {
+    TLFlush();
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.3 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        NSString* path = TLLogPath();
+        if ([[NSFileManager defaultManager] fileExistsAtPath:path])
+            [[NSWorkspace sharedWorkspace] activateFileViewerSelectingURLs:@[[NSURL fileURLWithPath:path]]];
+        else
+            [[NSWorkspace sharedWorkspace] openURL:[NSURL fileURLWithPath:[path stringByDeletingLastPathComponent]]];
+    });
+}
+
+- (void)clearLog {
+    NSAlert* a = [NSAlert new];
+    a.messageText = @"Xoá toàn bộ nhật ký gõ?";
+    a.informativeText = @"Số liệu thống kê và file log sẽ bị xoá.";
+    [a addButtonWithTitle:@"Xoá"];
+    [a addButtonWithTitle:@"Huỷ"];
+    if ([a runModal] != NSAlertFirstButtonReturn) return;
+    TLClear();
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.3 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{ [self reload]; });
+}
+@end
 
 //see document in Engine.h
 int vLanguage = 1;
@@ -71,6 +302,7 @@ extern bool convertToolDontAlertWhenCompleted;
     NSWindowController *_macroWC;
     NSWindowController *_convertWC;
     NSWindowController *_aboutWC;
+    TypingLogWindowController *_logWC;
     
     NSStatusItem *statusItem;
     NSMenu *theMenu;
@@ -197,7 +429,7 @@ extern bool convertToolDontAlertWhenCompleted;
 }
 
 - (void)applicationWillTerminate:(NSNotification *)aNotification {
-    // Insert code here to tear down your application
+    TLFlush();
 }
 
 -(void) createStatusBarMenu {
@@ -238,6 +470,7 @@ extern bool convertToolDontAlertWhenCompleted;
     
     [theMenu addItemWithTitle:@"Bảng điều khiển..." action:@selector(onControlPanelSelected) keyEquivalent:@""];
     [theMenu addItemWithTitle:@"Gõ tắt..." action:@selector(onMacroSelected) keyEquivalent:@""];
+    [theMenu addItemWithTitle:@"Nhật ký gõ..." action:@selector(onTypingLogSelected) keyEquivalent:@""];
     [theMenu addItemWithTitle:@"Giới thiệu" action:@selector(onAboutSelected) keyEquivalent:@""];
     [theMenu addItem:[NSMenuItem separatorItem]];
     
@@ -459,6 +692,7 @@ extern bool convertToolDontAlertWhenCompleted;
 
 - (void)onInputMethodSelected {
     [self onImputMethodChanged:YES];
+    TLManual(@"menu", vLanguage);
 }
 
 - (void)onInputTypeSelected:(id)sender {
@@ -519,6 +753,15 @@ extern bool convertToolDontAlertWhenCompleted;
     [_mainWC.window setLevel:NSFloatingWindowLevel];
 }
 
+-(void) onTypingLogSelected {
+    if (_logWC == nil) _logWC = [[TypingLogWindowController alloc] init];
+    [_logWC reload];
+    [_logWC.window center];
+    [_logWC.window makeKeyAndOrderFront:nil];
+    [_logWC.window setLevel:NSFloatingWindowLevel];
+    [NSApp activateIgnoringOtherApps:YES];
+}
+
 -(void) onMacroSelected {
     if (_macroWC == nil) {
         _macroWC = [[NSStoryboard storyboardWithName:@"Main" bundle:nil] instantiateControllerWithIdentifier:@"MacroWindow"];
@@ -563,6 +806,7 @@ extern bool convertToolDontAlertWhenCompleted;
 }
 
 -(void)activeAppChanged: (NSNotification*)note {
+    TLAppChanged();
     if (vUseSmartSwitchKey && [OpenKeyManager isInited]) {
         OnActiveAppChanged();
     }
