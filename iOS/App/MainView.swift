@@ -31,7 +31,7 @@ struct MainView: View {
                     }
                 }
                 Section("Thử bàn phím") {
-                    TextField("Chạm vào đây, chọn Vikey bằng \(Image(systemName: "globe")) rồi gõ", text: $sample, axis: .vertical)
+                    TextField("Chạm vào đây, chọn Vikey bằng 🌐 rồi gõ", text: $sample, axis: .vertical)
                         .lineLimit(2...5)
                         .onChange(of: sample) { _, t in
                             #if DEBUG
@@ -68,10 +68,14 @@ struct MainView: View {
                             Label("Gửi nhật ký", systemImage: "square.and.arrow.up")
                         }
                         Button("Xoá nhật ký", role: .destructive) { KBLog.clear(); logText = "" }
-                        Text(logText.isEmpty ? "Chưa có gì. Mở bàn phím Vikey và gõ thử." : "\(logText.split(separator: "\n").count) dòng").font(.footnote).foregroundStyle(.secondary)
+                        Text(logText.isEmpty ? LocalizedStringKey("Chưa có gì. Mở bàn phím Vikey và gõ thử.") : LocalizedStringKey("\(logText.split(separator: "\n").count) dòng")).font(.footnote).foregroundStyle(.secondary)
                     }
                 } header: { Text("Gỡ lỗi") }
                 Section {
+                    Button { KeyboardStatus.openSettings() } label: {
+                        LabeledContent("Ngôn ngữ ứng dụng", value: Locale.current.localizedString(forLanguageCode: Bundle.main.preferredLocalizations.first ?? "en") ?? "")
+                    }
+                    .foregroundStyle(.primary)
                     Button("Xem lại hướng dẫn") { didOnboard = false }
                     Link("vikey.app", destination: URL(string: "https://vikey.app")!)
                     LabeledContent("Phiên bản", value: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "")
@@ -88,9 +92,9 @@ struct MainView: View {
 
 /// A setting's title with a (?) that explains it.
 struct Tip: View {
-    let title: String, tip: String
+    let title: LocalizedStringKey, tip: LocalizedStringKey
     @State private var shown = false
-    init(_ title: String, _ tip: String) { self.title = title; self.tip = tip }
+    init(_ title: LocalizedStringKey, _ tip: LocalizedStringKey) { self.title = title; self.tip = tip }
     var body: some View {
         HStack(spacing: 6) {
             Text(title)

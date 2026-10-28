@@ -477,7 +477,21 @@ final class KeyPopup: UIView {
         // keep the bubble on screen at the left and right edges
         if bubble.minX < 1 { bubble.origin.x = 1 }
         if bubble.maxX > parent.bounds.width - 1 { bubble.origin.x = parent.bounds.width - 1 - bubble.width }
-        bubble.origin.y = max(bubble.minY, 0)
+        if bubble.minY < 0 {
+            // no room above (top row, no strip on top): a widened key that grows to the top edge
+            // instead of a balloon whose neck would fold back over the key
+            let r = CGRect(x: bubble.minX, y: 0, width: bubble.width, height: k.maxY)
+            frame = r
+            let path = UIBezierPath(roundedRect: CGRect(origin: .zero, size: r.size), cornerRadius: 10)
+            shape.path = path.cgPath
+            shape.shadowPath = path.cgPath
+            label.font = .systemFont(ofSize: 30, weight: .regular)
+            label.frame = CGRect(x: 0, y: 2, width: r.width, height: r.height * 0.7)
+            isHidden = false
+            parent.bringSubviewToFront(self)
+            return
+        }
+        label.font = .systemFont(ofSize: 38, weight: .regular)
         let all = bubble.union(k)
         frame = all
         let b = bubble.offsetBy(dx: -all.minX, dy: -all.minY), kk = k.offsetBy(dx: -all.minX, dy: -all.minY)

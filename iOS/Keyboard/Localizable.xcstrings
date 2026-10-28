@@ -1,0 +1,150 @@
+{
+ "sourceLanguage": "vi",
+ "strings": {
+  "Đi": {
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "go"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đi"
+     }
+    }
+   }
+  },
+  "Tìm": {
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "search"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tìm"
+     }
+    }
+   }
+  },
+  "Gửi": {
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "send"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Gửi"
+     }
+    }
+   }
+  },
+  "Xong": {
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "done"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Xong"
+     }
+    }
+   }
+  },
+  "Tiếp": {
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "next"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tiếp"
+     }
+    }
+   }
+  },
+  "Tham gia": {
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "join"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tham gia"
+     }
+    }
+   }
+  },
+  "Chỉ đường": {
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "route"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chỉ đường"
+     }
+    }
+   }
+  },
+  "Tiếp tục": {
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "continue"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tiếp tục"
+     }
+    }
+   }
+  },
+  "Gõ để xem thông số": {
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Type to see diagnostics"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Gõ để xem thông số"
+     }
+    }
+   }
+  }
+ },
+ "version": "1.0"
+}

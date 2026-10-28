@@ -91,6 +91,19 @@ final class KeyboardPerformanceTests: XCTestCase {
         XCTAssertGreaterThan(a, 0, "keyboard background is fully transparent: taps between keys are lost")
     }
 
+    func testRenderPopups() {
+        // renders key popups (top row and second row) to an image for a visual check
+        let kb = KeyboardView(frame: CGRect(x: 0, y: 0, width: 402, height: KeyboardView.keyboardHeight(compactHeight: false)))
+        kb.backgroundColor = UIColor(red: 0.82, green: 0.83, blue: 0.86, alpha: 1)
+        kb.layoutIfNeeded()
+        let caps = kb.subviews.compactMap { $0 as? KeyCap }
+        let pop1 = KeyPopup(); kb.addSubview(pop1); pop1.show(over: caps[4], in: kb)     // t
+        let pop2 = KeyPopup(); kb.addSubview(pop2); pop2.show(over: caps[17], in: kb)    // k
+        let img = UIGraphicsImageRenderer(bounds: kb.bounds).image { ctx in kb.layer.render(in: ctx.cgContext) }
+        try? img.pngData()?.write(to: URL(fileURLWithPath: "/tmp/claude-501/popup_test.png"))
+        XCTAssertGreaterThanOrEqual(pop1.frame.minY, 0)
+    }
+
     func testKeyShadowsHaveFixedPaths() {
         let kb = KeyboardView(frame: CGRect(x: 0, y: 0, width: 402, height: KeyboardView.keyboardHeight(compactHeight: false)))
         kb.layoutIfNeeded()

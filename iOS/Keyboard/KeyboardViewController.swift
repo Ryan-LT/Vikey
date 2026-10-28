@@ -96,7 +96,7 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
         doubleSpacePeriod = d.bool(forKey: VKSettings.Key.doubleSpacePeriod)
         haptics = d.bool(forKey: VKSettings.Key.haptics)
         Diag.on = d.bool(forKey: VKSettings.Key.diagnostics)
-        keyboard?.diagnostics = Diag.on ? "Gõ để xem thông số" : nil
+        keyboard?.diagnostics = Diag.on ? String(localized: "Gõ để xem thông số") : nil
         heightConstraint?.constant = KeyboardView.keyboardHeight(compactHeight: traitCollection.verticalSizeClass == .compact)
         keyboard?.setNeedsLayout()
         keyboard?.haptics = haptics && hasFullAccess   // haptics need Full Access; without it keys click
@@ -131,14 +131,14 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
 
     private static func returnTitle(_ t: UIReturnKeyType) -> (String, Bool) {
         switch t {
-        case .go: return ("Đi", true)
-        case .search, .google, .yahoo: return ("Tìm", true)
-        case .send: return ("Gửi", true)
-        case .done: return ("Xong", true)
-        case .next: return ("Tiếp", false)
-        case .join: return ("Tham gia", true)
-        case .route: return ("Chỉ đường", true)
-        case .continue: return ("Tiếp tục", true)
+        case .go: return (String(localized: "Đi"), true)
+        case .search, .google, .yahoo: return (String(localized: "Tìm"), true)
+        case .send: return (String(localized: "Gửi"), true)
+        case .done: return (String(localized: "Xong"), true)
+        case .next: return (String(localized: "Tiếp"), false)
+        case .join: return (String(localized: "Tham gia"), true)
+        case .route: return (String(localized: "Chỉ đường"), true)
+        case .continue: return (String(localized: "Tiếp tục"), true)
         case .emergencyCall: return ("SOS", true)
         default: return ("return", false)
         }

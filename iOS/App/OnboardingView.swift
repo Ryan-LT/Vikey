@@ -27,7 +27,7 @@ struct OnboardingView: View {
                 Button {
                     if page < 2 { withAnimation { page += 1 } } else { done() }
                 } label: {
-                    Text(page == 0 ? "Bắt đầu" : page == 1 ? (added ? "Tiếp tục" : "Để sau") : "Xong")
+                    Text(page == 0 ? LocalizedStringKey("Bắt đầu") : page == 1 ? (added ? LocalizedStringKey("Tiếp tục") : LocalizedStringKey("Để sau")) : LocalizedStringKey("Xong"))
                         .font(.headline).foregroundStyle(.white)
                         .frame(maxWidth: .infinity).padding(.vertical, 16)
                         .background(LinearGradient(colors: [Color.brand, Color(red: 0.24, green: 0.30, blue: 0.80)], startPoint: .topLeading, endPoint: .bottomTrailing),
@@ -87,7 +87,7 @@ struct OnboardingView: View {
         VStack(alignment: .leading, spacing: 18) {
             Spacer()
             Text("Thử ngay").font(.largeTitle.bold())
-            Text("Chạm vào ô bên dưới, giữ \(Image(systemName: "globe")) để chọn Vikey, rồi gõ thử \"sorry em tooiws treex\".")
+            Text("Chạm vào ô bên dưới, giữ 🌐 để chọn Vikey, rồi gõ thử \"sorry em tooiws treex\".")
                 .foregroundStyle(.secondary)
             TextField("Gõ ở đây", text: $sample, axis: .vertical)
                 .lineLimit(3...6)
@@ -101,12 +101,12 @@ struct OnboardingView: View {
 }
 
 private struct Step: View {
-    let n: Int, text: String
+    let n: Int, text: LocalizedStringKey
     var body: some View {
         HStack(spacing: 14) {
             Text("\(n)").font(.headline).foregroundStyle(.white)
                 .frame(width: 32, height: 32).background(Color.brand, in: Circle())
-            Text(text).font(.title3)
+            Text(text).font(.title3).fixedSize(horizontal: false, vertical: true)
         }
     }
 }
