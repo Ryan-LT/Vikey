@@ -29,6 +29,7 @@ static Uint16 keyOf(char c) {
     }
     return 0xFFFF;
 }
+static bool enAfterDouble = false;
 static bool isLetter(char c) { return c >= 'a' && c <= 'z'; }
 static char16_t charOf(Uint32 d) { return (d & CHAR_CODE_MASK) ? (char16_t)(d & 0xFFFF) : (char16_t)keyCodeToCharacter(d); }
 
@@ -58,6 +59,7 @@ static void press(char c) {
         if (vAutoSwitchRequest == 0) {
             vAutoSwitchRequest = -1; vLanguage = 0; startNewSession(); vAutoSwitchForget(); prevN = 0; switches++;
             enCount = 0; enValid = (key == KEY_SPACE || key == KEY_RETURN);
+            enAfterDouble = isLetter(lc);
         }
         return;
     }
@@ -66,10 +68,15 @@ static void press(char c) {
         if (enCount < MAX_BUFF - 2) enKeys[enCount++] = key | (caps ? CAPS_MASK : 0); else enValid = false;
         screen.push_back(c); return;
     }
-    if (key == KEY_DELETE) { if (enCount == 0) prevN = 0; if (enCount > 0) enCount--; else enValid = false; if (!screen.empty()) screen.pop_back(); return; }
-    if (lc >= '0' && lc <= '9') { enValid = false; screen.push_back(c); return; }
-    bool wordEnd = key == KEY_SPACE || key == KEY_COMMA || key == KEY_DOT || key == KEY_RETURN;
+    if (key == KEY_DELETE) { if (enCount == 0) { prevN = 0; enAfterDouble = false; } if (enCount > 0) enCount--; else enValid = false; if (!screen.empty()) screen.pop_back(); return; }
+    if (lc >= '0' && lc <= '9') { enValid = false; enAfterDouble = false; screen.push_back(c); return; }
+    bool wordEnd = key == KEY_SPACE || key == KEY_COMMA || key == KEY_DOT || key == KEY_RETURN || key == KEY_SEMICOLON ||
+                   (caps && (key == KEY_SLASH || key == KEY_1 || key == KEY_QUOTE || key == KEY_0));
     int count = enCount; bool valid = enValid; enCount = 0; enValid = (key == KEY_SPACE || key == KEY_RETURN);
+    bool afterDouble = enAfterDouble; enAfterDouble = false;
+    if (afterDouble && wordEnd && vAutoSwitchFixDoubledKey(enKeys, count)) {
+        prevN = 0; applyOutput(key, caps); return;
+    }
     const Uint32* prev[2] = {prevKeys[0], prevKeys[1]};
     bool converted = wordEnd && valid && count >= 2 && vAutoSwitchCheckEnglishWord(enKeys, count, prev, prevCounts, prevN);
     if (!converted && key == KEY_SPACE && valid && count >= 1) {
@@ -102,7 +109,7 @@ int main(int argc, char** argv) {
         while (fgets(buf, sizeof buf, stdin)) {
             char* tab = strchr(buf, '\t'); if (!tab) continue;
             buf[strcspn(buf, "\n")] = 0;
-            screen.clear(); switches = 0; enCount = 0; enValid = true; prevN = 0; startNewSession(); vAutoSwitchForget();
+            screen.clear(); switches = 0; enCount = 0; enValid = true; prevN = 0; enAfterDouble = false; startNewSession(); vAutoSwitchForget();
             vLanguage = atoi(buf);
             for (char* p = tab + 1; *p; p++) press(*p == '|' ? '\n' : *p);
             printf("%s\t%d\t%d\n", utf8(screen).c_str(), switches, vLanguage);

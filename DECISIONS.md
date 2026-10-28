@@ -23,9 +23,21 @@ If every listed change is intended, accept them with `Tools/autoswitch/check.sh 
 
 ---
 
+## 18. "mĩ" + x gives "mix", not "mixx"
+
+**Status:** Done 2026-10-28 (1.0.5). Rule cases D18.
+
+**Asked by Tony.** In VN mode "let's mix" gave "mĩ" (a tie: mĩ is Vietnamese). Pressing x again by muscle memory gave "mixx". Tony picked option A.
+
+**Decided.**
+- After a doubled tone key switches to English, the end of that word decides: if the word with both presses is not English but the word with one press is, the extra press goes ("mixx" → "mix", "mixxer" → "mixer"). When both presses make a word they stay (err, boss, tomorrow). Words still being typed are never touched. Backspace right after puts "mixx" back.
+- A key Telex drops when undoing a doubled vowel ("eee" → "ee") now counts for the English check: seemed, cheese, defense. Three of the same vowel alone stays Telex ("aaa" → "aa").
+- Option B (the previous English word as a hint for ties) was not chosen.
+- Tie count, typing the most common English words in VN mode: 27 of the top 1,000 stay Vietnamese (this/thí, there/thể, see/sê, did/đi...). Those are real syllables and stay Vietnamese without other signals.
+
 ## 17. Doubled tone key restores every key; no vanishing text
 
-**Status:** Done 2026-10-28, not released yet. Rule cases D17.
+**Status:** Done 2026-10-28 (1.0.5). Rule cases D17.
 
 **Found while counting tie cases for Tony's "let's mĩ" report.**
 - A doubled tone key that switches to English now puts back the whole word as typed. Before, only the tone was undone: "tômrrow", "surprrise", "êpss". Now: tomorrow, surprise, express. "err" still keeps both letters (D8).

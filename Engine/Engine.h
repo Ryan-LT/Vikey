@@ -134,6 +134,14 @@ bool vAutoSwitchCheckEnglishWord(const Uint32* keys, const int& count,
 void vAutoSwitchForget();
 
 /**
+ * Call at the end of the first English word after a doubled tone key switched to English (D18).
+ * keys: the letters typed since the switch. When the word with both presses of the key is not
+ * English but the word with one is ("mixx" -> "mix"), fills the hook state (code vRestore) with
+ * the fixed word and returns true. Always forgets the pending switch.
+ */
+bool vAutoSwitchFixDoubledKey(const Uint32* keys, const int& count);
+
+/**
  * Call this function first to receive data pointer
  */
 void* vKeyInit();

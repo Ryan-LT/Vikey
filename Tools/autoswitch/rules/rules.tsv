@@ -63,3 +63,10 @@ D17	1	tomorrow 	tomorrow 	0	a doubled tone key puts the whole word back to the t
 D17	1	surprise 	surprise 	0	same: "surprrise" before
 D17	1	express 	express 	0	same: "êpss" before
 D17	1	weren't 	weren't 	0	a w-vowel that loses its ư is written as a letter, never an empty character (text vanished before)
+D18	1	mixx 	mix 	0	tie "mĩ" fixed by pressing x again: at the end of the word, the extra x goes if "mixx" is not English but "mix" is (Tony)
+D18	1	mixxer 	mixer 	0	the fix also works when the word goes on after the doubled key
+D18	1	err 	err 	0	both presses stay when they make an English word (D8)
+D18	1	boss 	boss 	0	both presses stay: boss
+D18	1	seemed 	seemed 	0	a key Telex dropped ("eee" undo) counts for the English check: seemed, not "semed"
+D18	1	cheese, 	cheese, 	0	same before a comma: cheese, not "chees"
+D18	1	aaa 	aa 	1	typing a vowel three times is still Telex for two ("aa"), no switch

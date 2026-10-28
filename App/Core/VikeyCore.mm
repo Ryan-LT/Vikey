@@ -128,7 +128,10 @@ extern "C" {
     }
 
     /// Starts over: no current word and nothing to look back on.
+    static bool _enAfterDouble = false;   // the current English word began in Vietnamese and switched on a doubled tone key
+
     static void ResetEnglishWord(bool valid) {
+        _enAfterDouble = false;
         StartEnglishWord(valid);
         _enPrevN = 0;
         vAutoSwitchForget();
@@ -825,6 +828,7 @@ extern "C" {
         if (atWordBreak) RememberAutoFix(correctedCount); else _autoFixUndo.active = false;
         AutoSwitchTo(0, atWordBreak ? @"vi_word_to_en" : @"double_key");
         ResetEnglishWord(atWordBreak && IsWhitespaceKey(_keycode)); // mid-word: the rest of this word is not a whole word
+        _enAfterDouble = !atWordBreak;   // at its end, "mixx" may become "mix"
     }
 
     static bool OtherInputSourceActive() {
@@ -848,19 +852,30 @@ extern "C" {
             return false;
         }
         if (_keycode == KEY_DELETE) {
-            if (_enCount == 0) _enPrevN = 0; // editing the previous word
+            if (_enCount == 0) { _enPrevN = 0; _enAfterDouble = false; } // editing the previous word
             if (_enCount > 0) _enCount--;
             else if (!_enAfterShortcut) _enValid = false; // deleting into the previous word: we don't know its letters
             return false;
         }
         if (IS_NUMBER_KEY(_keycode) && !shift) {
             _enValid = false;
+            _enAfterDouble = false;
             return false;
         }
         bool wordEnd = _keycode == KEY_SPACE || _keycode == KEY_COMMA || _keycode == KEY_DOT || _keycode == KEY_SEMICOLON ||
                        _keycode == KEY_RETURN || _keycode == KEY_ENTER || (shift && (_keycode == KEY_SLASH || _keycode == KEY_1 || _keycode == KEY_QUOTE || _keycode == KEY_0));
         int count = _enCount;
         bool valid = _enValid;
+        bool afterDouble = _enAfterDouble;
+        _enAfterDouble = false;
+        if (afterDouble && wordEnd && vAutoSwitchFixDoubledKey(_enKeys, count)) {
+            StartEnglishWord(IsWhitespaceKey(_keycode));
+            _enPrevN = 0;
+            int correctedCount = pData->newCharCount;
+            SendEngineOutput();
+            RememberAutoFix(correctedCount);
+            return true;
+        }
         // the next word is whole only after whitespace; after . _ - / ( etc. it's part of an identifier or path
         StartEnglishWord(IsWhitespaceKey(_keycode));
         bool checked = wordEnd && valid && count >= 2 && !(vOtherLanguage && OtherInputSourceActive());

@@ -12,6 +12,12 @@ struct VikeyApp: App {
         } label: {
             Image(nsImage: MenuBarIcon.image(vietnamese: state.language == 1))
         }
+        .commands {
+            CommandGroup(replacing: .appInfo) {
+                Button("Giới thiệu về Vikey") { AboutPanel.show() }   // with the credits
+                Button("Kiểm tra cập nhật…") { Updater.shared.checkForUpdates() }
+            }
+        }
 
     }
 }

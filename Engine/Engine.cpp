@@ -78,6 +78,8 @@ vector<Uint32> _typingStatesData;
  * Use for restore key if invalid word
  */
 static Uint32 KeyStates[MAX_BUFF];
+static int _asDropPos = -1;      //auto switch: a key Telex undid and dropped from the key states ("eee" -> "ee"), and where it was
+static Uint32 _asDropKey = 0;
 static Byte _stateIndex = 0;
 
 static bool tempDisableKey = false;
@@ -420,6 +422,7 @@ void restoreLastTypingState() {
 }
 
 void startNewSession() {
+    _asDropPos = -1;
     _index = 0;
     hBPC = 0;
     hNCC = 0;
@@ -1326,6 +1329,8 @@ static void asRememberWord() {
 }
 
 /** Vietnamese mode, at a word break: are the raw keys an English word the user clearly meant? */
+static Uint32 _asDoubleKeys[MAX_BUFF];   //the keys of the word a doubled tone key switched to English, both presses last
+static int _asDoubleCount = 0;
 static bool _asApostrophe = false;   //the word ends at an apostrophe: allow contraction stems
 
 static bool asShouldRestoreToEnglish() {
@@ -1334,7 +1339,27 @@ static bool asShouldRestoreToEnglish() {
     if (_stateIndex < 2 || _stateIndex < _index) return false;
     char word[AS_KEY_LEN], raw[AS_KEY_LEN];
     bool transformed;
-    if (!asWordKey(word, transformed)) return false;
+    bool wordOk = asWordKey(word, transformed);
+    //Telex dropped a key on the way ("seemed" -> "semed", "cheese" -> "chees"): with it back, an English word?
+    if (_asDropPos >= 0 && _asDropPos <= _stateIndex && _stateIndex >= 3 && _stateIndex < MAX_BUFF - 1) {   //4+ keys: "aaa" stays Telex "aa"
+        Uint32 full[MAX_BUFF];
+        int n = 0;
+        for (int x = 0; x <= _stateIndex; x++) {
+            if (x == _asDropPos) full[n++] = _asDropKey;
+            if (x < _stateIndex) full[n++] = KeyStates[x];
+        }
+            bool savedTemp = tempDisableKey;
+        checkSpelling(true);
+        bool invalid = tempDisableKey;   //the shown word is no syllable ("chée")
+        tempDisableKey = savedTemp;
+        if (asRawWord(full, n, raw) && asEnglishScore(raw) != AS_MISSING && (!wordOk || !transformed || invalid || asVietnameseScore(word) == AS_MISSING)) {
+            memcpy(KeyStates, full, n * sizeof(Uint32));   //restore puts these keys back
+            _stateIndex = n;
+            _asDropPos = -1;
+            return true;
+        }
+    }
+    if (!wordOk) return false;
     if (!transformed) {
         //no marks left, but Telex ate a key on the way ("seemed" -> "semed", "cheese" -> "chees"): put back an English word
         if (asRawWord(KeyStates, _stateIndex, raw) && strcmp(raw, word) != 0 && asEnglishScore(raw) != AS_MISSING)
@@ -1451,6 +1476,7 @@ struct AsEngineState {
     Uint32 word[MAX_BUFF], states[MAX_BUFF];
     Byte index, stateIndex;
     bool tempDisable, useSpellingBefore, wordStartOk;
+    int dropPos; Uint32 dropKey;
     int spaceCount, checkSpelling, language;
     vector<Uint32> longWord, special, statesData;
     list<vector<Uint32>> typing;
@@ -1463,6 +1489,7 @@ static void asSaveState(AsEngineState& st) {
     st.index = _index; st.stateIndex = _stateIndex;
     st.tempDisable = tempDisableKey; st.useSpellingBefore = _useSpellCheckingBefore;
     st.wordStartOk = _asWordStartOk;
+    st.dropPos = _asDropPos; st.dropKey = _asDropKey;
     st.spaceCount = _spaceCount; st.checkSpelling = vCheckSpelling;
     st.language = vLanguage;
     st.longWord.swap(_longWordHelper);
@@ -1478,6 +1505,7 @@ static void asRestoreState(AsEngineState& st) {
     _index = st.index; _stateIndex = st.stateIndex;
     tempDisableKey = st.tempDisable; _useSpellCheckingBefore = st.useSpellingBefore;
     _asWordStartOk = st.wordStartOk;
+    _asDropPos = st.dropPos; _asDropKey = st.dropKey;
     _spaceCount = st.spaceCount; vCheckSpelling = st.checkSpelling;
     vLanguage = st.language;
     _longWordHelper.swap(st.longWord);
@@ -1689,6 +1717,7 @@ void vKeyHandleEvent(const vKeyEvent& event,
         } else {
             if (_stateIndex > 0) {
                 _stateIndex--;
+                if (_stateIndex < _asDropPos) _asDropPos = -1;
             }
             if (_index > 0){
                 _index--;
@@ -1753,6 +1782,9 @@ void vKeyHandleEvent(const vKeyEvent& event,
                     hNCC = _stateIndex - 1;
                     for (int x = 0; x < hNCC; x++) hData[hNCC - 1 - x] = KeyStates[x];
                     rawRestored = true;
+                    //remember the word for the end-of-word fix ("mixx" -> "mix")
+                    _asDoubleCount = _stateIndex;
+                    memcpy(_asDoubleKeys, KeyStates, _stateIndex * sizeof(Uint32));
                 }
 #if AS_DOUBLE_KEEP
                 //keep the first press of the key too ("err", not Telex's "er")
@@ -1775,6 +1807,7 @@ void vKeyHandleEvent(const vKeyEvent& event,
         
         if (hCode == vRestore) {
             insertKey(data, _isCaps);
+            if (_stateIndex > 0 && vAutoSwitchRequest != 0) { _asDropPos = _stateIndex - 1; _asDropKey = KeyStates[_stateIndex - 1]; }
             _stateIndex--;
         }
         
@@ -1796,4 +1829,30 @@ void vKeyHandleEvent(const vKeyEvent& event,
     //cout<<"index "<<(int)_index<< ", stateIndex "<<(int)_stateIndex<<", word "<<_typingStates.size()<<", long word "<<_longWordHelper.size()<< endl;
     //cout<<"backspace "<<(int)hBPC<<endl;
     //cout<<"new char "<<(int)hNCC<<endl<<endl;
+}
+
+bool vAutoSwitchFixDoubledKey(const Uint32* keys, const int& count) {
+    int n = _asDoubleCount;
+    _asDoubleCount = 0;
+    if (!asEnabled() || n < 2 || count < 0 || n + count >= AS_KEY_LEN || n + count >= MAX_BUFF) return false;
+    asInitLetters();
+    Uint32 full[MAX_BUFF];
+    memcpy(full, _asDoubleKeys, n * sizeof(Uint32));
+    for (int x = 0; x < count; x++) full[n + x] = keys[x];
+    int total = n + count;
+    char raw[AS_KEY_LEN], fewer[AS_KEY_LEN];
+    if (!asRawWord(full, total, raw)) return false;
+    if (asEnglishScore(raw) != AS_MISSING) return false;            //both presses make a word: err, boss, tomorrow
+    Uint32 fixed[MAX_BUFF];
+    int m = 0;
+    for (int x = 0; x < total; x++) if (x != n - 1) fixed[m++] = full[x];   //drop the second press
+    if (m < 2 || !asRawWord(fixed, m, fewer) || asEnglishScore(fewer) == AS_MISSING) return false;
+    vAutoSwitchUndoCount = 0;   //Backspace right after puts "mixx" back
+    for (int x = 0; x < total; x++) vAutoSwitchUndoData[vAutoSwitchUndoCount++] = full[x];
+    hCode = vRestore;          //platform sends the new text, then the break key itself
+    hBPC = (Byte)total;
+    hNCC = (Byte)m;
+    hExt = 3;
+    for (int x = 0; x < m; x++) hData[m - 1 - x] = fixed[x];
+    return true;
 }
