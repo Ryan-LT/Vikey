@@ -240,9 +240,18 @@ final class KeyboardView: UIView {
     }
     private func kind(of cap: KeyCap) -> KeyKind? { keys.first { $0.view === cap }?.def.kind }
 
+    private var lastHaptic: CFTimeInterval = 0
+    /// One vibration per key press at most (overlapping touches in fast typing must not double up).
+    private func tick() {
+        let t = CACurrentMediaTime()
+        guard t - lastHaptic > 0.04 else { return }
+        lastHaptic = t
+        feedback.impactOccurred()
+    }
+
     private func press(_ c: KeyCap) {
         c.backgroundColor = c.pressedColor
-        if haptics { feedback.impactOccurred() } else { UIDevice.current.playInputClick() }
+        if haptics { tick() } else { UIDevice.current.playInputClick() }
     }
     private func release(_ c: KeyCap) { c.backgroundColor = c.normalColor }
 
@@ -362,7 +371,7 @@ final class KeyboardView: UIView {
         cursorMode = true
         cursorAnchor = touch?.location(in: self).x ?? x
         popup.isHidden = true
-        if haptics { feedback.impactOccurred() }
+        if haptics { tick() }
         refreshLabels()
     }
 
@@ -382,7 +391,7 @@ final class KeyboardView: UIView {
         let upper = shift != .off && layer_ == .letters
         popup.isHidden = true
         alternates.show(list.map { upper ? $0.uppercased() : $0 }, over: c, in: self)
-        if haptics { feedback.impactOccurred() }
+        if haptics { tick() }
     }
 }
 
