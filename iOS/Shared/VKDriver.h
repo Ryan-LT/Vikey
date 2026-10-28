@@ -45,4 +45,9 @@ FOUNDATION_EXTERN bool VKShouldCorrect(const char *typed, const VKCandidate *c, 
 /// The most common words starting with prefix, both languages, current mode first.
 FOUNDATION_EXTERN int VKCompletions(const char *prefix, int vietnamese, VKCandidate *out, int max);
 
+/// A valid Vietnamese syllable when typed in Telex ("im", "thanhj").
+FOUNDATION_EXTERN bool VKIsVietnameseSpelling(const char *letters);
+/// Whether the keys make a word in the dictionary of that language ("im" is Vietnamese, "thats" → "thát" is not).
+FOUNDATION_EXTERN bool VKIsWord(int vietnamese, const char *letters);
+
 NS_ASSUME_NONNULL_END

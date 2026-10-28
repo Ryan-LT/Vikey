@@ -28,6 +28,8 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
     private var wordCaps = 0
     private var candidates: [VKCandidate] = []     // for the strip; [0] is what auto-correct would use
     private var willCorrect = false
+    /// What the end of this word will put in instead of it (auto-correct or a contraction), and its language.
+    private var pendingFix: (text: String, vietnamese: Bool)?
     /// The last auto-correct, so the next backspace can put the typed word back.
     private var lastCorrection: (typed: String, inserted: String)?
     private var keepWord: String?                  // a word put back by backspace: don't correct it again
@@ -214,6 +216,10 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
         switch kind {
         case .char(let c):
             lastCorrection = nil
+            if [".", ",", "?", "!"].contains(c), !wordPrefix.isEmpty, autoCorrectAtBreak(c) {   // "dont?" → "don't?"
+                if c != "," { updateAutoShift(lastContext ?? "") }
+                break
+            }
             if let ch = c.first, ch.isLetter, ch.isASCII, wordPrefix.count < 30 {
                 wordPrefix.append(ch)
                 let t = keyboard.lastTapPoint ?? CGPoint(x: CGFloat.nan, y: .nan)
@@ -369,7 +375,7 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
 
     private func clearWord() {
         wordPrefix = ""; wordXs = []; wordYs = []; wordCaps = 0
-        candidates = []; willCorrect = false
+        candidates = []; willCorrect = false; pendingFix = nil
         keyboard?.suggestions = []
     }
 
@@ -408,7 +414,7 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
     func updateSuggestions() {
         suggestionsDirty = false
         guard KeyboardView.barOn, correctsHere, !wordPrefix.isEmpty, !shownWord.isEmpty else {
-            if !candidates.isEmpty || !(keyboard?.suggestions.isEmpty ?? true) { candidates = []; willCorrect = false; keyboard.suggestions = [] }
+            if !candidates.isEmpty || !(keyboard?.suggestions.isEmpty ?? true) { candidates = []; willCorrect = false; pendingFix = nil; keyboard.suggestions = [] }
             return
         }
         let typed = wordPrefix.lowercased()
@@ -425,6 +431,16 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
         // never auto-correct acronyms / names typed with capitals inside, or a word put back by backspace
         willCorrect = autoCorrectOn && wordCaps < 2 && keepWord != typed && wordPrefix.count >= 3
             && typed.withCString { t in candidates.withUnsafeBufferPointer { VKShouldCorrect(t, $0.baseAddress!, n) } }
+        pendingFix = willCorrect ? candidates.first.map { (cased(Self.text(of: $0)), $0.vietnamese == 1) } : nil
+        // "dont" → "don't" from the keys typed (in Vietnamese mode "thats" shows as "thát" until the end of
+        // the word); a real Vietnamese word in Vietnamese mode stays ("im")
+        let shownNow = shownWord
+        let typedCased = wordCaps == wordPrefix.count && wordPrefix.count > 1 ? typed.uppercased()
+            : shownNow.first?.isUppercase == true ? typed.prefix(1).uppercased() + typed.dropFirst() : typed
+        if autoCorrectOn, keepWord != typed, let c = Contractions.fix(typedCased),
+           driver.language == 0 || !typed.withCString({ VKIsWord(1, $0) }) {
+            pendingFix = (c, false); willCorrect = true
+        }
         var comp = [VKCandidate](repeating: VKCandidate(), count: 6)
         let m = suggestionsOn ? typed.withCString { VKCompletions($0, vi, &comp, 6) } : 0
         let shown = shownWord
@@ -435,7 +451,9 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
             guard cells.count < 3, !seen.contains(t.lowercased()) else { return }
             seen.insert(t.lowercased()); cells.append(Suggestion(text: t, highlighted: highlight))
         }
-        if willCorrect, let best = candidates.first { add(best, highlight: true) }
+        if willCorrect, let fix = pendingFix, !seen.contains(fix.text.lowercased()) {
+            seen.insert(fix.text.lowercased()); cells.append(Suggestion(text: fix.text, highlighted: true))
+        }
         if suggestionsOn {
             // a typed word that isn't a word: fixes first; otherwise ways to finish it
             let isWord = candidates.contains { String(cString: withUnsafeBytes(of: $0.letters) { Array($0.bindMemory(to: CChar.self)) + [0] }) == typed }
@@ -448,17 +466,17 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
     }
 
     /// Space after a word: put in the correction (like the system keyboard). Returns true when it typed the space itself.
-    private func autoCorrectAtBreak() -> Bool {
+    private func autoCorrectAtBreak(_ end: String = " ") -> Bool {
         updateSuggestionsIfNeeded()       // typed faster than the strip: decide on the whole word now
-        guard willCorrect, let best = candidates.first else { return false }
-        replaceWord(with: cased(Self.text(of: best)), vietnamese: best.vietnamese == 1, recordUndo: true)
+        guard willCorrect, let fix = pendingFix else { return false }
+        replaceWord(with: fix.text, vietnamese: fix.vietnamese, recordUndo: true, then: end)
         return true
     }
 
     /// Replace the word before the cursor with `word` + a space, in the word's language.
-    private func replaceWord(with word: String, vietnamese: Bool, recordUndo: Bool) {
+    private func replaceWord(with word: String, vietnamese: Bool, recordUndo: Bool, then end: String = " ") {
         let old = shownWord
-        let insert = word + " "
+        let insert = word + end
         for _ in 0..<old.count { proxy.deleteBackward() }
         proxy.insertText(insert)
         Diag.edits += old.count + 1
@@ -468,7 +486,7 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
             saveLanguage(); refresh()
         }
         lastCorrection = recordUndo ? (old, insert) : nil
-        lastSpace = now
+        lastSpace = end == " " ? now : 0
         clearWord()
         afterEdit(deleted: old.count, inserted: insert)
     }

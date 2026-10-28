@@ -92,6 +92,24 @@ final class KeyboardPerformanceTests: XCTestCase {
         XCTAssertTrue(p.text.hasSuffix("teh "), "kept: \(p.text)")
     }
 
+    func testContractions() {
+        let (vc, p) = makeKeyboard()
+        vc.setLanguageForTests(0)
+        type("i dont know youre ill. ", into: vc)       // "ill" is a word: stays
+        XCTAssertEqual(p.text, "I don't know you're ill. ")
+        type("Ill be there, cant", into: vc)              // capital I: "I'll"
+        vc.keyboard(sender, didTap: .char("!"))
+        XCTAssertTrue(p.text.hasSuffix("I'll be there, can't!"), p.text)
+        vc.keyboard(sender, didTap: .backspace)           // right after: undo the fix
+        XCTAssertTrue(p.text.hasSuffix("I'll be there, cant"), p.text)
+        // Vietnamese mode: a real word stays, an English contraction still gets fixed
+        p.text = ""; vc.setLanguageForTests(1)
+        type(" im lawngj ", into: vc)
+        XCTAssertTrue(p.text.hasSuffix(" im lặng "), p.text)
+        type("thats ", into: vc)
+        XCTAssertTrue(p.text.hasSuffix("that's "), p.text)
+    }
+
     func testAutoCorrectLeavesRealWordsAndShorthand() {
         let (vc, p) = makeKeyboard()
         // clean mixed typing must come out exactly as typed: no correction of real words / VN shorthand

@@ -138,3 +138,6 @@ int VKCompletions(const char *prefix, int vietnamese, VKCandidate *out, int max)
     for (int i = 1; i < count; i++) for (int j = i; j > 0 && out[j].score > out[j - 1].score; j--) { VKCandidate t = out[j]; out[j] = out[j - 1]; out[j - 1] = t; }
     return count;
 }
+
+bool VKIsVietnameseSpelling(const char *letters) { return vAutoSwitchIsVietnameseSpelling(letters); }
+bool VKIsWord(int vietnamese, const char *letters) { return vAutoSwitchWordScore(vietnamese, letters, nullptr, nullptr) > -1000; }
