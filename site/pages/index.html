@@ -15,11 +15,10 @@
 <div class="stage">
 <img class="pop zoom" src="/assets/shots/main.png" width="460" height="605" alt="Cửa sổ Vikey: chuyển Tiếng Việt/English, phím tắt, tự chuyển, kiểu đặt dấu">
 <div class="demo" aria-label="Minh hoạ: gõ lẫn tiếng Anh và tiếng Việt, Vikey tự chuyển">
-<div class="demo-bar"><span class="dots"><i></i><i></i><i></i></span><span class="demo-title">Tin nhắn</span><span class="toast" id="toast"></span><span class="vk" id="vk" title="Chế độ hiện tại">V</span></div>
+<div class="demo-bar"><span class="dots"><i></i><i></i><i></i></span><span class="demo-title">Tin nhắn</span><span class="vk" id="vk" title="Chế độ hiện tại">V</span></div>
 <div class="demo-body">
-<div class="row"><span class="lbl">Phím bạn gõ</span><code class="keys" id="keys"></code></div>
 <div class="row plain"><span class="lbl">Bộ gõ thông thường</span><div class="txt" id="plain"></div></div>
-<div class="row vikey"><span class="lbl">Vikey</span><div class="txt" id="out"></div></div>
+<div class="row vikey"><span class="lbl brandlbl"><img src="/assets/icon.png" alt="" width="16" height="16">Vikey</span><div class="txt" id="out"></div></div>
 </div>
 </div>
 </div>
@@ -36,15 +35,15 @@ lb.addEventListener("click",closeLb);addEventListener("keydown",e=>{if(e.key==="
 // Typing demo: every frame was produced by the real engine, one keystroke at a time (Vikey, and plain Telex for comparison).
 (async()=>{
  const scenes=await (await fetch(document.querySelector('link[data-demo]').href)).json();
- const $=id=>document.getElementById(id),keys=$("keys"),out=$("out"),plain=$("plain"),vk=$("vk"),toast=$("toast");
+ const $=id=>document.getElementById(id),out=$("out"),plain=$("plain"),vk=$("vk");
  const wait=ms=>new Promise(r=>setTimeout(r,ms));
  const esc=t=>t.replace(/&/g,"&amp;").replace(/</g,"&lt;");
  const setLang=(l,announce)=>{vk.textContent=l?"V":"E";vk.classList.toggle("en",!l);
-  if(announce){toast.textContent=l?"→ Tiếng Việt":"→ English";toast.classList.remove("show");void toast.offsetWidth;toast.classList.add("show");vk.classList.remove("flip");void vk.offsetWidth;vk.classList.add("flip")}};
+  if(announce){vk.classList.remove("flip");void vk.offsetWidth;vk.classList.add("flip")}};
  const caret='<span class="caret"></span>';
  // mark the words where plain Telex and Vikey disagree
  const marked=(a,b,cls)=>{const wa=a.split(" "),wb=b.split(" ");return wa.map((w,i)=>w&&w!==wb[i]?`<mark class="${cls}">${esc(w)}</mark>`:esc(w)).join(" ")};
- const show=(f,done)=>{keys.textContent=f?f.k:"";
+ const show=(f,done)=>{
   if(!f){out.innerHTML=caret;plain.innerHTML="";return}
   out.innerHTML=(done?marked(f.v,f.p,"good"):esc(f.v))+(done?"":caret);
   plain.innerHTML=done?marked(f.p,f.v,"bad"):esc(f.p)};
@@ -53,7 +52,7 @@ lb.addEventListener("click",closeLb);addEventListener("keydown",e=>{if(e.key==="
  for(;;){for(const s of scenes){
   show(null);setLang(s.start,false);await wait(900);
   let lang=s.start,k="";
-  for(const [c,v,l,p] of s.frames){k+=c;show({k,v,p},false);if(l!==lang){setLang(l,true);lang=l;await wait(650)}await wait(c===" "?240:85+Math.random()*55)}
+  for(const [c,v,l,p] of s.frames){k+=c;show({k,v,p},false);if(l!==lang){setLang(l,true);lang=l}await wait(c===" "?240:85+Math.random()*55)}
   const f=s.frames[s.frames.length-1];show({k,v:f[1],p:f[3]},true);
   await wait(3200)}}
 })();
