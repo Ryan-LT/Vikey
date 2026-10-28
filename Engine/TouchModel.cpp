@@ -16,6 +16,7 @@ float TouchModel::sureZone = 0.8f;
 float TouchModel::modeShare = 0.8f;
 float TouchModel::correctMargin = 1.0f;
 float TouchModel::correctFloor = -2.0f;
+float TouchModel::deleteCost = -7.0f;   // -6 broke matcha→match, repost→repos (VietMix); -7 keeps 30%+ of real typos fixed
 float TouchModel::correctFloorLong = -4.0f;   // tuned on GitHub/Birkbeck typos vs ViLexNorm/ViCTSD (D26)
 
 /** P(next letter | prefix), mixing both languages by mode; smoothed so no letter is impossible. */
@@ -121,7 +122,7 @@ int TouchModel::candidates(const char* typed, const float* tx, const float* ty, 
         // deletion: an extra key (never down to a 1–2 letter word: usd -> us, kpi -> ki)
         if (L > 3) {
             int j = 0; for (int k = 0; k < L; k++) if (k != i) w[j++] = typed[k]; w[j] = 0;
-            addCandidate(w, -6.0, vietnamese, out, count, max);
+            addCandidate(w, TouchModel::deleteCost, vietnamese, out, count, max);
         }
         // transposition
         if (i + 1 < L && typed[i] != typed[i + 1]) {

@@ -17,6 +17,7 @@ int vLanguage = 1, vSwitchKeyStatus = 0, vCheckSpelling = 1, vUseModernOrthograp
     vFixRecommendBrowser = 1, vUseSmartSwitchKey = 1, vOtherLanguage = 1, vAutoSwitchByTyping = 1;
 
 int main(int argc, char** argv) {
+    if (getenv("TOUCH_DELETE")) TouchModel::deleteCost = atof(getenv("TOUCH_DELETE"));
     if (getenv("TOUCH_FLOOR_LONG")) TouchModel::correctFloorLong = atof(getenv("TOUCH_FLOOR_LONG"));
     static std::string keepEnv;
     if (getenv("TOUCH_KEEP")) { FILE* kf = fopen(getenv("TOUCH_KEEP"), "r"); char kb[256]; while (kf && fgets(kb, sizeof kb, kf)) keepEnv += kb; if (kf) fclose(kf); TouchModel::keepWords = keepEnv.c_str(); }
