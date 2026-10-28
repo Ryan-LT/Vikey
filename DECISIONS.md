@@ -23,6 +23,39 @@ If every listed change is intended, accept them with `Tools/autoswitch/check.sh 
 
 ---
 
+## 13. Catch "thí makes" one word sooner
+
+**Status:** Done 2026-10-28. In the engine and on the website demo.
+
+**Asked by Tony.** "Can we detect this sooner? Ideally correct at 'thí makes'. Currently I type 'thí makes' and 'thí' is still not changed."
+
+**Rule (D13).** A word that looks the same in both modes but is English-only ("makes"), right after an ambiguous word that stayed Vietnamese ("thí", which reads as "this"), means the pair is English. Vikey switches at "makes" and fixes "thí" → "this".
+- It fires only when the immediately preceding word is ambiguous and its English reading is at least AS_PLAIN_MARGIN = 15 points (about 30×) more common than its Vietnamese one. "this" vs "thí" clears that by 20.
+
+**Measured**
+
+| Setting | Chat: wrong words with no manual switching | Viblo: manual switches |
+|---|---|---|
+| Margin 0 | 0.49% → 0.42% | 16 more (Vietnamese words before a tech term like "… token", "… file") |
+| Margin 15 (chosen) | 0.49% → 0.46% | 2,116 → 2,117 |
+
+**Bug found and fixed.** After leaving Vietnamese mode at a comma, the engine's "the next word starts after punctuation" flag survived the round trip through English mode. So the first word after switching back was not checked ("em đang tét"). `vAutoSwitchForget()` now resets it.
+
+**Rule lock.** D13 cases were added. The golden diffs were reviewed:
+- six chat lines improve: "call thí Sunday" → "this Sunday", "há tô many changes" → "has too many changes";
+- one line keeps the rare "bừ" typed as keys.
+
+**Website demo examples (Tony: "too many server examples, be creative").** Five scenes, each one broken by plain Telex:
+- merge → mẻge;
+- issue → isue;
+- "this makes sense" → "thí makes sến";
+- version → veión;
+- English mode by mistake: "toois nay mifnh deploy leen production nhes".
+
+**Known.** "pair" in Vietnamese mode stays "pải", because the subtitle word list contains the misspelling "pải" (of "phải") with a low score. The fix for later is cleaning typo-like rare syllables out of the Vietnamese list.
+
+---
+
 ## 12. Typing log is an opt-in debug feature; credits in the About window
 
 **Status:** Done 2026-10-28 and released as 1.0.1.

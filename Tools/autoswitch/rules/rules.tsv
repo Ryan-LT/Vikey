@@ -52,3 +52,5 @@ D8.2	1	analytics dashboard 	analytics dashboard 	0	unknown foreign word restores
 D9	1	tooi thicsh lanwm 	tôi thích lanwm 	1	Vietnamese typo (has ă/â/ơ/ư/đ marks) never switches the language (shown as typed keys: D10 restore-if-invalid is on)
 D10	1	khoongg 	khoongg 	1	an invalid word is kept as typed keys without switching (restore-if-invalid, on by default); stays Vietnamese
 D10	1	windoows 	windoows 	0	a multi-syllable invalid word counts as a foreign word: kept as typed, switches to English
+D13	1	this makes 	this makes 	0	an English-only word right after an ambiguous one ("thí") switches at once and fixes it (Tony)
+D13	1	tooi thaays bee app bij loix 	tôi thấy bê app bị lõi 	1	Vietnamese followed by a tech word does not switch (the earlier word is not ambiguous enough)

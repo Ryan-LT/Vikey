@@ -1187,6 +1187,9 @@ static bool _asWordStartOk = true;   //the current word began after a space, Ent
 #ifndef AS_LOOKBACK_WORDS
 #define AS_LOOKBACK_WORDS 2
 #endif
+#ifndef AS_PLAIN_MARGIN
+#define AS_PLAIN_MARGIN 15    //"thí makes": the earlier word must read English ~30x more often than Vietnamese (this vs thí)
+#endif
 #ifndef AS_LOOKBACK_MARGIN
 #define AS_LOOKBACK_MARGIN 10
 #endif
@@ -1202,7 +1205,10 @@ struct AsWord {
 static AsWord _asPrev[AS_LOOKBACK_WORDS];
 static int _asPrevCount = 0;
 
-void vAutoSwitchForget() { _asPrevCount = 0; }
+void vAutoSwitchForget() {
+    _asPrevCount = 0;
+    _asWordStartOk = true;   //a fresh context (language switched, app changed): the next word stands on its own
+}
 
 static void asInitLetters() {
     if (_asLetterReady) return;
@@ -1326,7 +1332,22 @@ static bool asShouldRestoreToEnglish() {
     if (_stateIndex < 2 || _stateIndex < _index) return false;
     char word[AS_KEY_LEN], raw[AS_KEY_LEN];
     bool transformed;
-    if (!asWordKey(word, transformed) || !transformed) return false;
+    if (!asWordKey(word, transformed)) return false;
+    if (!transformed) {
+#ifndef AS_PLAIN_AFTER_AMBIGUOUS
+#define AS_PLAIN_AFTER_AMBIGUOUS 1
+#endif
+#if AS_PLAIN_AFTER_AMBIGUOUS
+        //An English-only word that looks the same in both modes ("makes") right after an ambiguous word that
+        //stayed Vietnamese ("thí" = this): together they are English. Switch now and fix the earlier word.
+        if (_asPrevCount < 1 || !_asPrev[0].lookbackOk || _asPrev[0].same) return false;
+        if (_asPrev[0].en < _asPrev[0].vn + AS_PLAIN_MARGIN) return false;   //the earlier word must lean English
+        if (!asRawWord(KeyStates, _stateIndex, raw)) return false;
+        return asEnglishScore(raw) != AS_MISSING && asVietnameseScore(raw) == AS_MISSING;
+#else
+        return false;
+#endif
+    }
     if (!asRawWord(KeyStates, _stateIndex, raw)) return false;
     int en = asEnglishScore(raw);
     int vn = asVietnameseScore(word);
