@@ -34,25 +34,21 @@ static vector<Uint8> _macroBreakCode = {
 
 static Uint16 ProcessingChar[][11] = {
     {KEY_S, KEY_F, KEY_R, KEY_X, KEY_J, KEY_A, KEY_O, KEY_E, KEY_W, KEY_D, KEY_Z}, //Telex
-    {KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_6, KEY_7, KEY_8, KEY_9, KEY_0}, //VNI
     {KEY_S, KEY_F, KEY_R, KEY_X, KEY_J, KEY_A, KEY_O, KEY_E, KEY_W, KEY_D, KEY_Z}, //Simple Telex 1
     {KEY_S, KEY_F, KEY_R, KEY_X, KEY_J, KEY_A, KEY_O, KEY_E, KEY_W, KEY_D, KEY_Z} //Simple Telex 2
 };
 
 #define IS_KEY_Z(key) (ProcessingChar[vInputType][10] == key)
 #define IS_KEY_D(key) (ProcessingChar[vInputType][9] == key)
-#define IS_KEY_W(key) ((vInputType != vVNI) ? ProcessingChar[vInputType][8] == key : \
-                                    (vInputType == vVNI ? (ProcessingChar[vInputType][8] == key || ProcessingChar[vInputType][7] == key) : false))
-#define IS_KEY_DOUBLE(key) ((vInputType != vVNI) ? (ProcessingChar[vInputType][5] == key || ProcessingChar[vInputType][6] == key || ProcessingChar[vInputType][7] == key) :\
-                                        (vInputType == vVNI ? ProcessingChar[vInputType][6] == key : false))
+#define IS_KEY_W(key) (ProcessingChar[vInputType][8] == key)
+#define IS_KEY_DOUBLE(key) (ProcessingChar[vInputType][5] == key || ProcessingChar[vInputType][6] == key || ProcessingChar[vInputType][7] == key)
 #define IS_KEY_S(key) (ProcessingChar[vInputType][0] == key)
 #define IS_KEY_F(key) (ProcessingChar[vInputType][1] == key)
 #define IS_KEY_R(key) (ProcessingChar[vInputType][2] == key)
 #define IS_KEY_X(key) (ProcessingChar[vInputType][3] == key)
 #define IS_KEY_J(key) (ProcessingChar[vInputType][4] == key)
 
-#define IS_MARK_KEY(keyCode) (((vInputType != vVNI) && (keyCode == KEY_S || keyCode == KEY_F || keyCode == KEY_R || keyCode == KEY_J || keyCode == KEY_X)) || \
-                                        (vInputType == vVNI && (keyCode == KEY_1 || keyCode == KEY_2 || keyCode == KEY_3 || keyCode == KEY_5 || keyCode == KEY_4)))
+#define IS_MARK_KEY(keyCode) (keyCode == KEY_S || keyCode == KEY_F || keyCode == KEY_R || keyCode == KEY_J || keyCode == KEY_X)
 #define IS_BRACKET_KEY(key) (key == KEY_LEFT_BRACKET || key == KEY_RIGHT_BRACKET)
 
 #define VSI vowelStartIndex
@@ -1143,16 +1139,7 @@ void handleMainKey(const Uint16& data, const bool& isCaps) {
     }
     
     //check Vowel
-    if (vInputType == vVNI) {
-        for (i = _index-1; i >= 0; i--) {
-            if (CHR(i) == KEY_O || CHR(i) == KEY_A || CHR(i) == KEY_E) {
-                VEI = i;
-                break;
-            }
-        }
-    }
-    
-    keyForAEO = ((vInputType != vVNI) ? data : ((data == KEY_7 || data == KEY_8 ? KEY_W : (data == KEY_6 ? TypingWord[VEI] : data))));
+    keyForAEO = data;
     vector<vector<Uint16>>& charset = _vowel[keyForAEO];
     isCorect = false;
     isChanged = false;
@@ -1168,16 +1155,6 @@ void handleMainKey(const Uint16& data, const bool& isCaps) {
             if (IS_KEY_DOUBLE(data)) {
                 insertAOE(keyForAEO, isCaps);
             } else if (IS_KEY_W(data)) {
-                if (vInputType == vVNI) {
-                    for (j = _index-1; j >= 0; j--) {
-                        if (CHR(j) == KEY_O || CHR(j) == KEY_U ||CHR(j) == KEY_A || CHR(j) == KEY_E) {
-                            VEI = j;
-                            break;
-                        }
-                    }
-                    if ((data == KEY_7 && CHR(VEI) == KEY_A && (VEI-1>=0 ? CHR(VEI-1) != KEY_U : true)) || (data == KEY_8 && (CHR(VEI) == KEY_O || CHR(VEI) == KEY_U)))
-                        break;
-                }
                 insertW(keyForAEO, isCaps);
             }
             break;
@@ -1415,7 +1392,7 @@ static bool asRawWord(const Uint32* keys, const int& count, char* out) {
 }
 
 static inline bool asEnabled() {
-    return vAutoSwitchByTyping && vInputType != vVNI;
+    return vAutoSwitchByTyping;
 }
 
 /** Vietnamese mode: a word was ended by a single space and stays Vietnamese. Keep it for look-back. */

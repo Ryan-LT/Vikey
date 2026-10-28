@@ -49,7 +49,8 @@ extern int vLanguage;
 
 /*
  * 0: Telex
- * 1: VNI
+ * 1: Simple Telex 1
+ * 2: Simple Telex 2
  */
 extern int vInputType;
 
