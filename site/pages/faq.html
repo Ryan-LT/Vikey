@@ -1,16 +1,23 @@
 <!-- title: Câu hỏi thường gặp – Vikey -->
-<!-- description: Vikey có miễn phí không, khác gì OpenKey, tự chuyển hoạt động thế nào, Vikey có gửi dữ liệu đi đâu không. -->
+<!-- description: Vikey có miễn phí không, tự chuyển Anh/Việt hoạt động thế nào, chính xác cỡ nào, gõ sai thì sửa ra sao, Vikey có gửi dữ liệu đi đâu không. -->
 <main class="wrap prose">
 <h1>Câu hỏi thường gặp</h1>
 <div class="faq">
 <details open><summary>Vikey có miễn phí không?</summary><p>Có. Vikey miễn phí và mã nguồn mở theo giấy phép GPL-3.0. Mã nguồn ở <a href="https://github.com/tonyminibot/Vikey">GitHub</a>.</p></details>
-<details><summary>Tự chuyển Anh/Việt hoạt động thế nào?</summary><p>Khi bạn gõ xong một từ, Vikey kiểm tra các phím vừa gõ là từ tiếng Anh hay từ tiếng Việt gõ bằng Telex. Ví dụ đang ở English, "truowfng" không phải từ tiếng Anh nhưng gõ Telex ra "trường", nên Vikey sửa thành "trường" và chuyển sang Tiếng Việt. Từ nào có nghĩa ở cả hai ngôn ngữ thì Vikey giữ nguyên chế độ đang dùng.</p></details>
-<details><summary>Vikey tự sửa sai thì sao?</summary><p>Bấm Delete ngay sau đó. Vikey trả lại đúng phím bạn đã gõ và quay về ngôn ngữ trước.</p></details>
-<details><summary>Vikey khác gì OpenKey?</summary><p>Vikey được làm tiếp từ OpenKey của Tuyen Mai. Vikey thêm tự chuyển Anh/Việt, nhớ ngôn ngữ cho từng trang web và giao diện mới. Vikey cũng sửa lỗi đang gõ thì không ra dấu, phải mở lại app. Vikey chỉ giữ kiểu gõ Telex và bảng mã Unicode.</p></details>
-<details><summary>Có kiểu gõ VNI không?</summary><p>Không. Vikey chỉ hỗ trợ Telex.</p></details>
+<details><summary>Tự chuyển Anh/Việt hoạt động thế nào?</summary><p>Mỗi khi bạn gõ xong một từ, Vikey xem các phím vừa gõ là từ tiếng Anh hay từ tiếng Việt gõ bằng Telex, rồi sửa từ đó và chuyển chế độ nếu cần.</p><ul><li>Đang ở Tiếng Việt, gõ "sorry" ra "sory", Vikey sửa thành "sorry" và chuyển sang English.</li><li>Đang ở English, gõ "truowfng", Vikey sửa thành "trường" và chuyển sang Tiếng Việt.</li></ul><p>Từ nào có nghĩa ở cả hai ngôn ngữ thì Vikey xét độ phổ biến của mỗi từ và các từ đứng cạnh. Ví dụ "cos" thường là "có", còn "video call thí" là "video call this".</p></details>
+<details><summary>Chính xác tới 99.3% nghĩa là gì?</summary><p>Vikey được chạy thử với gần 2 triệu từ: tin nhắn, bài viết, bình luận diễn đàn và tin tức, cả tiếng Việt, tiếng Anh lẫn trộn hai thứ tiếng. Người gõ không bao giờ tự bấm chuyển. Ít nhất 99.3% số từ ra đúng. Với văn bản trộn hai thứ tiếng, bộ gõ Telex thông thường chỉ đạt khoảng 96,5–99%.</p></details>
+<details><summary>Vikey sửa sai thì làm sao?</summary><p>Bấm phím Xoá (Delete) ngay sau đó. Vikey trả lại đúng các phím bạn đã gõ và quay về ngôn ngữ trước. Nếu Vikey vừa sửa nhiều từ cùng lúc, phím Xoá chỉ xoá một ký tự như bình thường.</p></details>
+<details><summary>Tôi tự bấm chuyển Anh/Việt thì sao?</summary><p>Vikey chuyển ngay, rồi tạm dừng tự chuyển trong 5 giây để giữ đúng lựa chọn của bạn. Có thể tắt trong cửa sổ Vikey (Tạm dừng 5 giây sau khi chuyển tay). Phím chuyển mặc định là ⌥Z.</p></details>
+<details><summary>Bấm phím dấu hai lần thì sao?</summary><p>Giống bộ gõ Telex quen thuộc: v e r r ra "ver", và Vikey chuyển sang English. Khi gõ xong từ, Vikey sửa lại nếu cần: "terrible", "sorry", "issue" vẫn ra đúng.</p></details>
+<details><summary>Vikey có nhớ ngôn ngữ cho từng ứng dụng không?</summary><p>Có. Vikey nhớ bạn dùng tiếng Anh hay tiếng Việt ở mỗi ứng dụng, ví dụ Terminal luôn English, Zalo luôn Tiếng Việt. Bật "Nhớ riêng cho từng trang web" để nhớ riêng từng trang trong Safari, Chrome, Edge, Brave, Arc, Vivaldi và Opera. Tuỳ chọn này tắt sẵn vì cần quyền đọc địa chỉ tab đang mở.</p></details>
+<details><summary>Có kiểu gõ VNI không?</summary><p>Không. Vikey chỉ hỗ trợ kiểu gõ Telex và bảng mã Unicode.</p></details>
+<details><summary>Dùng bàn phím Dvorak, Colemak hay AZERTY được không?</summary><p>Được. Vikey tự nhận ra bố cục bàn phím, nên bạn gõ Telex theo đúng chữ in trên phím như bình thường. Khi bạn dùng bộ gõ của ngôn ngữ khác, như tiếng Nhật hay tiếng Trung, Vikey tự đứng ngoài.</p></details>
+<details><summary>Vikey có làm chậm máy không?</summary><p>Không. Vikey chỉ kiểm tra khi bạn gõ xong một từ, mất khoảng một phần triệu giây, và không đọc file hay kết nối mạng khi bạn gõ.</p></details>
+<details><summary>Vikey có tự cập nhật không?</summary><p>Có. Mỗi ngày Vikey kiểm tra bản mới trên vikey.app, tự tải về và cài khi bạn thoát Vikey. Muốn kiểm tra ngay, chọn "Kiểm tra cập nhật…" trong menu. Có thể tắt tự động cập nhật trong cửa sổ Vikey.</p></details>
 <details><summary>Vì sao Vikey cần quyền Trợ năng?</summary><p>macOS chỉ cho ứng dụng có quyền Trợ năng (Accessibility) đọc phím bạn gõ và thay bằng chữ có dấu. Mọi thứ xử lý ngay trên máy bạn.</p></details>
-<details><summary>Vikey có gửi những gì tôi gõ đi đâu không?</summary><p>Không. Vikey không kết nối mạng. Xem <a href="/privacy">quyền riêng tư</a>.</p></details>
-<details><summary>Dùng OpenKey trước đó, có phải cài đặt lại không?</summary><p>Không. Lần đầu mở, Vikey tự lấy phím tắt, ngôn ngữ đã nhớ cho từng ứng dụng và trang web từ OpenKey. Nhớ thoát OpenKey trước khi dùng Vikey.</p></details>
+<details><summary>Vikey có gửi những gì tôi gõ đi đâu không?</summary><p>Không. Phím bạn gõ không bao giờ rời khỏi máy. Vikey chỉ kết nối mạng để kiểm tra bản cập nhật. Xem <a href="/privacy">quyền riêng tư</a>.</p></details>
+<details><summary>Ai làm Vikey?</summary><p>Tony Dinh. Vikey được phát triển tiếp từ OpenKey, bộ gõ mã nguồn mở của Tuyen Mai. Nếu bạn đang dùng OpenKey, Vikey tự lấy phím tắt và ngôn ngữ đã nhớ cho từng ứng dụng ở lần mở đầu tiên. Nhớ thoát OpenKey trước khi dùng Vikey.</p></details>
+<details><summary>Báo lỗi ở đâu?</summary><p>Ở <a href="https://github.com/tonyminibot/Vikey/issues">GitHub Issues</a>. Ghi lại phím bạn đã gõ, chữ hiện ra và chữ bạn muốn.</p></details>
 <details><summary>Gỡ Vikey thế nào?</summary><p>Thoát Vikey từ thanh menu rồi kéo Vikey từ Applications vào Thùng rác.</p></details>
 </div>
 </main>
