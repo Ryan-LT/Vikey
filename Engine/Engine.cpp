@@ -1333,6 +1333,7 @@ static Uint32 _asDoubleKeys[MAX_BUFF];   //the keys of the word a doubled tone k
 static int _asDoubleCount = 0;
 static int _asDoubleFirst = -1;      //where the first press is in _asDoubleKeys
 static bool _asDoubleBoth = false;   //both presses are on screen
+static bool asFewCapitals(const Uint32* keys, const int& count);
 static bool _asApostrophe = false;   //the word ends at an apostrophe: allow contraction stems
 
 static bool asShouldRestoreToEnglish() {
@@ -1383,6 +1384,24 @@ static bool asShouldRestoreToEnglish() {
     if (!asRawWord(KeyStates, _stateIndex, raw)) return false;
     int en = asEnglishScore(raw);
     int vn = asVietnameseScore(word);
+#ifndef AS_ACRONYM
+#define AS_ACRONYM 1
+#endif
+#ifndef AS_ACRONYM_VN
+#define AS_ACRONYM_VN 5     //below ~3 per million: tuned on Tinhte (acronyms) vs all-caps Vietnamese news
+#endif
+#if AS_ACRONYM
+    //2+ capitals (NAS, HDD, SATA, GoPro) that Telex turned into a rare or invalid syllable: an acronym or a name (D23)
+    if (!asFewCapitals(KeyStates, _stateIndex) && (vn == AS_MISSING || vn < AS_ACRONYM_VN)) {
+        bool vowelChanged = false;   //Vietnamese acronyms only have đ changed (VĐV, HĐND, BĐS): they stay
+        for (int x = 0; x < _index; x++) {
+            char c = asLetterOf(TypingWord[x]);
+            if ((c == 'a' || c == 'e' || c == 'i' || c == 'o' || c == 'u' || c == 'y') && (TypingWord[x] & (MARK_MASK | TONE_MASK | TONEW_MASK)))
+                vowelChanged = true;
+        }
+        if (vowelChanged) return true;
+    }
+#endif
     if (en == AS_MISSING && _asApostrophe) {             //a contraction stem: doesn't, isn't, wasn't -> is it "does" + n?
         size_t n = strlen(raw);
         if (n >= 3 && raw[n - 1] == 'n') { raw[n - 1] = 0; en = asEnglishScore(raw); raw[n - 1] = 'n'; }
@@ -1428,6 +1447,20 @@ static bool asShouldRestoreToEnglish() {
         _asPrev[0].same && _asPrev[0].en != AS_MISSING && _asPrev[0].vn == AS_MISSING)
         return true;   //"video call thí" -> "this"
     return vn == AS_MISSING || (vn < AS_VN_FLOOR && en - vn >= AS_PREFER) || en - vn >= AS_VN_EXTREME;
+}
+
+/** Before a hyphen: a rare w-word ("ưi") starts an English compound ("Wi-Fi", D23). */
+static bool asHyphenRestore() {
+    if (!asEnabled() || !_asWordStartOk || _stateIndex < 2 || _stateIndex < _index) return false;
+    asInitLetters();
+    char word[AS_KEY_LEN];
+    bool transformed;
+    bool ok = asWordKey(word, transformed);
+    if (!ok || !transformed) return false;
+    //only words starting with w (Telex "ư"): "nơ-ron", "rơ-moóc", "táp-lô" are Vietnamese loanwords
+    if (asLetterOf(KeyStates[0]) != 'w') return false;
+    int vn = asVietnameseScore(word);
+    return vn == AS_MISSING || vn < AS_VN_FLOOR;
 }
 
 /** Puts the raw keys back (like "restore if wrong spelling") and asks for English.
@@ -1567,13 +1600,24 @@ bool vAutoSwitchCheckEnglishWord(const Uint32* keys, const int& count,
     if (!asEnabled() || count < 2 || count >= MAX_BUFF - 1) return false;
     asInitLetters();
     char raw[AS_KEY_LEN];
-    if (!asRawWord(keys, count, raw) || !asFewCapitals(keys, count)) return false;
+    if (!asRawWord(keys, count, raw)) return false;
+    //2+ capitals: acronyms and identifiers stay as typed. All capitals (Caps Lock Vietnamese, "COONG") may still
+    //convert, but only to a common syllable and never when the keys are English (USA, EST stay): D23
+    bool allCaps = true;
+    for (int x = 0; x < count; x++) if (!(keys[x] & CAPS_MASK)) allCaps = false;
+    if (!asFewCapitals(keys, count) && !allCaps) return false;
     int en = asEnglishScore(raw);
 
     Uint32 result[MAX_BUFF];
     int resultCount;
     int vn = asReplay(keys, count, result, resultCount);
     if (vn == AS_MISSING || !(en == AS_MISSING || (en < AS_EN_FLOOR && vn - en >= AS_PREFER))) return false;
+    if (count > 1 && allCaps && (en != AS_MISSING || vn < AS_VN_FLOOR)) return false;
+    if (count > 1 && allCaps) {   //only inside a run of capitals (Caps Lock on): a lone HW, CWS stays
+        bool prevCaps = previousN >= 1 && previousCounts[0] >= 2;
+        for (int x = 0; prevCaps && x < previousCounts[0]; x++) if (!(previous[0][x] & CAPS_MASK)) prevCaps = false;
+        if (!prevCaps) return false;
+    }
     //a tie right after a clearly English word stays English ("the theme", "of rust"): D22
     if (en != AS_MISSING && previousN >= 1 && previousCounts[0] >= 1) {
         char praw[AS_KEY_LEN];
@@ -1655,7 +1699,8 @@ void vKeyHandleEvent(const vKeyEvent& event,
         hExt = 1; //word break
         
         _asApostrophe = data == KEY_QUOTE && capsStatus != 1;
-        bool asSwitch = asIsSwitchBreak(event, data, capsStatus, otherControlKey) && asShouldRestoreToEnglish();
+        bool asSwitch = (asIsSwitchBreak(event, data, capsStatus, otherControlKey) && asShouldRestoreToEnglish()) ||
+                        (data == KEY_MINUS && capsStatus != 1 && !otherControlKey && asHyphenRestore());
         _asApostrophe = false;
         if (asSwitch) {
             asRestoreToEnglish(vRestoreAndStartNewSession); //auto switch: an English word typed in Vietnamese mode
@@ -1870,6 +1915,7 @@ bool vAutoSwitchFixDoubledKey(const Uint32* keys, const int& count) {
     int fixedCount;
     if (_asDoubleBoth && !enFull && enSingle) { fixed = single; fixedCount = m; }            //"mixx" -> "mix"
     else if (!_asDoubleBoth && enFull && !enSingle) { fixed = full; fixedCount = total; }   //"terible" -> "terrible"
+    else if (!_asDoubleBoth && !enSingle && !asFewCapitals(full, total)) { fixed = full; fixedCount = total; }   //ASUS, not "AUS"
     else return false;
     if (fixedCount < 1) return false;
     vAutoSwitchUndoCount = 0;   //Backspace right after puts back what was on screen

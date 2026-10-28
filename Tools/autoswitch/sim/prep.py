@@ -44,7 +44,9 @@ def telex(word):
         else:
             last_vowel = max(i for i, (k, v) in enumerate(letters) if v)
             keys[last_vowel] += tone
-    return ''.join(keys)
+    out = ''.join(keys)
+    if len(word) > 1 and word.isupper(): out = out.upper()   # all caps: typed with Caps Lock, modifier keys too
+    return out
 
 VN_CHARS = re.compile(r'[^\x00-\x7f]')
 TYPO_RATE = float(sys.argv[sys.argv.index('--typos') + 1]) if '--typos' in sys.argv else 0.0

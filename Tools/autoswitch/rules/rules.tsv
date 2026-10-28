@@ -83,3 +83,11 @@ D22	0	crypto nos volatile 	crypto nó volatile 	1	same: nó vs nos
 D22	0	the theme of rust 	the theme of rust 	0	but never right after a clearly English word (D5.3 kept)
 D22	0	video call cos 	video call cos 	0	same: cos after "call" stays English
 D22	1	video call this 	video call this 	0	VN mode: a tie leaning English (3x+) right after a clearly English word goes English ("thí" -> this)
+D23	1	NAS 	NAS 	0	2+ capitals that Telex made into a rare or invalid syllable: an acronym, keys put back (NÁ -> NAS)
+D23	1	ASUS 	ASUS 	0	same with a doubled tone key: the capitals keep both presses
+D23	1	VDDV HDDND 	VĐV HĐND 	1	Vietnamese acronyms with only đ changed stay Vietnamese
+D23	1	Wi-Fi 	Wi-Fi 	0	before a hyphen, a rare w-word ("Ưi") starts an English compound
+D23	1	now-ron 	nơ-ron 	1	Vietnamese loanword syllables with hyphens stay (nơ-ron)
+D23	0	TOOI DDI HOCJ 	TOOI ĐI HỌC 	1	EN mode, Caps Lock Vietnamese: inside a run of capitals, all-caps words convert to common syllables
+D23	0	USA EST 	USA EST 	0	all-caps English or rare readings never convert
+D23	0	HW 	HW 	0	a lone all-caps word (not in a run of capitals) never converts

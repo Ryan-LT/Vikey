@@ -23,6 +23,20 @@ If every listed change is intended, accept them with `Tools/autoswitch/check.sh 
 
 ---
 
+## 23. Capitals, Caps Lock Vietnamese and Wi-Fi
+
+**Status:** Done 2026-10-28 (1.0.12). Rule cases D23.
+
+**Asked by Tony.** "Check and see if there is any easy win we can do to improve metrics." Found by ranking the wrong words on the new 1.8M-word test data (vikey-data).
+
+**Decided.**
+- VN mode: a word with 2+ capitals that Telex turned into a rare (under ~3 per million) or invalid syllable is an acronym or a name: keys put back and English (NÁ → NAS, HĐ → HDD, ỐM → OSMO). Vietnamese acronyms where only đ changed stay (VĐV, HĐND, BĐS). A doubled tone key in a capitalized word keeps both presses (ASUS, not AUS).
+- EN mode: all-caps words could never convert before, so Caps Lock Vietnamese after any English or unknown word got stuck in English (39% wrong words on an all-caps news test). Now an all-caps word converts when it is inside a run of capitals, the keys are not English, and the syllable is common. A lone HW or CWS stays.
+- Before a hyphen, a rare w-word ("Ưi") starts an English compound: Wi-Fi. Vietnamese loanwords with hyphens (nơ-ron, rơ-moóc) stay.
+- The simulator's text-to-keys tool now types all-caps words with Caps Lock (modifier keys in capitals too).
+
+**Result.** Tinhte wrong words −52% (5,129 → 2,450), Viblo −9%, VnExpress −12%, all-caps news 64,404 → 2,878; English-only sets unchanged. Average no-switch accuracy over the 10 sets: 99.83%.
+
 ## 22. Ties: frequency ratio decides, a clearly English neighbor guards
 
 **Status:** Done 2026-10-28 (1.0.11). Rule cases D22. Tony picked option A.
