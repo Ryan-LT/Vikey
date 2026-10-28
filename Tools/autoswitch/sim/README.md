@@ -20,4 +20,4 @@ clang++ -std=c++17 -O2 -w -DAS_TESTING -I$E -I$E/platforms -o sim sim.cpp $E/Eng
 ./sim chat.units --off      # auto switch off (baseline)
 ```
 
-Compile-time variants for experiments: `-DAS_NO_LOOKBACK`, `-DAS_RESTORE_UNKNOWN=0`, `-DAS_DOUBLE_KEEP`.
+Compile-time variants for experiments: `-DAS_NO_LOOKBACK`, `-DAS_RESTORE_UNKNOWN=0`, `-DAS_DOUBLE_KEEP=0`.

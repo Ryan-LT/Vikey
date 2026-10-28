@@ -9,7 +9,7 @@ Status values: **Shipped** (in a build Tony has), **Agreed** (decided, not built
 
 ## 8. Tuning with a mixed-text typing simulation
 
-**Status:** Built 2026-10-28 and sent as OpenKey-2.0.4-lookback. The double-key change is waiting for Tony.
+**Status:** Built 2026-10-28 and sent as OpenKey-2.0.4-lookback. The double-key change was approved by Tony the same day and shipped in OpenKey-2.0.4-err.
 
 **Reported by Tony.** "I typed 'this makes' in VN mode and got 'thí makes'. Can we correct thí → this?" Then: "Run the engine over a large mixed Vietnamese/English text, key by key, to see how close it gets without manual switching."
 
@@ -38,7 +38,7 @@ With no manual switching at all, wrong words go 9.8% → 1.2% (chat) and 3.2% �
 - **Unknown foreign words.** In VN mode, a word that is neither a real syllable nor in the English list, and fails OpenKey's own spelling rules, is restored and switches to English: TestFlight, analytics, workflow, postgresql. Without the spelling-rule check, rare real syllables like riệt and chịt were wrongly restored. Minimum 3 letters.
 - **Undo moved to Backspace.** This changes decision 5. The simulation showed the hotkey can't mean both "undo that fix" and "the next word is in the other language": after "wifi" was correctly fixed, pressing the hotkey to type "tốt" reverted it to "ừii". Backspace right after an auto-fix now restores the original word and language, like macOS autocorrect. The hotkey is always a plain switch.
 - **"cors gif" in EN mode now becomes "có gì".** Look-back judges the common Vietnamese phrase more likely.
-- **Pending Tony: keep both letters on a double key.** Doubled-letter English words (issue, miss, sorry, pass, office, error, password, traffic) cause about a third of the remaining manual switches, because Telex drops one letter. Keeping both letters when the double key switches to English cuts chat manual switches from 1.51 to 0.95 per 100 words. Tony earlier asked to keep Telex's "er"; the numbers are sent to him for a decision.
+- **Decided by Tony, 2026-10-28: keep both letters on a double key ("let's switch to 'err', I want to try it out").** Doubled-letter English words (issue, miss, sorry, pass, office, error, password, traffic) cause about a third of the remaining manual switches, because Telex drops one letter. Keeping both letters when the double key switches to English cuts chat manual switches from 1.51 to 0.95 per 100 words. This replaces rule 1's earlier "er" output: when the doubled tone key switches to English, it now outputs both letters (err, issue, sorry). Default on, controlled by `AS_DOUBLE_KEEP`.
 - **Bug fixed along the way.** Look-back history is now cleared when the language changes from the menu and on every app switch, so a rewrite can never use stale word lengths.
 
 ---

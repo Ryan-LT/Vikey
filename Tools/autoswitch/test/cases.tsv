@@ -1,8 +1,8 @@
 # start_lang(1=VN,0=EN)	keys ('<' = backspace, '|' = Enter)	expected text	expected final lang
 1	moer 	moẻ 	1
 1	more 	more 	0
-1	err	er	0
-1	boss 	bos 	0
+1	err	err	0
+1	boss 	boss 	0
 1	tooi ddi hocj owr truwowngf ddaij hocj 	tôi đi học ở trường đại học 	1
 1	anh owi, mai minh ddi uoongs cafe nhes. 	anh ơi, mai minh đi uống cafe nhé. 	1
 1	deploy leen server nhes 	deploy lên server nhé 	1
@@ -41,3 +41,5 @@
 1	cais testflight build 	cái testflight build 	0
 0	nos theer 	nó thể 	1
 0	check mail cos theer 	check mail có thể 	1
+1	the issue is sorry error 	the issue is sorry error 	0
+1	check password ok 	check password ok 	0

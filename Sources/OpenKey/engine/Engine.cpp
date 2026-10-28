@@ -1462,6 +1462,9 @@ static bool asShouldRestoreToEnglish() {
     if (!asRawWord(KeyStates, _stateIndex, raw)) return false;
     int en = asEnglishScore(raw);
     int vn = asVietnameseScore(word);
+#ifndef AS_DOUBLE_KEEP
+#define AS_DOUBLE_KEEP 1       //a doubled tone key that switches to English keeps both letters: e r r -> "err" (Tony 2026-10-28)
+#endif
 #ifndef AS_RESTORE_UNKNOWN
 #define AS_RESTORE_UNKNOWN 3   //min letters for restoring a word that is neither Vietnamese nor in the English list
 #endif
@@ -1915,7 +1918,7 @@ void vKeyHandleEvent(const vKeyEvent& event,
             //auto switch: the same tone key pressed twice undoes the tone, a strong sign of English
             if (hCode == vRestore && asEnabled() && IS_MARK_KEY(data)) {
                 vAutoSwitchRequest = 0;
-#ifdef AS_DOUBLE_KEEP
+#if AS_DOUBLE_KEEP
                 //switching to English: keep the first press of the key too ("err", not Telex's "er")
                 if (hNCC < MAX_BUFF - 1) {
                     for (int x = hNCC; x > 0; x--) hData[x] = hData[x - 1];
