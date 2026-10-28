@@ -1980,3 +1980,79 @@ void vAutoSwitchNextKeyMass(const int& vietnamese, const char* prefix, double ou
     int s = asLookup(words, offsets, scores, count, prefix);   //the prefix is a whole word: the word can end here
     out[26] = s == AS_MISSING ? 0 : pow(10.0, s / 10.0);
 }
+
+// ---- Dictionary access for suggestions and auto-correct (D26) ------------------------------------
+
+static Uint16 asKeyOfLetter(char c) {
+    static const Uint16 k[26] = {KEY_A,KEY_B,KEY_C,KEY_D,KEY_E,KEY_F,KEY_G,KEY_H,KEY_I,KEY_J,KEY_K,KEY_L,KEY_M,KEY_N,
+                                 KEY_O,KEY_P,KEY_Q,KEY_R,KEY_S,KEY_T,KEY_U,KEY_V,KEY_W,KEY_X,KEY_Y,KEY_Z};
+    return (c >= 'a' && c <= 'z') ? k[c - 'a'] : 0;
+}
+
+int vAutoSwitchWordScore(const int& vietnamese, const char* letters, Uint16* rendered, int* renderedLen) {
+    int n = (int)strlen(letters);
+    if (rendered && renderedLen) *renderedLen = 0;
+    if (n == 0 || n >= AS_KEY_LEN - 1) return AS_MISSING;
+    asInitLetters();
+    if (!vietnamese) {
+        int s = asEnglishScore(letters);
+        if (s != AS_MISSING && rendered && renderedLen) { for (int i = 0; i < n; i++) rendered[i] = letters[i]; *renderedLen = n; }
+        return s;
+    }
+    Uint32 keys[AS_KEY_LEN], result[MAX_BUFF];
+    for (int i = 0; i < n; i++) { keys[i] = asKeyOfLetter(letters[i]); if (!keys[i] && letters[i] != 'a') return AS_MISSING; }
+    int count = 0;
+    bool changed = false;
+    int vn = asReplay(keys, n, result, count, &changed);
+    if (vn != AS_MISSING) {
+        if (rendered && renderedLen) {
+            for (int i = 0; i < count; i++) rendered[i] = (result[i] & CHAR_CODE_MASK) ? (Uint16)(result[i] & 0xFFFF) : keyCodeToCharacter(result[i]);
+            *renderedLen = count;
+        }
+        return vn;
+    }
+    if (!changed) {                      //plain syllables that look the same in Telex: cho, anh, ban
+        vn = asVietnameseScore(letters);
+        if (vn != AS_MISSING && rendered && renderedLen) { for (int i = 0; i < n; i++) rendered[i] = letters[i]; *renderedLen = n; }
+    }
+    return vn;
+}
+
+int vAutoSwitchCompletions(const int& vietnamese, const char* prefix, char out[][32], int* scores, const int& maxOut) {
+    const char* words = vietnamese ? kAutoSwitchVnWords : kAutoSwitchEnWords;
+    const unsigned int* offsets = vietnamese ? kAutoSwitchVnOffsets : kAutoSwitchEnOffsets;
+    const signed char* sc = vietnamese ? kAutoSwitchVnScores : kAutoSwitchEnScores;
+    int count = vietnamese ? kAutoSwitchVnCount : kAutoSwitchEnCount;
+    int len = (int)strlen(prefix);
+    if (len == 0 || len >= 30) return 0;
+    int a, b;
+    asPrefixRange(words, offsets, count, prefix, len, a, b);
+    int n = 0;
+    for (int i = a; i < b; i++) {
+        int s = sc[i];
+        if (n == maxOut && s <= scores[n - 1]) continue;
+        const char* w = words + offsets[i];
+        if (strlen(w) >= 32) continue;
+        int pos = n < maxOut ? n++ : n - 1;
+        while (pos > 0 && scores[pos - 1] < s) { strcpy(out[pos], out[pos - 1]); scores[pos] = scores[pos - 1]; pos--; }
+        strcpy(out[pos], w); scores[pos] = s;
+    }
+    return n;
+}
+
+bool vAutoSwitchIsVietnameseSpelling(const char* letters) {
+    int n = (int)strlen(letters);
+    if (n == 0 || n >= AS_KEY_LEN - 1) return false;
+    Uint32 keys[AS_KEY_LEN];
+    for (int i = 0; i < n; i++) { keys[i] = asKeyOfLetter(letters[i]); if (!keys[i] && letters[i] != 'a') return false; }
+    AsEngineState saved;
+    asSaveState(saved);
+    _spaceCount = 0;
+    startNewSession();
+    for (int x = 0; x < n; x++) vKeyHandleEvent(vKeyEvent::Keyboard, vKeyEventState::KeyDown, (Uint16)keys[x], 0, false);
+    bool savedTemp = tempDisableKey;
+    checkSpelling(true);
+    bool valid = !tempDisableKey && !savedTemp;
+    asRestoreState(saved);
+    return valid;
+}

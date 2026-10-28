@@ -16,16 +16,33 @@ struct TMKey {
     float x, y, w, h;     // frame, any unit (points)
 };
 
+struct TMCandidate {
+    char letters[32];        // the keys of the word (Telex keys for Vietnamese)
+    unsigned short text[48]; // what it looks like
+    int textLen;
+    int vietnamese;
+    double score;            // log probability (higher is better)
+};
+
 class TouchModel {
 public:
     /** The letter for a touch at (x, y). prefix: letters typed so far in this word (lowercase).
      *  vietnamese: current mode. keys: the letter keys of the layout. */
     static char pick(float x, float y, const char* prefix, int vietnamese, const TMKey* keys, int n);
+    /** Auto-correct: candidates for a finished word, best first (edits of one key, scored by word
+     *  frequency, where each key was touched and the mode). touchX/touchY: one per letter, or null.
+     *  Returns how many (<= max). The typed word itself is included when it is a word. */
+    static int candidates(const char* typed, const float* touchX, const float* touchY, int vietnamese,
+                          const TMKey* keys, int n, TMCandidate* out, int max);
+    /** Whether to replace the typed word with candidates[0] at the space (conservative). */
+    static bool shouldCorrect(const char* typed, const TMCandidate* c, int count);
     // tuning (see Tools/autoswitch/touch: chosen by simulation)
     static float sigma;        // finger spread, in key widths
     static float weight;       // how much the prior counts (0 = nearest key only)
     static float sureZone;     // inside this fraction of a key, the key wins outright
-    static float modeShare;    // share of the current mode's language in the prior (the rest: the other language)
+    static float modeShare;
+    static float correctMargin;
+    static const char* keepWords;  // never "corrected": chat shorthand etc., newline-separated, lowercase  // auto-correct only when the best candidate leads by this much (log)    // share of the current mode's language in the prior (the rest: the other language)
 };
 
 #endif

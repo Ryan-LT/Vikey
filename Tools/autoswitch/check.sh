@@ -33,4 +33,17 @@ ok = model <= 15.0 and model < near * 0.6 and ns < 20000
 print(("fat-finger: ok" if ok else "FAIL fat-finger") + f" (wrong words {near}% -> {model}%, {ns:.0f} ns per touch)")
 sys.exit(0 if ok else 1)
 PY
+# auto-correct: on clean typing it must almost never change a right word; on sloppy typing it must help
+c0=$(TOUCH_CORRECT=1 touch/touchsim $U 0.0 | grep auto-correct)
+c3=$(TOUCH_CORRECT=1 touch/touchsim $U 0.30 | grep auto-correct)
+echo "  clean: $c0"; echo "  sloppy: $c3"
+python3 - "$c0" "$c3" "$out" <<'PY' || rc=1
+import re, sys
+clean = float(re.search(r'([\d.]+)% wrong', sys.argv[1]).group(1))
+sloppy = float(re.search(r'([\d.]+)% wrong', sys.argv[2]).group(1))
+model = float(re.search(r'model ([\d.]+)% wrong', sys.argv[3]).group(1))
+ok = clean <= 0.10 and sloppy < model * 0.75
+print(("auto-correct: ok" if ok else "FAIL auto-correct") + f" (clean typing {clean}% wrong, sloppy {model}% -> {sloppy}%)")
+sys.exit(0 if ok else 1)
+PY
 exit $rc

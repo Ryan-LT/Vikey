@@ -148,6 +148,17 @@ bool vAutoSwitchFixDoubledKey(const Uint32* keys, const int& count);
  */
 void vAutoSwitchNextKeyMass(const int& vietnamese, const char* prefix, double out[27]);
 
+/** Score (10·log10 per million) of the word these letters type: English as typed, or Vietnamese as
+ *  typed in Telex (any tone order). -1000 when it isn't a word. rendered: the word's characters. */
+int vAutoSwitchWordScore(const int& vietnamese, const char* letters, Uint16* rendered, int* renderedLen);
+
+/** The most common dictionary entries starting with prefix (English words, or Vietnamese syllables as
+ *  normalized Telex keys), best first. Returns how many. */
+/** Whether these keys, typed in Telex, spell a valid Vietnamese syllable (spelling rules, not the list). */
+bool vAutoSwitchIsVietnameseSpelling(const char* letters);
+
+int vAutoSwitchCompletions(const int& vietnamese, const char* prefix, char out[][32], int* scores, const int& maxOut);
+
 /**
  * Call this function first to receive data pointer
  */

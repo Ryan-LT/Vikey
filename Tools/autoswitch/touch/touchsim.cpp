@@ -42,6 +42,8 @@ int main(int argc, char** argv) {
         return false; };
     FILE* f = fopen(argv[1], "r"); char line[512];
     double pickNs = 0;
+    bool doCorrect = getenv("TOUCH_CORRECT") != nullptr;
+    long wordErrC = 0, corrections = 0, goodFix = 0, badFix = 0;
     long keysTotal = 0, keyErrN = 0, keyErrM = 0, words = 0, wordErrN = 0, wordErrM = 0, rescued = 0, broken = 0;
     while (fgets(line, sizeof line, f)) {
         if (line[0] != 'W') continue;
@@ -53,6 +55,7 @@ int main(int argc, char** argv) {
         if (word.size() < 1) continue;
         words++;
         std::string decN, decM;
+        std::vector<float> txs, tys;
         for (char c : word) {
             float cx, cy; center(c, cx, cy);
             float x = cx + nx(rng), y = cy + ny(rng);
@@ -60,13 +63,23 @@ int main(int argc, char** argv) {
             auto t0 = std::chrono::steady_clock::now();
             char b = TouchModel::pick(x, y, decM.c_str(), vn, keys.data(), (int)keys.size());
             pickNs += std::chrono::duration<double, std::nano>(std::chrono::steady_clock::now() - t0).count();
-            decN += a; decM += b;
+            decN += a; decM += b; txs.push_back(x); tys.push_back(y);
             keysTotal++; if (a != c) keyErrN++; if (b != c) keyErrM++;
         }
         // the typist types the intended word (with a space): keeps the engine's mode realistic for the next word
         for (char* p = k; *p; p++) { Uint16 kk; bool sh; if (keyOf(*p, kk, sh)) drv.press(kk, sh, 0); }
         { Uint16 kk; bool sh; keyOf(' ', kk, sh); drv.press(kk, sh, 0); }
         bool okN = decN == word, okM = decM == word;
+        int caps = 0; for (char* p = k; *p; p++) if (*p >= 'A' && *p <= 'Z') caps++;
+        if (doCorrect) {
+            std::string fin = decM;
+            if (caps >= 2) { if (fin != word) wordErrC++; goto done; }
+            TMCandidate cand[8];
+            int nc = TouchModel::candidates(decM.c_str(), txs.data(), tys.data(), vn, keys.data(), (int)keys.size(), cand, 8);
+            if (TouchModel::shouldCorrect(decM.c_str(), cand, nc)) { fin = cand[0].letters; corrections++; if (okM) { badFix++; if (getenv("TOUCH_SHOW")) fprintf(stderr, "BROKE %s -> %s\n", decM.c_str(), fin.c_str()); } else if (fin == word) goodFix++; }
+            if (fin != word) wordErrC++;
+        }
+        done:;
         if (!okN) wordErrN++; if (!okM) wordErrM++;
         if (!okN && okM) rescued++; if (okN && !okM) broken++;
     }
@@ -74,4 +87,6 @@ int main(int argc, char** argv) {
            noise, TouchModel::weight, TouchModel::sigma, TouchModel::sureZone, keysTotal, 100.0 * keyErrN / keysTotal, 100.0 * keyErrM / keysTotal,
            words, 100.0 * wordErrN / words, 100.0 * wordErrM / words, rescued, broken);
     printf("pick: %.0f ns per touch on average\n", pickNs / keysTotal);
+    if (doCorrect) printf("auto-correct: %.2f%% wrong words after correction; %ld corrections: %ld fixed a wrong word, %ld broke a right one\n",
+                          100.0 * wordErrC / words, corrections, goodFix, badFix);
 }
