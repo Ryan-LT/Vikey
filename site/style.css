@@ -268,3 +268,12 @@ h1 span{white-space:nowrap}
 @keyframes toast{0%{opacity:0;transform:translateY(4px)}12%,75%{opacity:1;transform:none}100%{opacity:0}}
 .one-r{position:relative}.one-r .pop{position:absolute;right:-10px;bottom:-60px;width:min(220px,34%);border-radius:12px;box-shadow:0 24px 60px -16px rgba(20,40,90,.45),0 0 0 1px rgba(0,0,0,.06);cursor:zoom-in}
 @media(max-width:900px){.one-r .pop{position:static;width:min(320px,80%);margin:28px auto 0}.demo-title{margin-right:0}}
+/* Vikey hero: demo and app window side by side, never overlapping */
+.one-r{display:flex;align-items:center;gap:28px}.one-r .demo{flex:1;min-width:0}
+.one-r .pop{position:static;flex:none;width:min(240px,34%);border-radius:12px;box-shadow:0 24px 60px -16px rgba(20,40,90,.45),0 0 0 1px rgba(0,0,0,.06);cursor:zoom-in}
+.one .lead{max-width:none;text-wrap:balance}
+@media(max-width:900px){.one-r{flex-direction:column;align-items:stretch}.one-r .pop{width:min(300px,80%);margin:8px auto 0}}
+/* the download button stays visible on phones: it leads to /download, which explains Vikey is for Mac */
+@media(max-width:900px){.btn.dl-mac{display:inline-flex!important}}
+/* footer credit line: links inline, not stacked */
+.foot .col p a{display:inline;margin:0;color:var(--muted);text-decoration:underline}

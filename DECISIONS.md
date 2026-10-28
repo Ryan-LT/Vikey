@@ -23,6 +23,46 @@ If every listed change is intended, accept them with `Tools/autoswitch/check.sh 
 
 ---
 
+## 11. vikey.app, open-source release, compact window
+
+**Status:** Done 2026-10-28. Vikey 1.0.0 is public at https://vikey.app and on GitHub Releases.
+
+**Asked by Tony.**
+- Buy vikey.app and make a free, open-source website like clipaudit.app.
+- Add the author Tony Dinh, while still crediting OpenKey by Tuyen Mai.
+- Opening the app while it runs shows the main window.
+- Make the main window smaller and drop the sidebar.
+- Put the history in its own window.
+
+**Decisions**
+
+- **Domain.** vikey.app was registered on the Cloudflare dedicated account ($8.20; renews at $14.20).
+  - Hosting: Pages project "vikey".
+  - www redirects to the apex with a 301.
+  - Always-HTTPS is on.
+- **Website.** Vietnamese, ClipAudit's layout and style, indigo.
+  - **Home hero:** the typing demo is replayed from frames that the real engine produced key by key (`harness frames`), so the site shows exactly what Vikey does.
+  - **Screenshots:** 2x, taken on a BetterDisplay HiDPI virtual screen.
+  - **Pages:** download (DMG plus checksum), changelog, FAQ, privacy.
+  - **Copy review:** reviewed by a subagent (avoid-AI-writing and copywriting rules). That fixed two factual errors: keystroke logging is on by default, and Firefox has no per-site memory.
+  - **Phones:** the download button leads to /download, which explains that Vikey is for Mac.
+- **Release.** `Tools/release/release.sh <version>` runs:
+  1. bump the version;
+  2. the engine rule lock;
+  3. a universal build (arm64 + x86_64);
+  4. sign and notarize the app;
+  5. build the DMG (signed, notarized, stapled);
+  6. site/downloads and release.json;
+  7. the GitHub Release;
+  8. deploy.
+- **App.**
+  - **Window:** one compact window (460 points wide): a language switch on top, then hotkey, auto-switch, typing settings and launch at login, with an author/credit footer.
+  - **History:** the typing history opens in its own window.
+  - **Reopening:** reopening Vikey shows the main window, and opening it by hand also shows the window.
+- **Bug found while taking screenshots.** Letting the window track the SwiftUI content size live crashed AppKit's constraint pass on a HiDPI (Retina) screen. The window is now sized once from the content.
+
+---
+
 ## 10. Vikey: new name, new app, fewer features
 
 **Status:** In progress 2026-10-28.
