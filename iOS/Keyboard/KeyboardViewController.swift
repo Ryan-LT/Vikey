@@ -11,7 +11,10 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
     private let driver = VKDriver()
     private var keyboard: KeyboardView!
     private var heightConstraint: NSLayoutConstraint?
-    private var lastContext: String?          // text before the cursor after our last edit
+    /// Our own copy of the text before the cursor, kept up to date from our edits. Asking the app for it
+    /// is a synchronous cross-process call, so it's only read when iOS says the text changed.
+    private var lastContext: String?
+    private var recentContexts: [String] = []   // states we produced that the app may still be catching up to
     private var lastShiftTap: TimeInterval = 0
     private var lastSpace: TimeInterval = 0
     private var fieldLanguage: Int?           // language to restore after a web/email field
@@ -158,8 +161,11 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
     }
 
     private func externalChange() {
+        let r0 = CACurrentMediaTime()
         let ctx = proxy.documentContextBeforeInput
-        if ctx != lastContext {
+        if Diag.on { KBLog.add(String(format: "text read (iOS said the text changed): %.2fms", (CACurrentMediaTime() - r0) * 1000)) }
+        if let c = ctx, c != lastContext, recentContexts.contains(c) { return }   // the app is catching up with our edits
+        if ctx != lastContext, !Self.sameEnding(ctx ?? "", lastContext ?? "") {
             if Diag.on { KBLog.add("reset: text changed outside the keyboard (cursor moved, or the app changed it)") }
             driver.resetContext()
             lastContext = ctx
@@ -220,7 +226,7 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
         while let last = chars.last, last != " " && last != "\n" { chars.removeLast(); k += 1 }
         for _ in 0..<max(k, 1) { proxy.deleteBackward() }
         driver.resetContext()
-        afterEdit()
+        afterEdit(deleted: max(k, 1), inserted: "")
     }
 
     func keyboard(_ view: KeyboardView, insertAlternate text: String) {
@@ -247,7 +253,7 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
             proxy.insertText(". ")
             driver.resetContext()
             lastSpace = 0
-            afterEdit()
+            afterEdit(deleted: 1, inserted: ". ")
             return
         }
         type(" ")
@@ -280,18 +286,29 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
         if !insert.isEmpty { proxy.insertText(insert) }
         Diag.edits += deletes + (insert.isEmpty ? 0 : 1)
         if e.languageChanged { saveLanguage(); refresh() }
-        afterEdit()
+        afterEdit(deleted: deletes, inserted: insert)
     }
 
-    private func afterEdit() {
-        let r0 = CACurrentMediaTime()
-        lastContext = proxy.documentContextBeforeInput   // one text read per key
-        Diag.readMs = (CACurrentMediaTime() - r0) * 1000
-        updateAutoShift(lastContext ?? "")
+    /// The app's text before the cursor only shows a window of the document: compare what both have.
+    private static func sameEnding(_ a: String, _ b: String) -> Bool {
+        let n = min(a.count, b.count, 40)
+        return n > 0 && a.suffix(n) == b.suffix(n) && abs(a.count - b.count) < 2000 && (a.count == b.count || n == 40)
+    }
+
+    private func afterEdit(deleted: Int, inserted: String) {
+        var c = lastContext ?? ""
+        c = String(c.dropLast(min(deleted, c.count))) + inserted
+        if c.count > 4000 { c = String(c.suffix(2000)) }
+        lastContext = c
+        recentContexts.append(c)
+        if recentContexts.count > 12 { recentContexts.removeFirst(recentContexts.count - 12) }
+        Diag.readMs = 0
+        updateAutoShift(c)
         if Diag.on {
-            let total = (CACurrentMediaTime() - Diag.touchStart) * 1000
-            keyboard.diagnostics = String(format: "touch→text %.1f ms · read %.2f ms\nvibrations %d · touches %d · edits %d", total, Diag.readMs, Diag.haptics, Diag.touches, Diag.edits)
-            KBLog.add(String(format: "key=%@ total=%.1fms read=%.2fms vib=%d touches=%d edits=%d lang=%d", Diag.lastKind, total, Diag.readMs, Diag.haptics, Diag.touches, Diag.edits, driver.language))
+            let end = CACurrentMediaTime()
+            let hold = max(0, Diag.touchUp - Diag.touchStart) * 1000, work = max(0, end - Diag.touchUp) * 1000
+            keyboard.diagnostics = String(format: "finger down %.0f ms · lift→text %.2f ms · read %.2f ms\nvibrations %d · touches %d · edits %d", hold, work, Diag.readMs, Diag.haptics, Diag.touches, Diag.edits)
+            KBLog.add(String(format: "key=%@ hold=%.0fms work=%.2fms read=%.2fms vib=%d touches=%d edits=%d lang=%d", Diag.lastKind, hold, work, Diag.readMs, Diag.haptics, Diag.touches, Diag.edits, driver.language))
             Diag.haptics = 0; Diag.touches = 0; Diag.edits = 0
         }
     }

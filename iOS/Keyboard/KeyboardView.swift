@@ -4,6 +4,7 @@ import UIKit
 enum Diag {
     static var on = false
     static var touchStart: CFTimeInterval = 0
+    static var touchUp: CFTimeInterval = 0
     static var touches = 0, haptics = 0, edits = 0
     static var readMs = 0.0
     static var lastKind = "letter"
@@ -350,6 +351,7 @@ final class KeyboardView: UIView {
 
     /// The touch that owns a key ended (or a newer touch began): type that key.
     private func finish(_ t: UITouch, on c: KeyCap) {
+        Diag.touchUp = CACurrentMediaTime()
         holdTimer?.invalidate(); holdTimer = nil
         release(c)
         popup.isHidden = true
