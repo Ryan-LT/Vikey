@@ -251,7 +251,7 @@ h1 span{white-space:nowrap}
 /* typing demo (home): the app window sits behind, the demo card in front; fixed row heights, no layout shift */
 .stage{position:relative;height:620px;width:100%}
 .stage .pop{position:absolute;right:0;top:0;width:430px;height:auto;border-radius:14px;box-shadow:0 30px 80px -20px rgba(20,40,90,.35),0 0 0 1px rgba(0,0,0,.06);cursor:zoom-in}
-.stage .demo{position:absolute;left:0;bottom:24px;width:min(560px,92%);z-index:2}
+.stage .demo{position:absolute;left:24px;top:50%;transform:translateY(-35%);width:min(560px,92%);z-index:2}
 .demo{background:#fff;border-radius:14px;box-shadow:0 34px 90px -18px rgba(20,40,90,.45),0 0 0 1px rgba(0,0,0,.07);overflow:hidden}
 .demo-bar{position:relative;display:flex;align-items:center;gap:10px;height:44px;padding:0 14px;background:#f4f5f8;border-bottom:1px solid var(--line)}
 .demo-bar .dots{display:flex;gap:7px}.demo-bar .dots i{width:12px;height:12px;border-radius:50%}
@@ -276,7 +276,7 @@ h1 span{white-space:nowrap}
 .caret{display:inline-block;width:2px;height:1.05em;background:var(--blue);vertical-align:-.15em;margin-left:1px;animation:blink 1s steps(1) infinite}
 @keyframes blink{50%{opacity:0}}
 @media(max-width:1100px) and (min-width:901px){.stage .pop{width:360px}.stage{height:560px}}
-@media(max-width:900px){.stage{height:auto;display:flex;flex-direction:column-reverse;gap:24px}.stage .pop,.stage .demo{position:static;width:100%}.stage .pop{width:min(320px,82%);margin:0 auto}.demo .vikey .txt{font-size:19px}.demo .plain .txt{font-size:15px}.demo .keys{font-size:12px}}
+@media(max-width:900px){.stage{height:auto;display:flex;flex-direction:column-reverse;gap:24px}.stage .pop,.stage .demo{position:static;width:100%;transform:none}.stage .pop{width:min(320px,82%);margin:0 auto}.demo .vikey .txt{font-size:19px}.demo .plain .txt{font-size:15px}.demo .keys{font-size:12px}}
 .one .lead{max-width:none;text-wrap:balance}
 /* the download button stays visible on phones: it leads to /download, which explains Vikey is for Mac */
 @media(max-width:900px){.btn.dl-mac{display:inline-flex!important}}
