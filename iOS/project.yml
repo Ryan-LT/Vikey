@@ -65,7 +65,7 @@ targets:
           NSExtensionAttributes:
             IsASCIICapable: false
             PrefersRightToLeft: false
-            PrimaryLanguage: vi-VN
+            PrimaryLanguage: mul
             RequestsOpenAccess: true
     entitlements:
       path: Keyboard/VikeyKeyboard.entitlements
