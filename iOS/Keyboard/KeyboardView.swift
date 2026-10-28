@@ -1,5 +1,14 @@
 import UIKit
 
+/// Debug readout (Vikey app › Hiện thông số bàn phím): what one key press costs on a real device.
+enum Diag {
+    static var on = false
+    static var touchStart: CFTimeInterval = 0
+    static var touches = 0, haptics = 0, edits = 0
+    static var readMs = 0.0
+    static var lastKind = "letter"
+}
+
 /// What a key does.
 enum KeyKind: Equatable {
     case char(String)      // inserts this (letters stored lowercase)
@@ -43,6 +52,10 @@ final class KeyboardView: UIView {
     var returnIsBlue = false { didSet { if returnIsBlue != oldValue { refreshColors() } } }
     var haptics = false
     var globeButton: UIButton?
+    private let diagLabel = UILabel()
+    var diagnostics: String? {
+        didSet { diagLabel.text = diagnostics; diagLabel.isHidden = diagnostics == nil }
+    }
 
     private var keys: [(def: KeyDef, view: KeyCap)] = []
     private var touch: UITouch?                 // the touch that owns the current key
@@ -58,8 +71,11 @@ final class KeyboardView: UIView {
     private let feedback = UIImpactFeedbackGenerator(style: .light)
 
     // geometry (portrait iPhone; scaled for other widths; landscape rows are shorter)
+    /// No suggestion strip on top for now (Tony): the keys start right away. With diagnostics on, the
+    /// strip comes back to show the readout.
     static func metrics(compactHeight: Bool) -> (top: CGFloat, keyH: CGFloat, pitch: CGFloat, bottom: CGFloat) {
-        compactHeight ? (top: 8, keyH: 34, pitch: 40, bottom: 4) : (top: 57, keyH: 43, pitch: 54, bottom: 3)
+        if compactHeight { return (top: 8, keyH: 34, pitch: 40, bottom: 4) }
+        return (top: Diag.on ? 57 : 11, keyH: 43, pitch: 54, bottom: 3)
     }
     static func keyboardHeight(compactHeight: Bool) -> CGFloat {
         let m = metrics(compactHeight: compactHeight)
@@ -104,6 +120,12 @@ final class KeyboardView: UIView {
                 if kind == .globe { let b = UIButton(type: .custom); addSubview(b); globeButton = b }
             }
         }
+        diagLabel.font = .monospacedSystemFont(ofSize: 11, weight: .regular)
+        diagLabel.textColor = .secondaryLabel
+        diagLabel.textAlignment = .center
+        diagLabel.numberOfLines = 2
+        addSubview(diagLabel)
+        diagLabel.isHidden = diagnostics == nil
         addSubview(popup); popup.isHidden = true
         addSubview(alternates); alternates.isHidden = true
         setFonts()
@@ -162,6 +184,7 @@ final class KeyboardView: UIView {
                 }
             }
         }
+        diagLabel.frame = CGRect(x: 8, y: 2, width: W - 16, height: max(m.top - 6, 20))
         for i in keys.indices where i < frames.count {
             keys[i].def.frame = frames[i]
             keys[i].view.frame = frames[i]
@@ -246,6 +269,7 @@ final class KeyboardView: UIView {
         let t = CACurrentMediaTime()
         guard t - lastHaptic > 0.04 else { return }
         lastHaptic = t
+        Diag.haptics += 1
         feedback.impactOccurred()
     }
 
@@ -259,6 +283,8 @@ final class KeyboardView: UIView {
         if haptics { feedback.prepare() }
         for t in touches {
             let p = t.location(in: self)
+            Diag.touches += 1
+            Diag.touchStart = CACurrentMediaTime()
             guard let c = cap(at: p), let k = kind(of: c), k != .globe else { continue }
             // a new touch while another is down: the earlier key is typed now (fast two-thumb typing)
             if let prev = touch, let pk = touchKey { finish(prev, on: pk) }

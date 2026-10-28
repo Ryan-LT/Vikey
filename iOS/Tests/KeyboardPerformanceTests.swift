@@ -21,16 +21,6 @@ class CountingProxy: NSObject, UITextDocumentProxy {
     func deleteBackward() { deletes += 1; if !text.isEmpty { text.removeLast() } }
 }
 
-/// A text field that models marked text: committed text + the marked word.
-final class MarkedProxy: CountingProxy {
-    var committed = "", marked = ""
-    override var documentContextBeforeInput: String? { reads += 1; return committed + marked }
-    override func setMarkedText(_ markedText: String, selectedRange: NSRange) { inserts += 1; marked = markedText; text = committed + marked }
-    override func unmarkText() { committed += marked; marked = ""; text = committed }
-    override func insertText(_ t: String) { inserts += 1; committed += marked + t; marked = ""; text = committed }
-    override func deleteBackward() { deletes += 1; if !marked.isEmpty { marked.removeLast() } else if !committed.isEmpty { committed.removeLast() }; text = committed + marked }
-}
-
 final class KeyboardPerformanceTests: XCTestCase {
     // mixed Vietnamese/English, typed in Telex, ~2,000 keys
     static let sample = String(repeating: "tooi ddi hocj sorry em i love phowr order traf suwax nhes booking phongf chuaw meeting lucs ba giowf nhes mixx verr ", count: 18)
@@ -50,23 +40,6 @@ final class KeyboardPerformanceTests: XCTestCase {
             if ch == " " { vc.keyboard(sender, didTap: .space) }
             else { vc.keyboard(sender, didTap: .char(String(ch))) }
         }
-    }
-
-    func testMarkedTextModeTypesCorrectly() {
-        VKSettings.defaults.set(true, forKey: VKSettings.Key.markedText)
-        defer { VKSettings.defaults.set(false, forKey: VKSettings.Key.markedText) }
-        let vc = KeyboardViewController()
-        let p = MarkedProxy()
-        vc.proxy = p
-        vc.loadViewIfNeeded()
-        vc.viewWillAppear(false)
-        type("tooi ddi hocj sorry em i love phowr mixx ", into: vc)
-        XCTAssertEqual(p.committed + p.marked, "Tôi đi học sorry em i love phở mix ")
-        let before = p.deletes + p.inserts
-        type(Self.sample, into: vc)
-        let calls = Double(p.deletes + p.inserts - before) / Double(Self.sample.count)
-        print("keyboard (marked): \(String(format: "%.2f", calls)) text edits per key")
-        XCTAssertLessThan(calls, 1.6)
     }
 
     func testTypesCorrectly() {

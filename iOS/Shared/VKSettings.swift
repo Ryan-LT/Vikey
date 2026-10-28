@@ -16,14 +16,14 @@ enum VKSettings {
         static let englishForWebFields = "EnglishForWebFields"
         static let autoCapitalize = "AutoCapitalize"
         static let doubleSpacePeriod = "DoubleSpacePeriod"
-        static let markedText = "MarkedText"
         static let haptics = "Haptics"
+        static let diagnostics = "KeyboardDiagnostics"
     }
 
     static let defaultValues: [String: Any] = [
         Key.autoSwitch: true, Key.pauseAfterManual: true, Key.modernOrthography: true, Key.spelling: true,
         Key.restoreIfInvalid: true, Key.englishForWebFields: true,
-        Key.autoCapitalize: true, Key.doubleSpacePeriod: true, Key.markedText: false, Key.haptics: true,
+        Key.autoCapitalize: true, Key.doubleSpacePeriod: true, Key.haptics: true, Key.diagnostics: false,
     ]
 
     static func register() { defaults.register(defaults: defaultValues) }

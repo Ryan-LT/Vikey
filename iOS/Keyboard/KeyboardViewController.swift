@@ -19,10 +19,7 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
     /// The text field. Tests swap in a counting proxy (performance lock: one text read per key).
     lazy var proxy: UITextDocumentProxy = textDocumentProxy
     // settings, read once when the keyboard appears (reading shared defaults per key is slow)
-    private var webFieldsEnglish = true, autoCapitalize = true, doubleSpacePeriod = true, markedText = false, haptics = true
-    /// Marked-text mode: the word being typed stays marked (like Chinese/Japanese keyboards) and each
-    /// key replaces it in one call; the word is committed at a word break. This is that word.
-    private var composing = ""
+    private var webFieldsEnglish = true, autoCapitalize = true, doubleSpacePeriod = true, haptics = true
 
     override func loadView() {
         let v = KeyboardInputView(frame: .zero, inputViewStyle: .keyboard)
@@ -55,6 +52,19 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
         loadSettings()
         startField()
         refresh()
+        if Diag.on {
+            KBLog.add("open: fullAccess=\(hasFullAccess) haptics=\(keyboard.haptics) field=\(proxy.keyboardType?.rawValue ?? -1) return=\(proxy.returnKeyType?.rawValue ?? -1) width=\(Int(view.bounds.width))")
+        }
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        KBLog.flush()
+        super.viewWillDisappear(animated)
+    }
+
+    override func didReceiveMemoryWarning() {
+        super.didReceiveMemoryWarning()
+        if Diag.on { KBLog.add("memory warning") ; KBLog.flush() }
     }
 
     override func traitCollectionDidChange(_ previous: UITraitCollection?) {
@@ -84,8 +94,11 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
         webFieldsEnglish = d.bool(forKey: VKSettings.Key.englishForWebFields)
         autoCapitalize = d.bool(forKey: VKSettings.Key.autoCapitalize)
         doubleSpacePeriod = d.bool(forKey: VKSettings.Key.doubleSpacePeriod)
-        markedText = d.bool(forKey: VKSettings.Key.markedText)
         haptics = d.bool(forKey: VKSettings.Key.haptics)
+        Diag.on = d.bool(forKey: VKSettings.Key.diagnostics)
+        keyboard?.diagnostics = Diag.on ? "Gõ để xem thông số" : nil
+        heightConstraint?.constant = KeyboardView.keyboardHeight(compactHeight: traitCollection.verticalSizeClass == .compact)
+        keyboard?.setNeedsLayout()
         keyboard?.haptics = haptics && hasFullAccess   // haptics need Full Access; without it keys click
     }
 
@@ -146,12 +159,8 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
 
     private func externalChange() {
         let ctx = proxy.documentContextBeforeInput
-        if markedText, !composing.isEmpty, (ctx ?? "").hasSuffix(composing) || (lastContext ?? "").hasSuffix(ctx ?? "\u{0}") {
-            lastContext = ctx      // the host caught up with our marked word
-            return
-        }
         if ctx != lastContext {
-            composing = ""
+            if Diag.on { KBLog.add("reset: text changed outside the keyboard (cursor moved, or the app changed it)") }
             driver.resetContext()
             lastContext = ctx
             updateAutoShift(ctx ?? "")
@@ -161,6 +170,15 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
     // MARK: keys
 
     func keyboard(_ view: KeyboardView, didTap kind: KeyKind) {
+        if Diag.on {
+            switch kind {
+            case .char(let c): Diag.lastKind = c.first?.isLetter == true ? "letter" : "symbol"
+            case .space: Diag.lastKind = "space"
+            case .backspace: Diag.lastKind = "delete"
+            case .returnKey: Diag.lastKind = "return"
+            default: Diag.lastKind = "other"
+            }
+        }
         switch kind {
         case .char(let c):
             var s = c
@@ -195,7 +213,6 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
     func keyboardBackspaceRepeat(_ view: KeyboardView, count n: Int) {
         // like the system keyboard: characters first, whole words after ~2 seconds of holding
         guard n > 20 else { backspace(); return }
-        commitMarked()
         let before = lastContext ?? ""
         guard !before.isEmpty else { return }
         var chars = Array(before), k = 0
@@ -212,7 +229,6 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
     }
 
     func keyboard(_ view: KeyboardView, moveCursorBy offset: Int) {
-        commitMarked()
         proxy.adjustTextPosition(byCharacterOffset: offset)
     }
 
@@ -227,7 +243,6 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
         let before = lastContext ?? ""
         if doubleSpacePeriod, now - lastSpace < 0.6, before.hasSuffix(" "),
            let prev = before.dropLast().last, prev.isLetter || prev.isNumber {
-            commitMarked()
             proxy.deleteBackward()
             proxy.insertText(". ")
             driver.resetContext()
@@ -250,7 +265,6 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
     }
 
     private func apply(_ e: VKEditResult) {
-        if markedText { applyMarked(e); return }
         // Send only what changes: "toi" + s comes back as delete "oi", insert "ói"; the "o" is kept.
         // Every call is a message to the app being typed in, which lays its text out again.
         var deletes = e.deleteCount
@@ -264,52 +278,22 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
         }
         for _ in 0..<deletes { proxy.deleteBackward() }
         if !insert.isEmpty { proxy.insertText(insert) }
+        Diag.edits += deletes + (insert.isEmpty ? 0 : 1)
         if e.languageChanged { saveLanguage(); refresh() }
         afterEdit()
-    }
-
-    /// Marked-text version of apply: edits inside the word being typed are one setMarkedText call.
-    private func applyMarked(_ e: VKEditResult) {
-        if e.deleteCount <= composing.count {
-            composing = String(composing.dropLast(e.deleteCount)) + e.text
-        } else {
-            // the edit reaches into text already committed (look-back fix, undo): plain delete + insert
-            let extra = e.deleteCount - composing.count
-            composing = ""
-            proxy.setMarkedText("", selectedRange: NSRange(location: 0, length: 0))
-            proxy.unmarkText()
-            for _ in 0..<extra { proxy.deleteBackward() }
-            composing = e.text
-        }
-        // everything up to the last word break is final; the rest is the word still being typed
-        if let i = composing.lastIndex(where: { !($0.isLetter || $0.isNumber) }) {
-            let done = String(composing[...i]), rest = String(composing[composing.index(after: i)...])
-            proxy.setMarkedText(done, selectedRange: NSRange(location: (done as NSString).length, length: 0))
-            proxy.unmarkText()
-            composing = rest
-        }
-        if !composing.isEmpty || e.deleteCount > 0 {
-            proxy.setMarkedText(composing, selectedRange: NSRange(location: (composing as NSString).length, length: 0))
-            if composing.isEmpty { proxy.unmarkText() }
-        }
-        if e.languageChanged { saveLanguage(); refresh() }
-        afterEdit()
-    }
-
-    private func commitMarked() {
-        guard markedText, !composing.isEmpty else { return }
-        proxy.unmarkText()
-        composing = ""
-    }
-
-    override func viewWillDisappear(_ animated: Bool) {
-        commitMarked()
-        super.viewWillDisappear(animated)
     }
 
     private func afterEdit() {
+        let r0 = CACurrentMediaTime()
         lastContext = proxy.documentContextBeforeInput   // one text read per key
+        Diag.readMs = (CACurrentMediaTime() - r0) * 1000
         updateAutoShift(lastContext ?? "")
+        if Diag.on {
+            let total = (CACurrentMediaTime() - Diag.touchStart) * 1000
+            keyboard.diagnostics = String(format: "touch→text %.1f ms · read %.2f ms\nvibrations %d · touches %d · edits %d", total, Diag.readMs, Diag.haptics, Diag.touches, Diag.edits)
+            KBLog.add(String(format: "key=%@ total=%.1fms read=%.2fms vib=%d touches=%d edits=%d lang=%d", Diag.lastKind, total, Diag.readMs, Diag.haptics, Diag.touches, Diag.edits, driver.language))
+            Diag.haptics = 0; Diag.touches = 0; Diag.edits = 0
+        }
     }
 
     private func saveLanguage() { UserDefaults.standard.set(driver.language, forKey: languageKey) }

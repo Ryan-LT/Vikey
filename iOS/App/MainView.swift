@@ -10,11 +10,12 @@ struct MainView: View {
     @AppStorage(VKSettings.Key.restoreIfInvalid, store: VKSettings.defaults) private var restore = true
     @AppStorage(VKSettings.Key.autoCapitalize, store: VKSettings.defaults) private var autoCap = true
     @AppStorage(VKSettings.Key.doubleSpacePeriod, store: VKSettings.defaults) private var doubleSpace = true
-    @AppStorage(VKSettings.Key.markedText, store: VKSettings.defaults) private var marked = false
     @AppStorage(VKSettings.Key.haptics, store: VKSettings.defaults) private var haptics = true
+    @AppStorage(VKSettings.Key.diagnostics, store: VKSettings.defaults) private var diagnostics = false
     @AppStorage("didOnboard") private var didOnboard = true
     @State private var added = KeyboardStatus.isAdded
     @State private var sample = ""
+    @State private var logText = ""
     @Environment(\.scenePhase) private var phase
 
     var body: some View {
@@ -60,9 +61,16 @@ struct MainView: View {
                     Toggle(isOn: $haptics) { Tip("Rung khi gõ phím", "Rung nhẹ mỗi khi chạm phím, như bàn phím của iPhone. Cần bật Cho phép Truy cập đầy đủ: Cài đặt › Vikey › Bàn phím. Vikey chỉ dùng quyền này để rung, không bao giờ gửi gì ra khỏi máy.") }
                     Toggle(isOn: $doubleSpace) { Tip("Chạm hai lần phím cách để thêm dấu chấm", "Chạm nhanh hai lần phím cách để thêm dấu chấm và một khoảng trắng.") }
                 }
-                Section("Thử nghiệm") {
-                    Toggle(isOn: $marked) { Tip("Gõ dấu bằng chữ gạch chân", "Từ đang gõ được gạch chân và thay một lần mỗi phím, như bàn phím tiếng Trung, tiếng Nhật. Có thể mượt hơn ở một số ứng dụng. Từ được chốt khi bạn gõ dấu cách hoặc dấu câu.") }
-                }
+                Section {
+                    Toggle(isOn: $diagnostics) { Tip("Gỡ lỗi bàn phím", "Phía trên các phím hiện thời gian xử lý mỗi lần chạm, số lần rung và số lần chạm iOS gửi tới, và ghi vào nhật ký. Nhật ký không chứa chữ bạn gõ, chỉ có thời gian và loại phím (chữ, dấu cách, xoá…). Cần Truy cập đầy đủ để bàn phím ghi được nhật ký.") }
+                    if diagnostics {
+                        ShareLink(item: logText.isEmpty ? "(nhật ký trống)" : logText, subject: Text("Vikey keyboard log")) {
+                            Label("Gửi nhật ký", systemImage: "square.and.arrow.up")
+                        }
+                        Button("Xoá nhật ký", role: .destructive) { KBLog.clear(); logText = "" }
+                        Text(logText.isEmpty ? "Chưa có gì. Mở bàn phím Vikey và gõ thử." : "\(logText.split(separator: "\n").count) dòng").font(.footnote).foregroundStyle(.secondary)
+                    }
+                } header: { Text("Gỡ lỗi") }
                 Section {
                     Button("Xem lại hướng dẫn") { didOnboard = false }
                     Link("vikey.app", destination: URL(string: "https://vikey.app")!)
@@ -73,7 +81,8 @@ struct MainView: View {
             }
             .navigationTitle("Vikey")
         }
-        .onChange(of: phase) { _, p in if p == .active { added = KeyboardStatus.isAdded } }
+        .onChange(of: phase) { _, p in if p == .active { added = KeyboardStatus.isAdded; logText = KBLog.read() } }
+        .onAppear { logText = KBLog.read() }
     }
 }
 
