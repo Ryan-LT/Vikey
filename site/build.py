@@ -33,7 +33,7 @@ HEAD = """<!doctype html><html lang="vi"><head><meta charset="utf-8">
 <title>{title}</title>
 <meta name="description" content="{description}">
 <link rel="icon" href="/assets/icon.png"><link rel="apple-touch-icon" href="/assets/icon.png">
-<meta property="og:title" content="{title}"><meta property="og:description" content="{description}">
+<meta property="og:site_name" content="Vikey - Gõ tiếng Việt"><meta name="application-name" content="Vikey - Gõ tiếng Việt"><meta property="og:title" content="{title}"><meta property="og:description" content="{description}">
 <meta property="og:image" content="{site}/assets/og.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:type" content="website"><meta property="og:url" content="{site}{path}">
 <meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="{site}/assets/og.png">
 {canonical}
