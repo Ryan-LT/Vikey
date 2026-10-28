@@ -64,6 +64,15 @@ final class KeyboardPerformanceTests: XCTestCase {
         XCTAssertEqual(VKSettings.reads, before, "shared settings were read while typing")
     }
 
+    func testFewEditsPerKey() {
+        let (vc, p) = makeKeyboard()
+        let keys = Self.sample.count
+        type(Self.sample, into: vc)
+        let calls = Double(p.deletes + p.inserts) / Double(keys)
+        print("keyboard: \(String(format: "%.2f", calls)) text edits per key")
+        XCTAssertLessThan(calls, 1.6, "\(calls) delete/insert calls per key: send only the characters that change")
+    }
+
     func testTimePerKey() {
         let (vc, _) = makeKeyboard()
         let keys = Self.sample.count

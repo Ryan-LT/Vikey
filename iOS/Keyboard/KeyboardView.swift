@@ -29,10 +29,11 @@ final class KeyboardView: UIView {
     var shift: Shift = .off { didSet { if shift != oldValue { refreshLabels() } } }
     var dark = false { didSet { if dark != oldValue { refreshColors() } } }
     var showsGlobe = true { didSet { if showsGlobe != oldValue { rebuild() } } }
-    var languageTitle = "Tiếng Việt" { didSet { refreshLabels() } }
-    var languageShort = "VI" { didSet { refreshLabels() } }
-    var returnTitle = "return" { didSet { refreshLabels() } }
-    var returnIsBlue = false { didSet { refreshColors() } }
+    // setters restyle keys only when something changed: they run on every key press
+    var languageTitle = "Tiếng Việt" { didSet { if languageTitle != oldValue { refreshLabels() } } }
+    var languageShort = "VI" { didSet { if languageShort != oldValue { refreshLabels() } } }
+    var returnTitle = "return" { didSet { if returnTitle != oldValue { refreshLabels() } } }
+    var returnIsBlue = false { didSet { if returnIsBlue != oldValue { refreshColors() } } }
     var globeButton: UIButton?
 
     private var keyViews: [(def: KeyDef, view: KeyCap)] = []
@@ -107,7 +108,8 @@ final class KeyboardView: UIView {
         }
         addSubview(popup)
         popup.isHidden = true
-        refreshLabels(); refreshColors()
+        setFonts()
+        refreshLabels()
         setNeedsLayout()
     }
 
@@ -160,7 +162,14 @@ final class KeyboardView: UIView {
     private func refreshLabels() {
         for (def, v) in keyViews {
             let (t, img) = title(for: def.kind)
-            v.label.text = t; v.icon.image = img
+            if v.label.text != t { v.label.text = t }
+            if v.icon.image != img { v.icon.image = img }
+        }
+        refreshColors()
+    }
+
+    private func setFonts() {
+        for (def, v) in keyViews {
             switch def.kind {
             case .char: v.label.font = .systemFont(ofSize: 25, weight: .regular)
             case .space: v.label.font = .systemFont(ofSize: 15, weight: .regular); v.label.adjustsFontSizeToFitWidth = true; v.label.minimumScaleFactor = 0.6
@@ -168,7 +177,6 @@ final class KeyboardView: UIView {
             default: v.label.font = .systemFont(ofSize: 16, weight: .regular)
             }
         }
-        refreshColors()
     }
 
     private func refreshColors() {
@@ -183,8 +191,8 @@ final class KeyboardView: UIView {
             if def.kind == .language { tint = UIColor(red: 0.31, green: 0.27, blue: 0.90, alpha: 1); if dark { tint = UIColor(red: 0.62, green: 0.60, blue: 1, alpha: 1) } }
             v.normalColor = bg
             v.pressedColor = isSpecial(def.kind) ? normal : special
-            v.backgroundColor = bg
-            v.label.textColor = tint; v.icon.tintColor = tint
+            if v.backgroundColor != bg { v.backgroundColor = bg }
+            if v.label.textColor != tint { v.label.textColor = tint; v.icon.tintColor = tint }
         }
         popup.dark = dark
     }

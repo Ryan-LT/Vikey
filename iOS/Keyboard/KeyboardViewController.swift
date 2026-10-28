@@ -199,8 +199,19 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
     }
 
     private func apply(_ e: VKEditResult) {
-        for _ in 0..<e.deleteCount { proxy.deleteBackward() }
-        if !e.text.isEmpty { proxy.insertText(e.text) }
+        // Send only what changes: "toi" + s comes back as delete "oi", insert "ói"; the "o" is kept.
+        // Every call is a message to the app being typed in, which lays its text out again.
+        var deletes = e.deleteCount
+        var insert = e.text
+        if deletes > 0, let before = lastContext, before.count >= deletes {
+            let old = Array(before.suffix(deletes)), new = Array(insert)
+            var same = 0
+            while same < old.count && same < new.count && old[same] == new[same] { same += 1 }
+            deletes -= same
+            insert = String(new.dropFirst(same))
+        }
+        for _ in 0..<deletes { proxy.deleteBackward() }
+        if !insert.isEmpty { proxy.insertText(insert) }
         if e.languageChanged { saveLanguage(); refresh() }
         afterEdit()
     }
