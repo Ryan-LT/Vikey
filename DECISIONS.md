@@ -48,7 +48,7 @@ If every listed change is intended, accept them with `Tools/autoswitch/check.sh 
 **Asked by Tony.** "Fat finger detection: give each key a bigger region depending on the current typed word. Probably a small neural network?"
 
 **Decided.**
-- No neural network for now: a statistical model is tiny, fast and testable. `Engine/TouchModel` scores each key near the touch by (2D Gaussian distance, σ = 0.35 key) + 0.8 × log P(key | letters of the word so far). The prior comes from the dictionaries (sorted lists, so every next letter's mass is two binary searches), mixed 80% current mode / 20% the other language, tuned on mixed text. A touch inside the central 60% of a key always types that key.
+- No neural network for now: a statistical model is tiny, fast and testable. `Engine/TouchModel` scores each key near the touch by (2D Gaussian distance, σ = 0.35 key) + 0.5 × log P(key | letters of the word so far). The prior comes from the dictionaries (sorted lists, so every next letter's mass is two binary searches), mixed 80% current mode / 20% the other language, tuned on mixed text. A touch inside the central 80% of a key always types that key (retuned so careful typists lose nothing).
 - Measured with `Tools/autoswitch/touch/touchsim` (touches scattered around key centers, σ = 0.30 key; mode taken from the engine as it types): wrong words 26.8% → 13.6% on chat, 27% → 13.7% everyday mixed, 26% → 14% Viblo; English-only and Vietnamese-only halve too. Careful typing (σ = 0.20): unchanged. 3.5 µs per touch.
 - Next: a mixed-text word-frequency list (English inside Vietnamese, chat shorthand) to replace the subtitle frequencies, then the suggestion bar and auto-correct on the same model.
 
