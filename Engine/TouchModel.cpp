@@ -7,12 +7,16 @@
 #include "Engine.h"
 #include <cmath>
 #include <cstring>
+#include "KeepWords.inc"
 
 float TouchModel::sigma = 0.35f;
+float TouchModel::sigmaY = 0.25f;   // real touches scatter less up/down in key heights (D25: Google TSI, Aalto data)
 float TouchModel::weight = 0.5f;
 float TouchModel::sureZone = 0.8f;
 float TouchModel::modeShare = 0.8f;
 float TouchModel::correctMargin = 1.0f;
+float TouchModel::correctFloor = -2.0f;
+float TouchModel::correctFloorLong = -4.0f;   // tuned on GitHub/Birkbeck typos vs ViLexNorm/ViCTSD (D26)
 
 /** P(next letter | prefix), mixing both languages by mode; smoothed so no letter is impossible. */
 static void prior(const char* prefix, int vietnamese, double p[26]) {
@@ -51,7 +55,7 @@ char TouchModel::pick(float x, float y, const char* prefix, int vietnamese, cons
     for (int i = 0; i < n; i++) {
         const TMKey& k = keys[i];
         float cx = k.x + k.w / 2, cy = k.y + k.h / 2;
-        float dx = (x - cx) / (k.w * sigma), dy = (y - cy) / (k.h * sigma);
+        float dx = (x - cx) / (k.w * sigma), dy = (y - cy) / (k.h * sigmaY);
         double spatial = -0.5 * (dx * dx + dy * dy);          // log of a 2D Gaussian
         if (spatial < -8) continue;                            // far keys never win
         int li = k.letter - 'a';
@@ -72,7 +76,7 @@ static double spatial(char typed, char c, float x, float y, bool haveTouch, cons
     if (!k) return -20;
     float px = x, py = y;
     if (!haveTouch) { const TMKey* t = keyFor(typed, keys, n); if (!t) return -20; px = t->x + t->w / 2; py = t->y + t->h / 2; }
-    float dx = (px - (k->x + k->w / 2)) / (k->w * TouchModel::sigma), dy = (py - (k->y + k->h / 2)) / (k->h * TouchModel::sigma);
+    float dx = (px - (k->x + k->w / 2)) / (k->w * TouchModel::sigma), dy = (py - (k->y + k->h / 2)) / (k->h * TouchModel::sigmaY);
     return -0.5 * (dx * dx + dy * dy);
 }
 
@@ -157,9 +161,20 @@ bool TouchModel::shouldCorrect(const char* typed, const TMCandidate* c, int coun
     if (count == 0 || !strcmp(c[0].letters, typed)) return false;          // best is what was typed
     for (int i = 0; i < count; i++) if (!strcmp(c[i].letters, typed)) return false;   // the typed word is a real word: keep it
     if (strlen(typed) < 3) return false;                                   // too little to go on (ok, ko, j…)
-    if (inflected(typed)) return false;
+    // a real stem + ending (githubs, tweeted): keep it, unless the fix is the same word spelled right (occured -> occurred)
+    if (inflected(typed)) {
+        size_t L = strlen(typed), cl = strlen(c[0].letters);
+        bool sameEnding = cl >= 2 && L >= 2 && !strcmp(c[0].letters + cl - 2, typed + L - 2) && !strncmp(c[0].letters, typed, 3);
+        if (!sameEnding) return false;
+    }
     if (vAutoSwitchIsVietnameseSpelling(typed)) return false;               // a rare but valid syllable (thạnh): keep it
-    // chat shorthand and other words to keep (one per line): oke, okee, ntn…
+    // words people really type (ntn, cta, xog, brands…): never "fixed"
+    for (int lo = 0, hi = kKeepWordsCount - 1; lo <= hi; ) {
+        int mid = (lo + hi) / 2, cmp = strcmp(kKeepWords[mid], typed);
+        if (cmp == 0) return false;
+        if (cmp < 0) lo = mid + 1; else hi = mid - 1;
+    }
+    // more words to keep, for experiments (one per line)
     size_t tl = strlen(typed);
     for (const char* p = keepWords; *p; ) {
         const char* e = strchr(p, '\n'); size_t n = e ? (size_t)(e - p) : strlen(p);
@@ -167,5 +182,8 @@ bool TouchModel::shouldCorrect(const char* typed, const TMCandidate* c, int coun
         p += n + (e ? 1 : 0);
     }
     double margin = count > 1 ? c[0].score - c[1].score : 10;
-    return c[0].score > -2.0 && margin > TouchModel::correctMargin;
+    // a long word that is no word in either language (nor kept) is almost surely a slip: trust rarer fixes
+    size_t L = strlen(typed);
+    float floor = L >= 6 ? TouchModel::correctFloorLong : L == 5 ? (TouchModel::correctFloor + TouchModel::correctFloorLong) / 2 : TouchModel::correctFloor;
+    return c[0].score > floor && margin > TouchModel::correctMargin;
 }

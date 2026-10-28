@@ -38,10 +38,13 @@ public:
     static bool shouldCorrect(const char* typed, const TMCandidate* c, int count);
     // tuning (see Tools/autoswitch/touch: chosen by simulation)
     static float sigma;        // finger spread, in key widths
+    static float sigmaY;       // finger spread up/down, in key heights
     static float weight;       // how much the prior counts (0 = nearest key only)
     static float sureZone;     // inside this fraction of a key, the key wins outright
     static float modeShare;
     static float correctMargin;
+    static float correctFloor;      // the fix must score above this (3–4 letter words)
+    static float correctFloorLong;  // … and this for 6+ letters (5: halfway)
     static const char* keepWords;  // never "corrected": chat shorthand etc., newline-separated, lowercase  // auto-correct only when the best candidate leads by this much (log)    // share of the current mode's language in the prior (the rest: the other language)
 };
 

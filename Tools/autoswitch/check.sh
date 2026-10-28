@@ -46,4 +46,20 @@ ok = clean <= 0.10 and sloppy < model * 0.75
 print(("auto-correct: ok" if ok else "FAIL auto-correct") + f" (clean typing {clean}% wrong, sloppy {model}% -> {sloppy}%)")
 sys.exit(0 if ok else 1)
 PY
+# auto-correct on real data (vikey-data, private; skipped when it isn't there): real English typos must get
+# fixed, real Vietnamese social text (shorthand, teencode) must survive. ViLexNorm is held out of the keep-list.
+P=~/Work/vikey-data/public/evals
+if [ -f $P/vilexnorm_pairs.tsv ]; then
+  for t in typoeval normeval; do clang++ -std=c++17 -O2 -w ${=EXTRA} -I$E -I$E/platforms -o touch/$t touch/$t.cpp $E/TouchModel.cpp $SRC; done
+  ty=$(touch/typoeval $P/typos_github.tsv 0); nv=$(touch/normeval $P/vilexnorm_pairs.tsv)
+  echo "  github typos: $ty"; echo "  $nv"
+  python3 - "$ty" "$nv" <<'PY' || rc=1
+import re, sys
+fix, wrong = map(float, re.search(r'by count: fixed ([\d.]+)%, wrong ([\d.]+)%', sys.argv[1]).groups())
+broke = float(re.search(r'broke \d+ \(([\d.]+)%', sys.argv[2]).group(1))
+ok = fix >= 30 and wrong <= 5 and broke <= 0.10
+print(("real-data auto-correct: ok" if ok else "FAIL real-data auto-correct") + f" (English typos fixed {fix}%, wrong {wrong}%; Vietnamese social words broken {broke}%)")
+sys.exit(0 if ok else 1)
+PY
+else echo "real-data auto-correct: skipped (no ~/Work/vikey-data)"; fi
 exit $rc

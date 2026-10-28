@@ -17,11 +17,19 @@ int vLanguage = 1, vSwitchKeyStatus = 0, vCheckSpelling = 1, vUseModernOrthograp
     vFixRecommendBrowser = 1, vUseSmartSwitchKey = 1, vOtherLanguage = 1, vAutoSwitchByTyping = 1;
 
 int main(int argc, char** argv) {
+    if (getenv("TOUCH_FLOOR_LONG")) TouchModel::correctFloorLong = atof(getenv("TOUCH_FLOOR_LONG"));
+    static std::string keepEnv;
+    if (getenv("TOUCH_KEEP")) { FILE* kf = fopen(getenv("TOUCH_KEEP"), "r"); char kb[256]; while (kf && fgets(kb, sizeof kb, kf)) keepEnv += kb; if (kf) fclose(kf); TouchModel::keepWords = keepEnv.c_str(); }
+
     double noise = argc > 2 ? atof(argv[2]) : 0.30;
     if (argc > 3) TouchModel::weight = atof(argv[3]);
     if (argc > 4) TouchModel::sigma = atof(argv[4]);
     if (argc > 5) TouchModel::sureZone = atof(argv[5]);
     if (argc > 6) TouchModel::modeShare = atof(argv[6]);
+    TouchModel::sigmaY = argc > 7 ? atof(argv[7]) : TouchModel::sigmaY;
+    // up/down scatter: real touch data (Google TSI, Aalto; vikey-data/public) is ~1.8 mm both ways,
+    // which is 0.30 key width and 0.20 key height on an iPhone
+    double noiseY = getenv("TOUCH_NOISE_Y") ? atof(getenv("TOUCH_NOISE_Y")) : noise * 2 / 3;
     bool realMode = !getenv("TOUCH_LABEL_MODE");   // mode at each word = what the engine is in (lazy typist), not the label
     const float W = 402, side = 6.67f, gap = 6, key = (W - 2 * side - 9 * gap) / 10, h = 43, pitch = 54;
     std::vector<TMKey> keys;
@@ -32,7 +40,7 @@ int main(int argc, char** argv) {
     auto nearest = [&](float x, float y) { char best = 0; float bd = 1e30f; for (auto& k : keys) { float dx = (x - (k.x + k.w / 2)) / k.w, dy = (y - (k.y + k.h / 2)) / k.h; float d = dx * dx + dy * dy; if (d < bd) { bd = d; best = k.letter; } } return best; };
 
     std::mt19937 rng(42);
-    std::normal_distribution<float> nx(0, noise * key), ny(0, noise * h);
+    std::normal_distribution<float> nx(0, noise * key), ny(0, noiseY * h);
     VikeyDriver drv; vLanguage = 1;
     auto keyOf = [](char c, Uint16& key, bool& shift) {
         static const Uint16 L[26] = {KEY_A,KEY_B,KEY_C,KEY_D,KEY_E,KEY_F,KEY_G,KEY_H,KEY_I,KEY_J,KEY_K,KEY_L,KEY_M,KEY_N,KEY_O,KEY_P,KEY_Q,KEY_R,KEY_S,KEY_T,KEY_U,KEY_V,KEY_W,KEY_X,KEY_Y,KEY_Z};

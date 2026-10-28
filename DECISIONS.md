@@ -37,7 +37,11 @@ If every listed change is intended, accept them with `Tools/autoswitch/check.sh 
 - Settings: "Gợi ý từ" and "Tự sửa lỗi gõ", both on by default. The strip only shows when one of them is on.
 - The strip is worked out after the key's text is sent, so it never delays typing.
 
-**Locked by:** check.sh auto-correct runs (clean typing ≤ 0.10% false fixes; sloppy typing errors cut by ≥ 25%); iOS tests: teh→the plus Backspace undo, clean mixed text unchanged, strip contents, strip time per key, key time per key.
+- Tested on real data (vikey-data/public, private): finger scatter calibrated on 60k real taps (Google TSI, Aalto): ~1.8 mm, i.e. 0.30 key width × 0.20 key height on iPhone; the model uses σ 0.35 × 0.25.
+- A keep-list of 16k words people really type (shorthand, teencode, slang, brands: ntn, cta, xog…), from 2.65M words of crawled Vietnamese forums/comments (`Engine/KeepWords.inc`, `Tools/autoswitch/keep/gen_inc.py`). Real social comments (ViLexNorm, held out): right words broken 0.17% → 0.06%.
+- A long non-word gets a rarer fix (floor −4 for 6+ letters): real English typos (GitHub Typo Corpus) fixed 15% → 33% ("occured", "funtion", "defualt").
+
+**Locked by:** check.sh auto-correct runs (clean typing ≤ 0.10% false fixes; sloppy typing errors cut by ≥ 25%); real data (GitHub typos fixed ≥ 30%, wrong ≤ 5%; ViLexNorm right words broken ≤ 0.10%); iOS tests: teh→the plus Backspace undo, clean mixed text unchanged, strip contents, strip time per key, key time per key.
 
 **Status:** Agreed (built, not in a TestFlight build yet).
 

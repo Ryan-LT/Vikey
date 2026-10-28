@@ -10,3 +10,5 @@ dist/
 site/dist/
 .wrangler/
 site/downloads/
+Tools/autoswitch/touch/normeval
+Tools/autoswitch/touch/typoeval
