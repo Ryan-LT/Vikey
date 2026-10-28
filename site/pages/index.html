@@ -50,10 +50,10 @@ lb.addEventListener("click",closeLb);addEventListener("keydown",e=>{if(e.key==="
  const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
  if(reduce){const s=scenes[0],f=s.frames[s.frames.length-1];show({k:s.frames.map(x=>x[0]).join(""),v:f[1],p:f[3]},true);setLang(f[2],false);return}
  for(;;){for(const s of scenes){
-  show(null);setLang(s.start,false);await wait(900);
+  show(null);setLang(s.start,false);await wait(600);
   let lang=s.start,k="";
-  for(const [c,v,l,p] of s.frames){k+=c;show({k,v,p},false);if(l!==lang){setLang(l,true);lang=l}await wait(c===" "?240:85+Math.random()*55)}
+  for(const [c,v,l,p] of s.frames){k+=c;show({k,v,p},false);if(l!==lang){setLang(l,true);lang=l}await wait(c===" "?160:55+Math.random()*35)}
   const f=s.frames[s.frames.length-1];show({k,v:f[1],p:f[3]},true);
-  await wait(3200)}}
+  await wait(2200)}}
 })();
 </script>
