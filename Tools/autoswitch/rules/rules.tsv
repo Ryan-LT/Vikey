@@ -91,3 +91,11 @@ D23	1	now-ron 	nơ-ron 	1	Vietnamese loanword syllables with hyphens stay (nơ-r
 D23	0	TOOI DDI HOCJ 	TOOI ĐI HỌC 	1	EN mode, Caps Lock Vietnamese: inside a run of capitals, all-caps words convert to common syllables
 D23	0	USA EST 	USA EST 	0	all-caps English or rare readings never convert
 D23	0	HW 	HW 	0	a lone all-caps word (not in a run of capitals) never converts
+D27	1	deepseek 	deepseek 	0	a foreign word restored as typed gets back the keys Telex undid on the way (not deepsek)
+D27	1	DeepSeek 	DeepSeek 	0	same with capitals
+D27	1	web(	web(	0	"(" right after a word ends it
+D27	1	ddc 	đc 	1	đ shorthand (đc, đt, đk) is Vietnamese (chat frequencies)
+D27	0	ddc 	đc 	1	and switches from English
+D27	1	con NAS 	con NAS 	0	an all-caps word right after a lowercase word is an acronym even if the syllable is used in chat (ná)
+D27	1	meme 	meme 	0	English used in Vietnamese chat (en_extra)
+D27	1	xin visa 	xin visa 	0	a formal-only syllable (vía) loses to the English word people mean

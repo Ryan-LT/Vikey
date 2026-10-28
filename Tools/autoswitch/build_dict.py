@@ -61,7 +61,36 @@ for w, c in vi:
     if plain and plain[-1] in 'srx': continue
     if k and len(w) <= 7 and c >= 5 and SYL.match(k):
         vn[k] = vn.get(k, 0) + c
-vn = {k: score(c, vi_total) for k, c in vn.items()}
+# Informal Vietnamese (D27): our crawl of forums and comments (vikey-data/freq, count_informal.py). The
+# subtitles are formal; chat has particles (ạ, á), shorthand (đc, đt) and English inside. Rates are mixed
+# half and half. Without vikey-data the subtitles alone are used.
+INF = os.environ.get('VIKEY_INFORMAL', os.path.expanduser('~/Work/vikey-data/freq'))
+INF_SHARE = float(os.environ.get('VIKEY_INFORMAL_SHARE', '0.5'))
+SHORTHAND = re.compile('^dd[bcdghklmnpqrstvx]{0,2}$')   # đ, đc, đt, đk: no vowel, still Vietnamese
+inf = {}
+inf_total = 0
+if INF_SHARE > 0 and os.path.exists(os.path.join(INF, 'vi_informal.txt')):
+    inf_total = int(open(os.path.join(INF, 'total.txt')).read())
+    for line in open(os.path.join(INF, 'vi_informal.txt'), encoding='utf-8'):
+        w, c = line.split(); c = int(c)
+        k = vn_key(w)
+        plain = unicodedata.normalize('NFD', w.lower())
+        if not k or (plain and plain[-1] in 'srx'): continue
+        if (len(w) <= 7 and c >= 5 and SYL.match(k)) or (SHORTHAND.match(k) and c >= 50):
+            inf[k] = inf.get(k, 0) + c
+if inf_total:
+    for w, c in vi:   # shorthand the subtitles have too
+        k = vn_key(w)
+        if k and SHORTHAND.match(k) and c >= 50 and k in inf: vn[k] = vn.get(k, 0) + c
+    keys = set(vn) | set(inf)
+    def rate(k):
+        sub, mixed = vn.get(k, 0) / vi_total, (1 - INF_SHARE) * vn.get(k, 0) / vi_total + INF_SHARE * inf.get(k, 0) / inf_total
+        # chat can lower formal-only words (vía, mêm) and add chat words (ạ, đc), never raise a subtitle word
+        # ("lít", "thí" are common in car forums, but "list", "this" are what mixed typing means)
+        return min(sub, mixed) if sub > 0 and os.environ.get('VIKEY_INFORMAL_LOWER_ONLY', '1') == '1' else mixed
+    vn = {k: max(-120, min(120, round(10 * math.log10(rate(k) * 1e6)))) for k in keys if vn.get(k, 0) + inf.get(k, 0) > 0}
+else:
+    vn = {k: score(c, vi_total) for k, c in vn.items()}
 
 en_rows, en_total = load('en_50k.txt')
 # Keep only words the macOS English spell checker accepts (drops subtitle junk like "ys", "af", "carm").
@@ -71,6 +100,13 @@ en = {}
 for w, c in en_rows:
     if re.fullmatch('[a-z]{2,}', w) and w in spell_ok:
         en[w] = max(en.get(w, -999), score(c, en_total))
+
+# English inside Vietnamese text (visa, meme, deadline): at least as common as there (D27)
+if inf_total and os.environ.get('VIKEY_EN_IN_VI', '1') == '1':
+    for line in open(os.path.join(INF, 'en_in_vi.txt'), encoding='utf-8'):
+        w, c = line.split(); c = int(c)
+        if c >= 5 and w in en and vn_key(w) not in vn:
+            en[w] = max(en[w], score(c, inf_total))
 
 # Chat shorthand, programming words and identifier words mined from code: always English, high score.
 for name in ('en_extra.txt', 'en_code.txt'):

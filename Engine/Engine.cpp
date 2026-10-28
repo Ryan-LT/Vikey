@@ -79,8 +79,14 @@ vector<Uint32> _typingStatesData;
  * Use for restore key if invalid word
  */
 static Uint32 KeyStates[MAX_BUFF];
-static int _asDropPos = -1;      //auto switch: a key Telex undid and dropped from the key states ("eee" -> "ee"), and where it was
-static Uint32 _asDropKey = 0;
+//auto switch: keys Telex undid and dropped from the key states ("eee" -> "ee", "deepseek"), and where each
+//was, oldest first (each position counts the keys kept at that moment)
+#define AS_MAX_DROPS 4
+static int _asDropN = 0;
+static int _asDropPos[AS_MAX_DROPS];
+static Uint32 _asDropKey[AS_MAX_DROPS];
+/** The keys as typed: the key states with the dropped keys put back. Returns how many. */
+static int asStatesWithDrops(Uint32* full, const int& maxN);
 static Byte _stateIndex = 0;
 
 static bool tempDisableKey = false;
@@ -423,7 +429,7 @@ void restoreLastTypingState() {
 }
 
 void startNewSession() {
-    _asDropPos = -1;
+    _asDropN = 0;
     _index = 0;
     hBPC = 0;
     hNCC = 0;
@@ -1129,11 +1135,11 @@ void handleMainKey(const Uint16& data, const bool& isCaps) {
 }
 
 
+static int asStatesWithDrops(Uint32* full, const int& maxN);
 bool checkRestoreIfWrongSpelling(const int& handleCode) {
     for (ii = 0; ii < _index; ii++) {
         if (!IS_CONSONANT(CHR(ii)) &&
             (TypingWord[ii] & MARK_MASK || TypingWord[ii] & TONE_MASK || TypingWord[ii] & TONEW_MASK)) {
-            
             hCode = handleCode;
             hBPC = _index;
             hNCC = _stateIndex;
@@ -1337,7 +1343,21 @@ static bool _asDoubleBoth = false;   //both presses are on screen
 static bool asFewCapitals(const Uint32* keys, const int& count);
 static bool _asApostrophe = false;   //the word ends at an apostrophe: allow contraction stems
 
-static bool asShouldRestoreToEnglish() {
+static int asStatesWithDrops(Uint32* full, const int& maxN) {
+    //newest drop first: an older drop's position never counts a newer dropped key
+    int n = _stateIndex;
+    if (n > maxN) n = maxN;
+    memcpy(full, KeyStates, n * sizeof(Uint32));
+    for (int d = _asDropN - 1; d >= 0; d--) {
+        int p = _asDropPos[d];
+        if (p < 0 || p > n || n + 1 > maxN) continue;
+        memmove(full + p + 1, full + p, (n - p) * sizeof(Uint32));
+        full[p] = _asDropKey[d]; n++;
+    }
+    return n;
+}
+
+static bool asShouldRestoreToEnglishCore() {
     if (!asEnabled() || !_asWordStartOk) return false;
     asInitLetters();
     if (_stateIndex < 2 || _stateIndex < _index) return false;
@@ -1345,13 +1365,9 @@ static bool asShouldRestoreToEnglish() {
     bool transformed;
     bool wordOk = asWordKey(word, transformed);
     //Telex dropped a key on the way ("seemed" -> "semed", "cheese" -> "chees"): with it back, an English word?
-    if (_asDropPos >= 0 && _asDropPos <= _stateIndex && _stateIndex >= 3 && _stateIndex < MAX_BUFF - 1) {   //4+ keys: "aaa" stays Telex "aa"
+    if (_asDropN > 0 && _stateIndex >= 3 && _stateIndex + _asDropN < MAX_BUFF - 1) {   //4+ keys: "aaa" stays Telex "aa"
         Uint32 full[MAX_BUFF];
-        int n = 0;
-        for (int x = 0; x <= _stateIndex; x++) {
-            if (x == _asDropPos) full[n++] = _asDropKey;
-            if (x < _stateIndex) full[n++] = KeyStates[x];
-        }
+        int n = asStatesWithDrops(full, MAX_BUFF);
             bool savedTemp = tempDisableKey;
         checkSpelling(true);
         bool invalid = tempDisableKey;   //the shown word is no syllable ("chée")
@@ -1359,7 +1375,7 @@ static bool asShouldRestoreToEnglish() {
         if (asRawWord(full, n, raw) && asEnglishScore(raw) != AS_MISSING && (!wordOk || !transformed || invalid || asVietnameseScore(word) == AS_MISSING)) {
             memcpy(KeyStates, full, n * sizeof(Uint32));   //restore puts these keys back
             _stateIndex = n;
-            _asDropPos = -1;
+            _asDropN = 0;
             return true;
         }
     }
@@ -1391,9 +1407,15 @@ static bool asShouldRestoreToEnglish() {
 #ifndef AS_ACRONYM_VN
 #define AS_ACRONYM_VN 5     //below ~3 per million: tuned on Tinhte (acronyms) vs all-caps Vietnamese news
 #endif
+#ifndef AS_ACRONYM_VN_AMID
+#define AS_ACRONYM_VN_AMID 15   //right after a lowercase word ("con NAS này"): Caps Lock Vietnamese comes in runs (D27)
+#endif
 #if AS_ACRONYM
     //2+ capitals (NAS, HDD, SATA, GoPro) that Telex turned into a rare or invalid syllable: an acronym or a name (D23)
-    if (!asFewCapitals(KeyStates, _stateIndex) && (vn == AS_MISSING || vn < AS_ACRONYM_VN)) {
+    //not inside a run of capitals: no earlier word, or a lowercase one
+    bool afterLower = _asPrevCount < 1 || _asPrev[0].rawCount < 1;
+    if (!afterLower) { afterLower = true; for (int x = 0; x < _asPrev[0].rawCount; x++) if (_asPrev[0].raw[x] & CAPS_MASK) afterLower = false; }
+    if (!asFewCapitals(KeyStates, _stateIndex) && (vn == AS_MISSING || vn < (afterLower ? AS_ACRONYM_VN_AMID : AS_ACRONYM_VN))) {
         bool vowelChanged = false;   //Vietnamese acronyms only have đ changed (VĐV, HĐND, BĐS): they stay
         for (int x = 0; x < _index; x++) {
             char c = asLetterOf(TypingWord[x]);
@@ -1448,6 +1470,26 @@ static bool asShouldRestoreToEnglish() {
         _asPrev[0].same && _asPrev[0].en != AS_MISSING && _asPrev[0].vn == AS_MISSING)
         return true;   //"video call thí" -> "this"
     return vn == AS_MISSING || (vn < AS_VN_FLOOR && en - vn >= AS_PREFER) || en - vn >= AS_VN_EXTREME;
+}
+
+/** Whether to put the word back to the keys typed. A foreign word restored as typed gets back the keys
+ *  Telex undid on the way too ("deepseek", not "deepsek"); a known English word without them stays. */
+static bool asShouldRestoreToEnglish() {
+    if (!asShouldRestoreToEnglishCore()) return false;
+    if (_asDropN > 0 && _stateIndex >= 3 && _stateIndex + _asDropN < MAX_BUFF - 1) {
+        char raw[AS_KEY_LEN];
+        Uint32 full[MAX_BUFF];
+        int n = asStatesWithDrops(full, MAX_BUFF - 1);
+        //only for words of 2+ vowel groups (deep-seek): in one syllable "ooo" is the Telex undo ("cuooocf" -> "cuoocf")
+        int groups = 0; bool inV = false;
+        for (int x = 0; x < n; x++) { char c = asLetterOf(full[x]); bool v = c == 'a' || c == 'e' || c == 'i' || c == 'o' || c == 'u' || c == 'y'; if (v && !inV) groups++; inV = v; }
+        if (groups >= 2 && !(asRawWord(KeyStates, _stateIndex, raw) && asEnglishScore(raw) != AS_MISSING)) {
+            memcpy(KeyStates, full, n * sizeof(Uint32));
+            _stateIndex = n;
+            _asDropN = 0;
+        }
+    }
+    return true;
 }
 
 /** Before a hyphen: a rare w-word ("ưi") starts an English compound ("Wi-Fi", D23). */
@@ -1510,7 +1552,8 @@ static bool asIsSwitchBreak(const vKeyEvent& event, const Uint16& data, const Ui
     if (event != vKeyEvent::Keyboard || otherControlKey) return false;
     return data == KEY_COMMA || data == KEY_DOT || data == KEY_SEMICOLON || data == KEY_ENTER || data == KEY_RETURN ||
            data == KEY_QUOTE ||                                 //closing quote, or an apostrophe: doesn't, we're
-           (data == KEY_SLASH && capsStatus == 1) || (data == KEY_1 && capsStatus == 1) || (data == KEY_0 && capsStatus == 1);
+           (data == KEY_SLASH && capsStatus == 1) || (data == KEY_1 && capsStatus == 1) || (data == KEY_0 && capsStatus == 1) ||
+           (data == KEY_9 && capsStatus == 1);                  //"(" right after a word: web(làm (D27)
 }
 
 /** Everything the engine keeps between keys, so a word can be replayed on a scratch session. */
@@ -1518,7 +1561,7 @@ struct AsEngineState {
     Uint32 word[MAX_BUFF], states[MAX_BUFF];
     Byte index, stateIndex;
     bool tempDisable, useSpellingBefore, wordStartOk;
-    int dropPos; Uint32 dropKey;
+    int dropN; int dropPos[AS_MAX_DROPS]; Uint32 dropKey[AS_MAX_DROPS];
     int spaceCount, checkSpelling, language;
     vector<Uint32> longWord, special, statesData;
     list<vector<Uint32>> typing;
@@ -1531,7 +1574,7 @@ static void asSaveState(AsEngineState& st) {
     st.index = _index; st.stateIndex = _stateIndex;
     st.tempDisable = tempDisableKey; st.useSpellingBefore = _useSpellCheckingBefore;
     st.wordStartOk = _asWordStartOk;
-    st.dropPos = _asDropPos; st.dropKey = _asDropKey;
+    st.dropN = _asDropN; memcpy(st.dropPos, _asDropPos, sizeof(_asDropPos)); memcpy(st.dropKey, _asDropKey, sizeof(_asDropKey));
     st.spaceCount = _spaceCount; st.checkSpelling = vCheckSpelling;
     st.language = vLanguage;
     st.longWord.swap(_longWordHelper);
@@ -1547,7 +1590,7 @@ static void asRestoreState(AsEngineState& st) {
     _index = st.index; _stateIndex = st.stateIndex;
     tempDisableKey = st.tempDisable; _useSpellCheckingBefore = st.useSpellingBefore;
     _asWordStartOk = st.wordStartOk;
-    _asDropPos = st.dropPos; _asDropKey = st.dropKey;
+    _asDropN = st.dropN; memcpy(_asDropPos, st.dropPos, sizeof(_asDropPos)); memcpy(_asDropKey, st.dropKey, sizeof(_asDropKey));
     _spaceCount = st.spaceCount; vCheckSpelling = st.checkSpelling;
     vLanguage = st.language;
     _longWordHelper.swap(st.longWord);
@@ -1613,7 +1656,10 @@ bool vAutoSwitchCheckEnglishWord(const Uint32* keys, const int& count,
     int resultCount;
     int vn = asReplay(keys, count, result, resultCount);
     if (vn == AS_MISSING || !(en == AS_MISSING || (en < AS_EN_FLOOR && vn - en >= AS_PREFER))) return false;
-    if (count > 1 && allCaps && (en != AS_MISSING || vn < AS_VN_FLOOR)) return false;
+#ifndef AS_CAPS_VN_FLOOR
+#define AS_CAPS_VN_FLOOR 15   //all capitals convert only to a common syllable (IRS stays, not "Í"): D23, D27
+#endif
+    if (count > 1 && allCaps && (en != AS_MISSING || vn < AS_CAPS_VN_FLOOR)) return false;
     if (count > 1 && allCaps) {   //only inside a run of capitals (Caps Lock on): a lone HW, CWS stays
         bool prevCaps = previousN >= 1 && previousCounts[0] >= 2;
         for (int x = 0; prevCaps && x < previousCounts[0]; x++) if (!(previous[0][x] & CAPS_MASK)) prevCaps = false;
@@ -1783,7 +1829,7 @@ void vKeyHandleEvent(const vKeyEvent& event,
         } else {
             if (_stateIndex > 0) {
                 _stateIndex--;
-                if (_stateIndex < _asDropPos) _asDropPos = -1;
+                while (_asDropN > 0 && _stateIndex < _asDropPos[_asDropN - 1]) _asDropN--;
             }
             if (_index > 0){
                 _index--;
@@ -1873,7 +1919,10 @@ void vKeyHandleEvent(const vKeyEvent& event,
         
         if (hCode == vRestore) {
             insertKey(data, _isCaps);
-            if (_stateIndex > 0 && vAutoSwitchRequest != 0) { _asDropPos = _stateIndex - 1; _asDropKey = KeyStates[_stateIndex - 1]; }
+            if (_stateIndex > 0 && vAutoSwitchRequest != 0) {
+                if (_asDropN == AS_MAX_DROPS) { memmove(_asDropPos, _asDropPos + 1, sizeof(int) * (AS_MAX_DROPS - 1)); memmove(_asDropKey, _asDropKey + 1, sizeof(Uint32) * (AS_MAX_DROPS - 1)); _asDropN--; }
+                _asDropPos[_asDropN] = _stateIndex - 1; _asDropKey[_asDropN] = KeyStates[_stateIndex - 1]; _asDropN++;
+            }
             _stateIndex--;
         }
         

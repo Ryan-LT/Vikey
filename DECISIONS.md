@@ -23,6 +23,22 @@ If every listed change is intended, accept them with `Tools/autoswitch/check.sh 
 
 ---
 
+## 27. Chat frequencies and VietMix fixes (Mac + iOS engine)
+
+**Asked by Tony.** "see if anything we can improve (which can apply to both macOS + iOS app)" after the VietMix dataset (real Vietnamese–English code-mixed posts, held out).
+
+**Decided.**
+- Vietnamese word frequencies now mix the subtitles with 2.5M words of our own crawl of Vietnamese forums and comments (`vikey-data/freq/count_informal.py`, `build_dict.py`). Chat can only lower a formal-only syllable (vía, mêm) or add a chat word (ạ, đc, đt); it never raises a word the subtitles have ("lít", "thí" are common in car forums, but "list", "this" are what mixed typing means: raising them broke "This is" typed in VI mode).
+- English words that Vietnamese chat uses get at least their in-chat frequency; "meme" added.
+- đ shorthand with no vowel (đ, đc, đt, đk) counts as Vietnamese.
+- Restoring a foreign word puts back the keys Telex undid on the way: "deepseek", not "deepsek" (only for 2+ vowel groups: "cuooocf" keeps the Telex undo).
+- "(" right after a word ends it: "web(" not "ưeb(".
+- An all-caps word not inside a run of capitals (after a lowercase word, or first) is an acronym unless the syllable is common (score 15): "con NAS". All-caps conversion from English needs a common syllable (15): "USA EST IRS" stays.
+- Lazy typist, wrong words, before → after: chat 0.28 → 0.26%, everyday mixed 0.26 → 0.23%, Viblo 0.24 → 0.22%, Tinhte 0.28 → 0.26%, Vietnamese-only 0.09 → 0.05%, VietMix 0.75 → 0.69%, ViCTSD 0.20 → 0.19%, ViLexNorm 0.54 → 0.44%; English-only unchanged. Manual switches on chat 92 → 86.
+- Rare syllables that now go English in VI mode (Telex lock updated): bín, bôp, bú, cỏn, dôm, hôt, mốn, séc, soả, trút, vía, ă (aw).
+
+**Status:** Built 2026-10-28, not in a release yet. Rules D27 in rules.tsv.
+
 ## 26. Auto-correct and the suggestion strip on iOS
 
 **Story:** As someone typing fast on the phone, I want a word I mistyped by one key fixed when I press space, and words to pick from above the keys, in both Vietnamese and English.

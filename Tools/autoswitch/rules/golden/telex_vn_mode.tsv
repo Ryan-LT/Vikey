@@ -114,7 +114,7 @@ au	au 	0	1
 aue	aue 	0	1
 aum	aum 	0	1
 aus	áu 	0	1
-aw	ă 	0	1
+aw	aw 	1	0
 awc	ăc 	0	1
 awcj	ặc 	0	1
 awcs	ắc 	0	1
@@ -485,7 +485,7 @@ binhj	bịnh 	0	1
 binhr	bỉnh 	0	1
 binhs	bính 	0	1
 binhx	bĩnh 	0	1
-bins	bín 	0	1
+bins	bins 	1	0
 biof	biof 	0	1
 bip	bip 	0	1
 bipj	bịp 	0	1
@@ -568,7 +568,7 @@ boongx	bỗng 	0	1
 boonj	bộn 	0	1
 boonr	bổn 	0	1
 boons	bốn 	0	1
-boop	bôp 	0	1
+boop	boop 	1	0
 boopj	bộp 	0	1
 boops	bốp 	0	1
 boor	bổ 	0	1
@@ -698,7 +698,7 @@ bupj	bụp 	0	1
 bups	búp 	0	1
 bura	bủa 	0	1
 burn	burn 	1	0
-bus	bú 	0	1
+bus	bus 	1	0
 busa	búa 	0	1
 busi	búi 	0	1
 busn	bún 	0	1
@@ -1599,7 +1599,7 @@ copj	cọp 	0	1
 cops	cops 	1	0
 cor	cỏ 	0	1
 cori	cỏi 	0	1
-corn	cỏn 	0	1
+corn	corn 	1	0
 cos	có 	0	1
 cosa	coá 	0	1
 cosc	cóc 	0	1
@@ -2684,7 +2684,7 @@ dooix	dỗi 	0	1
 dooji	dội 	0	1
 doojng	dộng 	0	1
 doojt	dột 	0	1
-doom	dôm 	0	1
+doom	doom 	1	0
 doon	dôn 	0	1
 doonf	dồn 	0	1
 doong	dông 	0	1
@@ -3827,7 +3827,7 @@ hoosc	hốc 	0	1
 hoosi	hối 	0	1
 hoosng	hống 	0	1
 hoost	hốt 	0	1
-hoot	hôt 	0	1
+hoot	hoot 	1	0
 hootj	hột 	0	1
 hoots	hốt 	0	1
 hoox	hỗ 	0	1
@@ -5713,7 +5713,7 @@ moong	mông 	0	1
 moongf	mồng 	0	1
 moongj	mộng 	0	1
 moongs	mống 	0	1
-moons	mốn 	0	1
+moons	moons 	1	0
 moooft	mooft 	1	0
 moootf	mootf 	0	1
 moor	mổ 	0	1
@@ -8395,7 +8395,7 @@ sea	sea 	0	1
 sean	sean 	0	1
 seat	seat 	0	1
 sec	sec 	0	1
-secs	séc 	0	1
+secs	secs 	1	0
 see	sê 	0	1
 seeing	seeing 	1	0
 seejt	sệt 	0	1
@@ -8475,7 +8475,7 @@ soangj	soạng 	0	1
 soanj	soạn 	0	1
 soans	soán 	0	1
 soap	soap 	0	1
-soar	soả 	0	1
+soar	soar 	1	0
 soasi	soái 	0	1
 soasn	soán 	0	1
 soast	soát 	0	1
@@ -9952,7 +9952,7 @@ truowsc	trước 	0	1
 trus	trú 	0	1
 trusc	trúc 	0	1
 trusng	trúng 	0	1
-trust	trút 	0	1
+trust	trust 	1	0
 truts	trút 	0	1
 truw	trư 	0	1
 truwa	trưa 	0	1
@@ -10521,7 +10521,7 @@ vir	vỉ 	0	1
 vira	vỉa 	0	1
 virn	vỉn 	0	1
 vis	ví 	0	1
-visa	vía 	0	1
+visa	visa 	1	0
 visch	vích 	0	1
 visng	víng 	0	1
 vist	vít 	0	1
