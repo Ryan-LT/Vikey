@@ -23,6 +23,17 @@ If every listed change is intended, accept them with `Tools/autoswitch/check.sh 
 
 ---
 
+## 19. Doubled tone key: Telex result by default, the dictionary decides at the end of the word
+
+**Status:** Done 2026-10-28 (1.0.7). Rule cases D19. Replaces D8's "keep both letters" default.
+
+**Asked by Tony.** "v e r r" showed "vẻ" then "verr". "Make it show 'ver' by default and only show 'verr' if it's a valid English word... the majority of people would have muscle memory from previous apps."
+
+**Decided.**
+- Pressing the same tone key again still switches to English. On screen: the Telex result ("ver"), unless the keys with both presses are already an English word ("err", "boss", "less").
+- At the end of the word the dictionary decides both ways: "terible" → "terrible", "sory" → "sorry", "mixx" → "mix". If both or neither spelling is English, the word stays as shown. Backspace right after undoes the fix.
+- Trade-off: an unknown name with a double letter typed in VN mode keeps one letter ("Nassr" → "Nasr"). In exchange, Vietnamese typos with a doubled tone key give the familiar Telex result ("bijj" → "bij"); wrong words on the chat-with-typos test went from 22 to 7.
+
 ## 18. "mĩ" + x gives "mix", not "mixx"
 
 **Status:** Done 2026-10-28 (1.0.5). Rule cases D18.

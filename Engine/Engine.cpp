@@ -1331,6 +1331,8 @@ static void asRememberWord() {
 /** Vietnamese mode, at a word break: are the raw keys an English word the user clearly meant? */
 static Uint32 _asDoubleKeys[MAX_BUFF];   //the keys of the word a doubled tone key switched to English, both presses last
 static int _asDoubleCount = 0;
+static int _asDoubleFirst = -1;      //where the first press is in _asDoubleKeys
+static bool _asDoubleBoth = false;   //both presses are on screen
 static bool _asApostrophe = false;   //the word ends at an apostrophe: allow contraction stems
 
 static bool asShouldRestoreToEnglish() {
@@ -1385,9 +1387,6 @@ static bool asShouldRestoreToEnglish() {
         size_t n = strlen(raw);
         if (n >= 3 && raw[n - 1] == 'n') { raw[n - 1] = 0; en = asEnglishScore(raw); raw[n - 1] = 'n'; }
     }
-#ifndef AS_DOUBLE_KEEP
-#define AS_DOUBLE_KEEP 1       //a doubled tone key that switches to English keeps both letters: e r r -> "err" (Tony 2026-10-28)
-#endif
 #ifndef AS_RESTORE_UNKNOWN
 #define AS_RESTORE_UNKNOWN 3   //min letters for restoring a word that is neither Vietnamese nor in the English list
 #endif
@@ -1773,27 +1772,27 @@ void vKeyHandleEvent(const vKeyEvent& event,
             //auto switch: the same tone key pressed twice undoes the tone, a strong sign of English
             if (hCode == vRestore && asEnabled() && IS_MARK_KEY(data)) {
                 vAutoSwitchRequest = 0;
-                //switching to English: put the whole word back to the keys typed, not just the undone tone
-                //("tomorr", not "tômrr"). The key itself is added after these by the caller (vRestore).
-                //Both presses stay ("err", not Telex's "er"): the first is in the keys, the caller adds the second.
-                bool rawRestored = false;
-                if (_stateIndex >= 1 && _stateIndex <= MAX_BUFF && _index <= MAX_BUFF) {
+                //Switching to English: put the whole word back to the keys typed, not just the undone tone
+                //("tomorr", not "tômrr"). The second press is added after these by the caller (vRestore).
+                //Like other Telex input methods the first press goes ("ver"), unless both make an English word
+                //already ("err", "boss"); the end of the word decides for good (D19, vAutoSwitchFixDoubledKey).
+                if (_stateIndex >= 2 && _stateIndex <= MAX_BUFF && _index <= MAX_BUFF) {
+                    int first = -1;                                  //the press that set the tone
+                    for (int x = _stateIndex - 2; x >= 0; x--)
+                        if ((KeyStates[x] & CHAR_MASK) == data) { first = x; break; }
+                    char raw[AS_KEY_LEN];
+                    asInitLetters();
+                    bool both = first < 0 || (asRawWord(KeyStates, _stateIndex, raw) && asEnglishScore(raw) != AS_MISSING);
                     hBPC = _index;
-                    hNCC = _stateIndex - 1;
-                    for (int x = 0; x < hNCC; x++) hData[hNCC - 1 - x] = KeyStates[x];
-                    rawRestored = true;
-                    //remember the word for the end-of-word fix ("mixx" -> "mix")
+                    hNCC = 0;
+                    for (int x = _stateIndex - 2; x >= 0; x--)
+                        if (both || x != first) hData[hNCC++] = KeyStates[x];
+                    //remember the word for the end-of-word decision
                     _asDoubleCount = _stateIndex;
+                    _asDoubleFirst = first;
+                    _asDoubleBoth = both;
                     memcpy(_asDoubleKeys, KeyStates, _stateIndex * sizeof(Uint32));
                 }
-#if AS_DOUBLE_KEEP
-                //keep the first press of the key too ("err", not Telex's "er")
-                if (!rawRestored && hNCC < MAX_BUFF - 1) {
-                    for (int x = hNCC; x > 0; x--) hData[x] = hData[x - 1];
-                    hData[0] = data | (_isCaps ? CAPS_MASK : 0);
-                    hNCC++;
-                }
-#endif
             }
         }
 
@@ -1834,25 +1833,30 @@ void vKeyHandleEvent(const vKeyEvent& event,
 bool vAutoSwitchFixDoubledKey(const Uint32* keys, const int& count) {
     int n = _asDoubleCount;
     _asDoubleCount = 0;
-    if (!asEnabled() || n < 2 || count < 0 || n + count >= AS_KEY_LEN || n + count >= MAX_BUFF) return false;
+    if (!asEnabled() || n < 2 || _asDoubleFirst < 0 || count < 0 || n + count >= AS_KEY_LEN || n + count >= MAX_BUFF) return false;
     asInitLetters();
-    Uint32 full[MAX_BUFF];
+    Uint32 full[MAX_BUFF], single[MAX_BUFF];
     memcpy(full, _asDoubleKeys, n * sizeof(Uint32));
     for (int x = 0; x < count; x++) full[n + x] = keys[x];
-    int total = n + count;
-    char raw[AS_KEY_LEN], fewer[AS_KEY_LEN];
-    if (!asRawWord(full, total, raw)) return false;
-    if (asEnglishScore(raw) != AS_MISSING) return false;            //both presses make a word: err, boss, tomorrow
-    Uint32 fixed[MAX_BUFF];
-    int m = 0;
-    for (int x = 0; x < total; x++) if (x != n - 1) fixed[m++] = full[x];   //drop the second press
-    if (m < 2 || !asRawWord(fixed, m, fewer) || asEnglishScore(fewer) == AS_MISSING) return false;
-    vAutoSwitchUndoCount = 0;   //Backspace right after puts "mixx" back
-    for (int x = 0; x < total; x++) vAutoSwitchUndoData[vAutoSwitchUndoCount++] = full[x];
+    int total = n + count, m = 0;
+    for (int x = 0; x < total; x++) if (x != _asDoubleFirst) single[m++] = full[x];
+    char rawFull[AS_KEY_LEN], rawSingle[AS_KEY_LEN];
+    if (!asRawWord(full, total, rawFull) || !asRawWord(single, m, rawSingle)) return false;
+    bool enFull = asEnglishScore(rawFull) != AS_MISSING, enSingle = asEnglishScore(rawSingle) != AS_MISSING;
+    const Uint32* shown = _asDoubleBoth ? full : single;
+    int shownCount = _asDoubleBoth ? total : m;
+    const Uint32* fixed;
+    int fixedCount;
+    if (_asDoubleBoth && !enFull && enSingle) { fixed = single; fixedCount = m; }            //"mixx" -> "mix"
+    else if (!_asDoubleBoth && enFull && !enSingle) { fixed = full; fixedCount = total; }   //"terible" -> "terrible"
+    else return false;
+    if (fixedCount < 1) return false;
+    vAutoSwitchUndoCount = 0;   //Backspace right after puts back what was on screen
+    for (int x = 0; x < shownCount; x++) vAutoSwitchUndoData[vAutoSwitchUndoCount++] = shown[x];
     hCode = vRestore;          //platform sends the new text, then the break key itself
-    hBPC = (Byte)total;
-    hNCC = (Byte)m;
+    hBPC = (Byte)shownCount;
+    hNCC = (Byte)fixedCount;
     hExt = 3;
-    for (int x = 0; x < m; x++) hData[m - 1 - x] = fixed[x];
+    for (int x = 0; x < fixedCount; x++) hData[fixedCount - 1 - x] = fixed[x];
     return true;
 }

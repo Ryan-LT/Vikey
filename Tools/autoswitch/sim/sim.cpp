@@ -21,7 +21,7 @@ typedef std::u16string U;
 
 struct Platform {                    // everything VikeyCore.mm keeps outside the engine
     U screen;
-    Uint32 enKeys[MAX_BUFF]; int enCount = 0; bool enValid = true;
+    Uint32 enKeys[MAX_BUFF]; int enCount = 0; bool enValid = true; bool enAfterDouble = false;
     Uint32 prevKeys[2][MAX_BUFF]; int prevCounts[2] = {0, 0}; int prevN = 0;
     bool undoActive = false; int undoRemove = 0; U undoText;
     int autoSwitches = 0, undos = 0;
@@ -92,6 +92,7 @@ static void press(Uint16 key, bool shift) {
                 if (atBreak) rememberFix(corrected, key, shift);
                 switchTo(0);
                 P.enCount = 0; P.enValid = atBreak && isWhitespace(key); P.prevN = 0;
+                P.enAfterDouble = !atBreak;
             }
         }
         return;
@@ -101,12 +102,20 @@ static void press(Uint16 key, bool shift) {
         if (P.enCount < MAX_BUFF - 2) P.enKeys[P.enCount++] = key | (shift ? CAPS_MASK : 0); else P.enValid = false;
         P.screen.push_back(typedChar(key, shift)); return;
     }
-    if (key == KEY_DELETE) { if (P.enCount == 0) P.prevN = 0; if (P.enCount > 0) P.enCount--; else P.enValid = false; if (!P.screen.empty()) P.screen.pop_back(); return; }
+    if (key == KEY_DELETE) { if (P.enCount == 0) { P.prevN = 0; P.enAfterDouble = false; } if (P.enCount > 0) P.enCount--; else P.enValid = false; if (!P.screen.empty()) P.screen.pop_back(); return; }
     bool digit = false; for (Uint16 d : {KEY_0,KEY_1,KEY_2,KEY_3,KEY_4,KEY_5,KEY_6,KEY_7,KEY_8,KEY_9}) if (key == d) digit = true;
-    if (digit && !shift) { P.enValid = false; P.screen.push_back(typedChar(key, shift)); return; }
+    if (digit && !shift) { P.enValid = false; P.enAfterDouble = false; P.screen.push_back(typedChar(key, shift)); return; }
     bool wordEnd = key == KEY_SPACE || key == KEY_COMMA || key == KEY_DOT || key == KEY_SEMICOLON || key == KEY_RETURN ||
-                   (shift && (key == KEY_SLASH || key == KEY_1));
+                   (shift && (key == KEY_SLASH || key == KEY_1 || key == KEY_QUOTE || key == KEY_0));
     int count = P.enCount; bool valid = P.enValid;
+    bool afterDouble = P.enAfterDouble; P.enAfterDouble = false;
+    if (afterDouble && wordEnd && vAutoSwitchFixDoubledKey(P.enKeys, count)) {
+        P.enCount = 0; P.enValid = isWhitespace(key); P.prevN = 0;
+        int corrected = H->newCharCount;
+        applyOutput(key, shift);
+        rememberFix(corrected, key, shift);
+        return;
+    }
     P.enCount = 0; P.enValid = isWhitespace(key);
     const Uint32* prev[2] = {P.prevKeys[0], P.prevKeys[1]};
     bool converted = wordEnd && valid && count >= 2 &&
@@ -127,7 +136,7 @@ static void press(Uint16 key, bool shift) {
 
 static void hotkey() {                        // switchLanguage(): a plain switch (undo is Backspace)
     P.undoActive = false;
-    P.enCount = 0; P.enValid = true; P.prevN = 0; vAutoSwitchForget();
+    P.enCount = 0; P.enValid = true; P.prevN = 0; P.enAfterDouble = false; vAutoSwitchForget();
     vLanguage = vLanguage ? 0 : 1;
     startNewSession();
 }

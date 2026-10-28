@@ -1,7 +1,7 @@
 # Engine rules, each pinned to the decision in DECISIONS.md that created it.
 # Tests run with Vikey's app defaults (spell check on, restore-if-invalid on, modern tone placement).
 # rule	start(1=VN,0=EN)	keys ('<'=Backspace, '|'=Enter)	expected text	final lang	why
-D5.1	1	err	err	0	doubled tone key in VN mode switches to English (D8: keeps both letters)
+D5.1	1	err	err	0	doubled tone key in VN mode switches to English (both letters stay: err is a word, D19)
 D5.1	1	boss 	boss 	0	doubled tone key keeps both letters
 D5.1	1	the issue is sorry error 	the issue is sorry error 	0	doubled-letter English words come out whole
 D5.1	1	as 	á 	1	a single tone key is normal Telex, no switch
@@ -70,3 +70,8 @@ D18	1	boss 	boss 	0	both presses stay: boss
 D18	1	seemed 	seemed 	0	a key Telex dropped ("eee" undo) counts for the English check: seemed, not "semed"
 D18	1	cheese, 	cheese, 	0	same before a comma: cheese, not "chees"
 D18	1	aaa 	aa 	1	typing a vowel three times is still Telex for two ("aa"), no switch
+D19	1	verr 	ver 	0	doubled tone key gives Telex's "ver" like other input methods; both letters only when they make an English word (Tony)
+D19	1	terrible 	terrible 	0	shows "ter" mid-word, the end of the word restores the double letter: terrible
+D19	1	sorry 	sorry 	0	same: sorry
+D19	1	issue 	issue 	0	same: issue
+D19	1	bijj 	bij 	0	a Vietnamese typo with a doubled tone key gives the familiar Telex result, not "bijj"
