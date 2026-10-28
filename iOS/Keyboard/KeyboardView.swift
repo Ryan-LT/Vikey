@@ -271,7 +271,7 @@ final class KeyboardView: UIView {
         guard t - lastHaptic > 0.04 else { return }
         lastHaptic = t
         Diag.haptics += 1
-        feedback.impactOccurred(intensity: 0.5)   // the system keyboard's tap is lighter than a full .light impact
+        feedback.impactOccurred(intensity: 0.75)   // 1.0 felt too strong next to the system keyboard, 0.5 too light (Tony)
     }
 
     private func press(_ c: KeyCap) {
