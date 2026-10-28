@@ -28,3 +28,12 @@
 0	ok vaayj thi mai gaawpj nhes|	ok vậy thi mai gặp nhé
 	1
 0	abc123 treen 	abc123 trên 	1
+0	var x = 1 	var x = 1 	0
+1	var x 	vả x 	1
+0	const deps = refs.uri 	const deps = refs.uri 	0
+0	cors gif 	cors gì 	1
+0	image.gif nginx.conf 	image.gif nginx.conf 	0
+0	obj.dir os.path.dirs 	obj.dir os.path.dirs 	0
+0	my_dir ok 	my_dir ok 	0
+1	tooi nghix gif ddos 	tôi nghĩ gì đó 	1
+1	char 	chả 	1

@@ -788,6 +788,10 @@ extern "C" {
         }
     }
 
+    static bool IsWhitespaceKey(const Uint16& key) {
+        return key == KEY_SPACE || key == KEY_RETURN || key == KEY_ENTER || key == KEY_TAB;
+    }
+
     static bool IsLetterKey(const Uint16& key) {
         switch (key) {
             case KEY_A: case KEY_B: case KEY_C: case KEY_D: case KEY_E: case KEY_F: case KEY_G: case KEY_H: case KEY_I:
@@ -865,7 +869,7 @@ extern "C" {
         vAutoSwitchRequest = -1;
         if (atWordBreak) RememberAutoFix(correctedCount); else _autoFixUndo.active = false;
         AutoSwitchTo(0);
-        ResetEnglishWord(atWordBreak); // mid-word: the rest of this word is not a whole word
+        ResetEnglishWord(atWordBreak && IsWhitespaceKey(_keycode)); // mid-word: the rest of this word is not a whole word
     }
 
     static bool OtherInputSourceActive() {
@@ -910,7 +914,8 @@ extern "C" {
                        _keycode == KEY_RETURN || _keycode == KEY_ENTER || (shift && (_keycode == KEY_SLASH || _keycode == KEY_1));
         int count = _enCount;
         bool valid = _enValid;
-        ResetEnglishWord(true); // any other key starts a new word too
+        // the next word is whole only after whitespace; after . _ - / ( etc. it's part of an identifier or path
+        ResetEnglishWord(IsWhitespaceKey(_keycode));
         if (!wordEnd || !valid || count < 2) return false;
         if (vOtherLanguage && OtherInputSourceActive()) return false;
         if (!vAutoSwitchCheckEnglishWord(_enKeys, count)) return false;

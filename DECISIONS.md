@@ -7,6 +7,26 @@ Status values: **Shipped** (in a build Tony has), **Agreed** (decided, not built
 
 ---
 
+## 6. Auto-switch must not touch programming words
+
+**Status:** Fixed 2026-10-28 and sent as OpenKey-2.0.4-autoswitch2.
+
+**Reported by Tony.** "I typed `var`, a popular short form for variable. We probably need to handle a lot of things for developers too."
+
+**Cause.** "var" isn't in the English dictionary, and its Telex replay "vả" is a real Vietnamese word, so English mode converted it.
+
+**Decisions**
+
+- **Programming words count as English.** About 250 terms were added: keywords, CLI tools, file types and common short forms like var, const, def, args, ctx, deps, refs, uri. Identifier words that collided with Vietnamese were also added. These were found by splitting camelCase/snake_case identifiers across real projects and replaying each through the engine, then reviewed by hand. Only that reviewed list is in the repo.
+- **Identifier guard.** Only a word that starts after a space, Enter, Tab, click or shortcut is ever checked. Text after . _ - / ( and similar is never touched, so obj.dir, os.path, my_var and image.gif stay as typed. This applies in both modes.
+- **Not added.** "gif" and "conf" type the very common Vietnamese "gì" and "còn". Those win in English mode when the word stands alone. File names are covered by the guard.
+- **Vietnamese mode keeps Vietnamese.** I tried letting programming words beat moderately common Vietnamese words in VN mode, and rejected it: it broke "mô tả" (tar) and "vả lại" (var). In VN mode, "var" stays "vả".
+- **Known limit, from Tony's double-key rule.** In VN mode, err, error and less lose one letter (er, eror, les) and switch to English, because Telex consumes the doubled key.
+
+**Result.** In English mode, 0 of the ~250 programming words are changed except "gif", which is deliberate. All regression cases and live cases pass.
+
+---
+
 ## 5. Auto-switch language from correction behavior
 
 **Status:** Built 2026-10-28 and sent as OpenKey-2.0.4-autoswitch. Tony is testing.

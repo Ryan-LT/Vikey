@@ -72,11 +72,12 @@ for w, c in en_rows:
     if re.fullmatch('[a-z]{2,}', w) and w in spell_ok:
         en[w] = max(en.get(w, -999), score(c, en_total))
 
-# Chat shorthand and developer words: always English, with a high score.
-for line in open(os.path.join(HERE, 'en_extra.txt')):
-    if line.startswith('#'): continue
-    for w in line.split():
-        en[w] = max(en.get(w, -999), 40)
+# Chat shorthand, programming words and identifier words mined from code: always English, high score.
+for name in ('en_extra.txt', 'en_code.txt'):
+    for line in open(os.path.join(HERE, name)):
+        if line.startswith('#'): continue
+        for w in line.split():
+            en[w] = max(en.get(w, -999), 40)
 
 def emit(name, d):
     keys = sorted(d)

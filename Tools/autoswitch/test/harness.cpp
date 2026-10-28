@@ -25,7 +25,7 @@ static Uint16 keyOf(char c) {
         case 'p': return KEY_P; case 'q': return KEY_Q; case 'r': return KEY_R; case 's': return KEY_S; case 't': return KEY_T;
         case 'u': return KEY_U; case 'v': return KEY_V; case 'w': return KEY_W; case 'x': return KEY_X; case 'y': return KEY_Y;
         case 'z': return KEY_Z; case ' ': return KEY_SPACE; case ',': return KEY_COMMA; case '.': return KEY_DOT;
-        case '\n': return KEY_RETURN; case '<': return KEY_DELETE; case '1': return KEY_1; case '2': return KEY_2;
+        case '\n': return KEY_RETURN; case '<': return KEY_DELETE; case '_': return KEY_MINUS; case '/': return KEY_SLASH; case '1': return KEY_1; case '2': return KEY_2;
     }
     return 0xFFFF;
 }
@@ -56,7 +56,7 @@ static void press(char c) {
         } else applyOutput(key, caps);
         if (vAutoSwitchRequest == 0) {
             vAutoSwitchRequest = -1; vLanguage = 0; startNewSession(); switches++;
-            enCount = 0; enValid = !isLetter(lc);
+            enCount = 0; enValid = (key == KEY_SPACE || key == KEY_RETURN);
         }
         return;
     }
@@ -68,7 +68,7 @@ static void press(char c) {
     if (key == KEY_DELETE) { if (enCount > 0) enCount--; else enValid = false; if (!screen.empty()) screen.pop_back(); return; }
     if (lc >= '0' && lc <= '9') { enValid = false; screen.push_back(c); return; }
     bool wordEnd = key == KEY_SPACE || key == KEY_COMMA || key == KEY_DOT || key == KEY_RETURN;
-    int count = enCount; bool valid = enValid; enCount = 0; enValid = true;
+    int count = enCount; bool valid = enValid; enCount = 0; enValid = (key == KEY_SPACE || key == KEY_RETURN);
     if (wordEnd && valid && count >= 2 && vAutoSwitchCheckEnglishWord(enKeys, count)) {
         applyOutput(key, caps); vLanguage = 1; startNewSession(); switches++; return;
     }

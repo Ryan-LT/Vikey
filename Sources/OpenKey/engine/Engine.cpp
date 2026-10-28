@@ -1311,6 +1311,7 @@ int vAutoSwitchUndoCount = 0;
 
 static char _asLetter[256];
 static bool _asLetterReady = false;
+static bool _asWordStartOk = true;   //the current word began after a space, Enter, Tab or a fresh start (not inside foo.bar or my_var)
 
 static void asInitLetters() {
     if (_asLetterReady) return;
@@ -1396,7 +1397,7 @@ static inline bool asEnabled() {
 
 /** Vietnamese mode, at a word break: are the raw keys an English word the user clearly meant? */
 static bool asShouldRestoreToEnglish() {
-    if (!asEnabled() || _hasHandledMacro) return false;
+    if (!asEnabled() || _hasHandledMacro || !_asWordStartOk) return false;
     asInitLetters();
     if (_stateIndex < 2 || _stateIndex < _index) return false;
     char word[AS_KEY_LEN], raw[AS_KEY_LEN];
@@ -1610,6 +1611,8 @@ void vKeyHandleEvent(const vKeyEvent& event,
             else
                 _upperCaseStatus = 0;
         }
+        //the next word is a whole word only after whitespace, a click or a shortcut, not after . _ - / etc.
+        _asWordStartOk = event == vKeyEvent::Mouse || otherControlKey || data == KEY_ENTER || data == KEY_RETURN || data == KEY_TAB;
     } else if (data == KEY_SPACE) {
         if (!tempDisableKey && vCheckSpelling) {
             checkSpelling(true); //force check spelling
@@ -1649,6 +1652,7 @@ void vKeyHandleEvent(const vKeyEvent& event,
         }
         vCheckSpelling = _useSpellCheckingBefore;
         _willTempOffEngine = false;
+        _asWordStartOk = true;
     } else if (data == KEY_DELETE) {
         hCode = vDoNothing;
         hExt = 2; //delete
