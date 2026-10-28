@@ -35,6 +35,7 @@ struct TypingLogView: View {
             }
         }
         .padding(20)
+        .frame(minWidth: 720, minHeight: 560)
         .onAppear { reload() }
         .confirmationDialog("Xoá toàn bộ nhật ký gõ?", isPresented: $confirmClear) {
             Button("Xoá", role: .destructive) {

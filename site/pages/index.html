@@ -1,0 +1,49 @@
+<!-- title: Vikey – Gõ tiếng Việt, tự chuyển Anh/Việt -->
+<!-- description: Bộ gõ tiếng Việt cho macOS. Gõ nhầm chế độ, Vikey tự sửa từ và chuyển Anh/Việt cho bạn. Miễn phí, mã nguồn mở. -->
+<!-- layout: one -->
+<main class="one">
+<div class="wrap">
+<div class="one-l">
+<span class="pill">macOS 13+ · Miễn phí · Mã nguồn mở</span>
+<h1>Gõ tiếng Việt,<br><span>tự chuyển Anh/Việt.</span></h1>
+<p class="lead">Gõ nhầm chế độ, Vikey tự sửa từ và chuyển giúp bạn. Không cần bấm phím chuyển sau mỗi vài chữ.</p>
+<div class="btns"><a class="btn big dl-mac" href="DOWNLOAD_URL" download>Tải cho macOS</a><a class="btn big ghost" href="https://github.com/tonyminibot/Vikey">Mã nguồn</a></div>
+<p class="sub">Telex · Apple Silicon và Intel · v<span data-ver>VERSION</span></p>
+</div>
+<div class="one-r">
+<div class="demo" aria-label="Minh hoạ: gõ lẫn tiếng Anh và tiếng Việt, Vikey tự chuyển">
+<div class="demo-bar"><span class="dots"><i></i><i></i><i></i></span><span class="demo-title">Tin nhắn</span><span class="vk" id="vk" title="Chế độ hiện tại">V</span></div>
+<div class="demo-body">
+<div class="row"><span class="lbl">Phím bạn gõ</span><code class="keys" id="keys"></code></div>
+<div class="row"><span class="lbl">Vikey viết</span><div class="out" id="out"><span class="caret"></span></div></div>
+<div class="toast" id="toast"></div>
+</div>
+</div>
+<img class="pop zoom" src="/assets/shots/main.png" width="460" height="693" alt="Cửa sổ Vikey: chuyển Tiếng Việt/English, phím tắt, tự chuyển, kiểu đặt dấu">
+</div>
+<nav class="links"><a href="/download">Tải về</a><a href="/faq">Câu hỏi thường gặp</a><a href="/changelog">Phiên bản</a><a href="/privacy">Quyền riêng tư</a><a href="https://github.com/tonyminibot/Vikey">GitHub</a><a href="https://github.com/tonyminibot/Vikey/issues">Báo lỗi</a></nav>
+</div>
+</main>
+<div class="lightbox" id="lb" hidden><img alt=""></div>
+<script>
+const lb=document.getElementById("lb"),lbi=lb.querySelector("img");
+document.querySelectorAll("img.zoom").forEach(i=>i.addEventListener("click",()=>{lbi.src=i.src;lbi.alt=i.alt;lb.hidden=false;document.body.classList.add("lb-open")}));
+const closeLb=()=>{lb.hidden=true;document.body.classList.remove("lb-open")};
+lb.addEventListener("click",closeLb);addEventListener("keydown",e=>{if(e.key==="Escape")closeLb()});
+// Typing demo: every frame below was produced by Vikey's real engine, one keystroke at a time.
+(async()=>{
+ const scenes=await (await fetch("/assets/demo.json")).json();
+ const keys=document.getElementById("keys"),out=document.getElementById("out"),vk=document.getElementById("vk"),toast=document.getElementById("toast");
+ const wait=ms=>new Promise(r=>setTimeout(r,ms));
+ const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+ const setLang=(l,announce)=>{vk.textContent=l?"V":"E";vk.classList.toggle("en",!l);
+  if(announce){toast.textContent=l?"Tự chuyển sang Tiếng Việt":"Tự chuyển sang English";toast.classList.remove("show");void toast.offsetWidth;toast.classList.add("show");vk.classList.remove("flip");void vk.offsetWidth;vk.classList.add("flip")}};
+ const render=t=>{out.textContent=t;const c=document.createElement("span");c.className="caret";out.appendChild(c)};
+ if(reduce){const s=scenes[0],f=s.frames[s.frames.length-1];keys.textContent=s.frames.map(x=>x[0]).join("");render(f[1]);setLang(f[2],false);return}
+ for(;;){for(const s of scenes){
+  keys.textContent="";render("");setLang(s.start,false);await wait(900);
+  let lang=s.start;
+  for(const [k,t,l] of s.frames){keys.textContent+=k;render(t);if(l!==lang){setLang(l,true);lang=l;await wait(650)}await wait(k===" "?260:95+Math.random()*60)}
+  await wait(2600)}}
+})();
+</script>

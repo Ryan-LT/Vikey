@@ -1,0 +1,63 @@
+#!/bin/zsh
+# Builds, signs, notarizes and publishes a Vikey release.
+#   Tools/release/release.sh 1.0.1
+# Steps: bump version → engine rule lock → universal Release build → Developer ID sign → notarize app
+#        → DMG (signed, notarized, stapled) → site/downloads + release.json → GitHub Release → deploy site.
+set -e
+VER=${1:?usage: release.sh <version>}
+cd "$(dirname "$0")/../.."
+ROOT=$PWD
+KC=~/Library/Keychains/s10w-signing.keychain-db
+KCP=$(grep "^KC_PASS=" ~/.secrets/s10w_signing | cut -d= -f2-)
+IDENT="Developer ID Application: Typing Technology Company Limited (3H6967F79Y)"
+NOTARY=(--key ~/.secrets/AuthKey_3QNAF6H8AT.p8 --key-id 3QNAF6H8AT --issuer 6587ae6d-4945-468e-8879-d58b7a6d33ad)
+
+echo "==> version $VER"
+BUILD=$(( $(grep 'CURRENT_PROJECT_VERSION' project.yml | grep -o '[0-9]\+') + 1 ))
+sed -i '' "s/MARKETING_VERSION: \".*\"/MARKETING_VERSION: \"$VER\"/; s/CURRENT_PROJECT_VERSION: \".*\"/CURRENT_PROJECT_VERSION: \"$BUILD\"/" project.yml
+xcodegen generate >/dev/null
+
+echo "==> engine rule lock"
+Tools/autoswitch/check.sh >/dev/null || { echo "check.sh failed: engine behavior changed"; exit 1; }
+
+echo "==> build (universal)"
+rm -rf build/dd dist && mkdir -p dist
+xcodebuild -project Vikey.xcodeproj -scheme Vikey -configuration Release -derivedDataPath build/dd \
+  ARCHS="arm64 x86_64" ONLY_ACTIVE_ARCH=NO CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=NO build | grep -E "error:|BUILD" || true
+APP=build/dd/Build/Products/Release/Vikey.app
+[ "$(defaults read "$ROOT/$APP/Contents/Info.plist" CFBundleShortVersionString)" = "$VER" ] || { echo "built version mismatch"; exit 1; }
+lipo -archs "$APP/Contents/MacOS/Vikey"
+cp -R "$APP" dist/
+
+echo "==> sign + notarize app"
+security unlock-keychain -p "$KCP" "$KC"
+codesign --force --deep --options runtime --timestamp --entitlements App/Vikey.entitlements -s "$IDENT" dist/Vikey.app
+ditto -c -k --keepParent dist/Vikey.app dist/Vikey.zip
+xcrun notarytool submit dist/Vikey.zip "${NOTARY[@]}" --wait | tail -1
+xcrun stapler staple dist/Vikey.app | tail -1
+rm dist/Vikey.zip
+
+echo "==> DMG"
+DMG=dist/Vikey-$VER.dmg
+python3 Tools/release/dmg_background.py dist/dmg_bg.png
+create-dmg --volname "Vikey" --volicon design/Vikey.icns \
+  --background dist/dmg_bg.png --window-pos 200 120 --window-size 660 420 \
+  --icon-size 128 --icon "Vikey.app" 170 190 --app-drop-link 490 190 \
+  --hide-extension "Vikey.app" --no-internet-enable \
+  --codesign "$IDENT" "$DMG" dist/Vikey.app >/dev/null || true
+[ -f "$DMG" ] || { echo "dmg not created"; exit 1; }
+xcrun notarytool submit "$DMG" "${NOTARY[@]}" --wait | tail -1
+xcrun stapler staple "$DMG" | tail -1
+spctl -a -vv -t open --context context:primary-signature "$DMG" 2>&1 | tail -1
+
+echo "==> site + GitHub release"
+mkdir -p site/downloads
+cp "$DMG" site/downloads/
+SHA=$(shasum -a 256 "$DMG" | cut -d' ' -f1)
+printf '{"version": "%s", "download_url": "/downloads/Vikey-%s.dmg", "sha256": "%s"}\n' "$VER" "$VER" "$SHA" > site/release.json
+setopt null_glob; for old in site/downloads/Vikey-*.dmg; do [ "$old" = "site/downloads/Vikey-$VER.dmg" ] || rm "$old"; done
+git add project.yml site/release.json && git commit -q -m "Release $VER" && git push -q origin main
+gh release create "v$VER" "$DMG" -R tonyminibot/Vikey --title "Vikey $VER" --notes-file <(sed -n "/<!-- release $VER -->/,/<!-- \/release -->/p" site/pages/changelog.html | sed 's/<[^>]*>//g' | sed '/^\s*$/d') 2>/dev/null \
+  || gh release create "v$VER" "$DMG" -R tonyminibot/Vikey --title "Vikey $VER" --notes "Vikey $VER"
+Tools/release/deploy_site.sh
+echo "==> done: https://vikey.app"

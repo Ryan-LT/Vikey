@@ -1,0 +1,18 @@
+<!-- title: Tải Vikey cho macOS -->
+<!-- description: Tải Vikey miễn phí cho macOS 13 trở lên. Đã ký và được Apple xác thực (notarized). -->
+<main class="wrap prose center" style="max-width:720px">
+<h1>Tải Vikey</h1>
+<p><span class="nw">Phiên bản VERSION</span> · <span class="nw">macOS 13+</span> · <span class="nw">Apple Silicon và Intel</span> · <span class="nw">đã được Apple xác thực</span></p>
+<p class="desk" style="margin:26px 0"><a class="btn big dl-mac" href="DOWNLOAD_URL" download>Tải cho macOS</a></p>
+<p class="mob muted" style="margin:26px 0">Vikey chạy trên máy Mac. Mở trang này trên máy Mac để tải về.</p>
+<ol class="steps" style="text-align:left">
+<li>Mở file vừa tải, kéo Vikey vào thư mục Applications.</li>
+<li>Thoát OpenKey, EVKey hoặc bộ gõ khác nếu đang chạy.</li>
+<li>Mở Vikey và cấp quyền Trợ năng (Accessibility) khi được hỏi. Vikey nằm trên thanh menu.</li>
+</ol>
+<div class="terminal" style="text-align:left;margin:30px 0"><span class="c"># Kiểm tra file tải về</span>
+shasum -a 256 ~/Downloads/Vikey-VERSION.dmg
+<span class="c"># kết quả đúng:</span> <span id="sha">SHA256</span></div>
+<p class="muted">Mã nguồn và mọi phiên bản đều có trên <a href="https://github.com/tonyminibot/Vikey/releases">GitHub</a>. Thay đổi từng bản xem ở <a href="/changelog">lịch sử phiên bản</a>.</p>
+</main>
+<script>const m=matchMedia("(max-width:900px),(pointer:coarse)").matches;document.querySelectorAll(m?".desk":".mob").forEach(e=>e.hidden=true)</script>

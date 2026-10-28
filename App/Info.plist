@@ -29,6 +29,6 @@
 	<key>NSAppleEventsUsageDescription</key>
 	<string>Vikey reads the address of the current browser tab so it can remember your typing language for each website. Nothing leaves your Mac.</string>
 	<key>NSHumanReadableCopyright</key>
-	<string>Based on OpenKey © Tuyen Mai. GPL-3.0.</string>
+	<string>© 2026 Tony Dinh. Based on OpenKey by Tuyen Mai. GPL-3.0.</string>
 </dict>
 </plist>

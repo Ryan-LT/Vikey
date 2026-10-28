@@ -13,11 +13,5 @@ struct VikeyApp: App {
             Image(nsImage: MenuBarIcon.image(vietnamese: state.language == 1))
         }
 
-        Window("Vikey", id: "settings") {
-            SettingsView()
-                .environmentObject(state)
-        }
-        .defaultSize(width: 880, height: 680)
-
     }
 }

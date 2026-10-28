@@ -105,6 +105,15 @@ int main(int argc, char** argv) {
         }
         return 0;
     }
+    if (argc >= 4 && strcmp(argv[1], "frames") == 0) {
+        // frames <lang> <keys>: one line per keystroke: "<key>\t<text>\t<lang>" (for the website demo)
+        vLanguage = atoi(argv[2]);
+        for (char* p = argv[3]; *p; p++) {
+            press(*p);
+            printf("%c\t%s\t%d\n", *p, utf8(screen).c_str(), vLanguage);
+        }
+        return 0;
+    }
     if (argc >= 2 && strcmp(argv[1], "bench") == 0) {
         Uint32 keys[8] = {KEY_T, KEY_R, KEY_U, KEY_O, KEY_W, KEY_F, KEY_N, KEY_G};
         auto t0 = std::chrono::steady_clock::now();
