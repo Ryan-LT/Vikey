@@ -1669,8 +1669,10 @@ void vKeyHandleEvent(const vKeyEvent& event,
             vCheckSpelling = _useSpellCheckingBefore;
         }
         _asPrevCount = 0;
-        //the next word is a whole word only after whitespace, a click or a shortcut, not after . _ - / etc.
-        _asWordStartOk = event == vKeyEvent::Mouse || otherControlKey || data == KEY_ENTER || data == KEY_RETURN || data == KEY_TAB;
+        //the next word is a whole word only after whitespace, a click, a shortcut or an opening ( [ { " ',
+        //not after . _ - / etc.
+        _asWordStartOk = event == vKeyEvent::Mouse || otherControlKey || data == KEY_ENTER || data == KEY_RETURN || data == KEY_TAB ||
+                         (data == KEY_9 && capsStatus == 1) || data == KEY_LEFT_BRACKET || data == KEY_QUOTE;
     } else if (data == KEY_SPACE) {
         if (!tempDisableKey && vCheckSpelling) {
             checkSpelling(true); //force check spelling

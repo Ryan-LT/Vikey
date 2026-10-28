@@ -75,3 +75,6 @@ D19	1	terrible 	terrible 	0	shows "ter" mid-word, the end of the word restores t
 D19	1	sorry 	sorry 	0	same: sorry
 D19	1	issue 	issue 	0	same: issue
 D19	1	bijj 	bij 	0	a Vietnamese typo with a doubled tone key gives the familiar Telex result, not "bijj"
+D20	1	(this create 	(this create 	0	after an opening ( the next word is a whole word: look-back fixes "(thí create" (Tony)
+D20	1	"this create 	"this create 	0	same after an opening "
+D20	1	(tooi ddi 	(tôi đi 	1	Vietnamese in parentheses stays Vietnamese

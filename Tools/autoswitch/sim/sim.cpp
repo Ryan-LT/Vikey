@@ -67,6 +67,7 @@ static void rememberFix(int corrected, Uint16 key, bool shift) {
     P.undoActive = false;
     char16_t brk = typedChar(key, shift);
     if (!brk || brk == u'\n' || vAutoSwitchUndoCount <= 0 || corrected <= 0) return;
+    for (int x = 0; x < vAutoSwitchUndoCount; x++) if ((vAutoSwitchUndoData[x] & 0xFFFF) == KEY_SPACE && !(vAutoSwitchUndoData[x] & CHAR_CODE_MASK)) return;   //multi-word fix: no undo
     P.undoText.clear();
     for (int x = 0; x < vAutoSwitchUndoCount; x++) P.undoText.push_back(charOf(vAutoSwitchUndoData[x]));
     P.undoText.push_back(brk);
@@ -116,7 +117,7 @@ static void press(Uint16 key, bool shift) {
         rememberFix(corrected, key, shift);
         return;
     }
-    P.enCount = 0; P.enValid = isWhitespace(key);
+    P.enCount = 0; P.enValid = isWhitespace(key) || (key == KEY_9 && shift) || key == KEY_LEFT_BRACKET || key == KEY_QUOTE;
     const Uint32* prev[2] = {P.prevKeys[0], P.prevKeys[1]};
     bool converted = wordEnd && valid && count >= 2 &&
         (getenv("SIM_NO_LOOKBACK") ? vAutoSwitchCheckEnglishWord(P.enKeys, count) : vAutoSwitchCheckEnglishWord(P.enKeys, count, prev, P.prevCounts, P.prevN));

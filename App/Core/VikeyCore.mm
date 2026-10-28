@@ -536,6 +536,11 @@ extern "C" {
         return key == KEY_SPACE || key == KEY_RETURN || key == KEY_ENTER || key == KEY_TAB;
     }
 
+    /// After these the next word is a whole word: whitespace, or an opening ( [ { " '.
+    static bool IsWordStartKey(const Uint16& key, bool shift) {
+        return IsWhitespaceKey(key) || (key == KEY_9 && shift) || key == KEY_LEFT_BRACKET || key == KEY_QUOTE;
+    }
+
     static bool IsLetterKey(const Uint16& key) {
         switch (key) {
             case KEY_A: case KEY_B: case KEY_C: case KEY_D: case KEY_E: case KEY_F: case KEY_G: case KEY_H: case KEY_I:
@@ -774,6 +779,8 @@ extern "C" {
     static void RememberAutoFix(int correctedCount) {
         _autoFixUndo.active = false;
         if (vAutoSwitchUndoCount <= 0 || correctedCount <= 0) return;
+        // only a fix of the last word is undone; one that also fixed earlier words stays (Backspace just deletes)
+        for (int x = 0; x < vAutoSwitchUndoCount; x++) if ((vAutoSwitchUndoData[x] & 0xFFFF) == KEY_SPACE && !(vAutoSwitchUndoData[x] & CHAR_CODE_MASK)) return;
         Uint16 breakChar = keyCodeToCharacter(_keycode | ((_flag & kCGEventFlagMaskAlphaShift) || (_flag & kCGEventFlagMaskShift) ? CAPS_MASK : 0));
         if (breakChar == 0) return; // Enter and the like have already acted
         int n = 0;
@@ -869,7 +876,7 @@ extern "C" {
         bool afterDouble = _enAfterDouble;
         _enAfterDouble = false;
         if (afterDouble && wordEnd && vAutoSwitchFixDoubledKey(_enKeys, count)) {
-            StartEnglishWord(IsWhitespaceKey(_keycode));
+            StartEnglishWord(IsWordStartKey(_keycode, shift));
             _enPrevN = 0;
             int correctedCount = pData->newCharCount;
             SendEngineOutput();
@@ -877,7 +884,7 @@ extern "C" {
             return true;
         }
         // the next word is whole only after whitespace; after . _ - / ( etc. it's part of an identifier or path
-        StartEnglishWord(IsWhitespaceKey(_keycode));
+        StartEnglishWord(IsWordStartKey(_keycode, shift));
         bool checked = wordEnd && valid && count >= 2 && !(vOtherLanguage && OtherInputSourceActive());
         const Uint32* previous[2] = {_enPrevKeys[0], _enPrevKeys[1]};
         bool converted = checked && vAutoSwitchCheckEnglishWord(_enKeys, count, previous, _enPrevCounts, _enPrevN);

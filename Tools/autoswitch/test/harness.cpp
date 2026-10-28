@@ -25,7 +25,7 @@ static Uint16 keyOf(char c) {
         case 'u': return KEY_U; case 'v': return KEY_V; case 'w': return KEY_W; case 'x': return KEY_X; case 'y': return KEY_Y;
         case 'z': return KEY_Z; case ' ': return KEY_SPACE; case ',': return KEY_COMMA; case '.': return KEY_DOT;
         case '\n': return KEY_RETURN; case '<': return KEY_DELETE; case '_': return KEY_MINUS; case '/': return KEY_SLASH; case '1': return KEY_1; case '2': return KEY_2;
-        case '\'': return KEY_QUOTE; case '"': return KEY_QUOTE; case ')': return KEY_0; case ';': return KEY_SEMICOLON; case '?': return KEY_SLASH;
+        case '\'': return KEY_QUOTE; case '"': return KEY_QUOTE; case ')': return KEY_0; case '(': return KEY_9; case '[': return KEY_LEFT_BRACKET; case ';': return KEY_SEMICOLON; case '?': return KEY_SLASH;
     }
     return 0xFFFF;
 }
@@ -44,7 +44,7 @@ static void applyOutput(Uint16 key, bool caps) {
 }
 
 static void press(char c) {
-    bool shifted = c == '"' || c == ')' || c == '?';
+    bool shifted = c == '"' || c == ')' || c == '(' || c == '?';
     bool caps = (c >= 'A' && c <= 'Z') || shifted;
     char lc = (c >= 'A' && c <= 'Z') ? c + 32 : c;
     Uint16 key = keyOf(lc);
@@ -72,7 +72,8 @@ static void press(char c) {
     if (lc >= '0' && lc <= '9') { enValid = false; enAfterDouble = false; screen.push_back(c); return; }
     bool wordEnd = key == KEY_SPACE || key == KEY_COMMA || key == KEY_DOT || key == KEY_RETURN || key == KEY_SEMICOLON ||
                    (caps && (key == KEY_SLASH || key == KEY_1 || key == KEY_QUOTE || key == KEY_0));
-    int count = enCount; bool valid = enValid; enCount = 0; enValid = (key == KEY_SPACE || key == KEY_RETURN);
+    int count = enCount; bool valid = enValid; enCount = 0;
+    enValid = key == KEY_SPACE || key == KEY_RETURN || (key == KEY_9 && caps) || key == KEY_LEFT_BRACKET || key == KEY_QUOTE;
     bool afterDouble = enAfterDouble; enAfterDouble = false;
     if (afterDouble && wordEnd && vAutoSwitchFixDoubledKey(enKeys, count)) {
         prevN = 0; applyOutput(key, caps); return;

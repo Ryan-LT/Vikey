@@ -23,6 +23,18 @@ If every listed change is intended, accept them with `Tools/autoswitch/check.sh 
 
 ---
 
+## 20. Words after ( and ", and no Backspace undo for multi-word fixes
+
+**Status:** Done 2026-10-28 (1.0.8). Rule cases D20.
+
+**Asked by Tony.**
+- "(thí create " didn't change "thí" into "this".
+- "thí create " became "this create ", then Backspace (to add an s) turned it back into "thí". "Maybe we shouldn't do the backspace to undo thing when there are more than 1 word involved?"
+
+**Decided.**
+- An opening ( [ " or ' starts a whole word, like a space does (both modes). "(thí create" → "(this create". Still not after . _ - / (identifiers, paths).
+- Backspace right after an auto-fix undoes it only when the fix changed the last word alone. When look-back also fixed earlier words, Backspace just deletes a character.
+
 ## 19. Doubled tone key: Telex result by default, the dictionary decides at the end of the word
 
 **Status:** Done 2026-10-28 (1.0.7). Rule cases D19. Replaces D8's "keep both letters" default.
