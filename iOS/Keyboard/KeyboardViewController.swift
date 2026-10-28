@@ -24,7 +24,7 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
             keyboard.topAnchor.constraint(equalTo: view.topAnchor),
             keyboard.bottomAnchor.constraint(equalTo: view.bottomAnchor),
         ])
-        let h = view.heightAnchor.constraint(equalToConstant: KeyboardView.keyboardHeight)
+        let h = view.heightAnchor.constraint(equalToConstant: KeyboardView.keyboardHeight(compactHeight: traitCollection.verticalSizeClass == .compact))
         h.priority = .defaultHigh
         h.isActive = true
         heightConstraint = h
@@ -37,6 +37,13 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
         loadSettings()
         startField()
         refresh()
+    }
+
+    override func traitCollectionDidChange(_ previous: UITraitCollection?) {
+        super.traitCollectionDidChange(previous)
+        heightConstraint?.constant = KeyboardView.keyboardHeight(compactHeight: traitCollection.verticalSizeClass == .compact)
+        keyboard?.setNeedsLayout()
+        if previous?.userInterfaceStyle != traitCollection.userInterfaceStyle { refresh() }
     }
 
     override func viewWillLayoutSubviews() {

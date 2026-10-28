@@ -40,8 +40,10 @@ final class KeyboardView: UIView {
     private let popup = KeyPopup()
     private var repeatTimer: Timer?
 
-    static let rowHeight: CGFloat = 56
-    static let keyboardHeight: CGFloat = 4 * rowHeight + 12
+    /// Shorter rows in landscape on iPhone, like the system keyboard.
+    static func rowHeight(compactHeight: Bool) -> CGFloat { compactHeight ? 42 : 56 }
+    static func keyboardHeight(compactHeight: Bool) -> CGFloat { 4 * rowHeight(compactHeight: compactHeight) + 12 }
+    private var rowH: CGFloat { Self.rowHeight(compactHeight: traitCollection.verticalSizeClass == .compact) }
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -125,7 +127,7 @@ final class KeyboardView: UIView {
             for def in row {
                 x += def.gapBefore * unit * scale
                 let w = def.width * unit * scale
-                let frame = CGRect(x: x + hGap / 2, y: top + CGFloat(r) * Self.rowHeight, width: w - hGap, height: Self.rowHeight - 12)
+                let frame = CGRect(x: x + hGap / 2, y: top + CGFloat(r) * rowH, width: w - hGap, height: rowH - (rowH < 50 ? 8 : 12))
                 let v = keyViews[index].view
                 v.frame = frame
                 if def.kind == .globe { globeButton?.frame = frame.insetBy(dx: -hGap / 2, dy: -6) }
