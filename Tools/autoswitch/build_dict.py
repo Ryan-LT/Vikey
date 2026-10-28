@@ -78,6 +78,21 @@ if INF_SHARE > 0 and os.path.exists(os.path.join(INF, 'vi_informal.txt')):
         if not k or (plain and plain[-1] in 'srx'): continue
         if (len(w) <= 7 and c >= 5 and SYL.match(k)) or (SHORTHAND.match(k) and c >= 50):
             inf[k] = inf.get(k, 0) + c
+# Bulk web Vietnamese (vikey-data/bulk: FineWeb-2, HPLT, MADLAD; experiment): mixed into the formal base
+BULK = os.path.expanduser('~/Work/vikey-data/bulk/merged')
+BULK_SHARE = float(os.environ.get('VIKEY_BULK_SHARE', '0'))
+if BULK_SHARE > 0 and os.path.exists(os.path.join(BULK, 'vi_counts.txt')):
+    import json
+    btot = json.load(open(os.path.join(BULK, 'sources.json')))['totals']['tokens_vi']
+    bulk = {}
+    for line in open(os.path.join(BULK, 'vi_counts.txt'), encoding='utf-8'):
+        w, c = line.split(); c = int(c)
+        k = vn_key(w); plain = unicodedata.normalize('NFD', w.lower())
+        if k and not (plain and plain[-1] in 'srx') and len(w) <= 7 and c >= 20 and SYL.match(k):
+            bulk[k] = bulk.get(k, 0) + c
+    # rewrite vn as counts on the subtitle scale: (1-b)*subtitle rate + b*bulk rate
+    vn = {k: ((1 - BULK_SHARE) * vn.get(k, 0) / vi_total + BULK_SHARE * bulk.get(k, 0) / btot) * vi_total for k in set(vn) | set(bulk)}
+    vn = {k: c for k, c in vn.items() if c > 0}
 if inf_total:
     for w, c in vi:   # shorthand the subtitles have too
         k = vn_key(w)
