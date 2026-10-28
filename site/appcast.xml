@@ -4,17 +4,15 @@
 <title>Vikey</title>
 <link>https://vikey.app</link>
 <item>
-<title>Vikey 1.0.5</title>
-<pubDate>Wed, 28 Oct 2026 09:07:31 +0000</pubDate>
-<sparkle:version>7</sparkle:version>
-<sparkle:shortVersionString>1.0.5</sparkle:shortVersionString>
+<title>Vikey 1.0.6</title>
+<pubDate>Wed, 28 Oct 2026 09:16:01 +0000</pubDate>
+<sparkle:version>8</sparkle:version>
+<sparkle:shortVersionString>1.0.6</sparkle:shortVersionString>
 <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
 <description><![CDATA[<ul>
-<li>Gõ "mĩ" rồi bấm thêm x để sửa thành "mix": hết bị "mixx".</li>
-<li>Sửa tomorrow, surprise, express, seemed, cheese khi gõ ở chế độ tiếng Việt.</li>
-<li>Sửa lỗi chữ bị mất khi gõ "were" ở chế độ tiếng Việt.</li>
+<li>Thêm "Kiểm tra cập nhật…" vào menu Vikey.</li>
 </ul>]]></description>
-<enclosure url="https://vikey.app/downloads/Vikey-1.0.5.dmg" type="application/octet-stream" sparkle:edSignature="ZFze4dtNDj5vydL9pI+IijSaJh2LvaV9r0ODnzf2AEY7AIjl76SKi0vu7dfY7T48pIy97vF7xpkVsaHwouz+AQ==" length="2130424"/>
+<enclosure url="https://vikey.app/downloads/Vikey-1.0.6.dmg" type="application/octet-stream" sparkle:edSignature="hIFy/obzyN0T++ir34dzZ+bEPChYPqoorMzRDjjHStodvsnlPfLLZfMhPRJ4bPYfMbeSl0OmqdMDDZnoe6puBg==" length="2131267"/>
 </item>
 </channel>
 </rss>
