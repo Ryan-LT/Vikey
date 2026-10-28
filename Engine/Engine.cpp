@@ -1173,7 +1173,7 @@ void vSetCheckSpelling() {
 #define AS_VN_FLOOR 10      //Vietnamese words used at least ~10 per million are never switched away from
 #endif
 #ifndef AS_EN_FLOOR
-#define AS_EN_FLOOR 0       //any English word used at least ~1 per million is never converted
+#define AS_EN_FLOOR 99      //no floor: a tie converts when the Vietnamese reading is AS_PREFER points more common (D22; was 0)
 #endif
 
 int vAutoSwitchRequest = -1;
@@ -1418,7 +1418,16 @@ static bool asShouldRestoreToEnglish() {
 #else
     if (en == AS_MISSING) return false;
 #endif
-    return vn == AS_MISSING || (vn < AS_VN_FLOOR && en - vn >= AS_PREFER);
+#ifndef AS_VN_EXTREME
+#define AS_VN_EXTREME 99    //an English word this many points more common wins even over a common Vietnamese word
+#endif
+#ifndef AS_TIE_PREV
+#define AS_TIE_PREV 5       //a tie leaning English (3x) goes English right after a clearly English word (D22)
+#endif
+    if (en != AS_MISSING && vn != AS_MISSING && en - vn >= AS_TIE_PREV && _asPrevCount >= 1 &&
+        _asPrev[0].same && _asPrev[0].en != AS_MISSING && _asPrev[0].vn == AS_MISSING)
+        return true;   //"video call thí" -> "this"
+    return vn == AS_MISSING || (vn < AS_VN_FLOOR && en - vn >= AS_PREFER) || en - vn >= AS_VN_EXTREME;
 }
 
 /** Puts the raw keys back (like "restore if wrong spelling") and asks for English.
@@ -1565,6 +1574,16 @@ bool vAutoSwitchCheckEnglishWord(const Uint32* keys, const int& count,
     int resultCount;
     int vn = asReplay(keys, count, result, resultCount);
     if (vn == AS_MISSING || !(en == AS_MISSING || (en < AS_EN_FLOOR && vn - en >= AS_PREFER))) return false;
+    //a tie right after a clearly English word stays English ("the theme", "of rust"): D22
+    if (en != AS_MISSING && previousN >= 1 && previousCounts[0] >= 1) {
+        char praw[AS_KEY_LEN];
+        Uint32 tmp[MAX_BUFF]; int tmpCount;
+        if (asRawWord(previous[0], previousCounts[0], praw)) {
+            int pen = asEnglishScore(praw);
+            int pvn = asReplay(previous[0], previousCounts[0], tmp, tmpCount);
+            if (pen != AS_MISSING && (pvn == AS_MISSING || pen - pvn >= AS_PREFER)) return false;
+        }
+    }
 
     //look-back: ambiguous words just before it (kept English because they are English words too)
     Uint32 out[MAX_BUFF];

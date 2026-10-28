@@ -14,7 +14,7 @@ Database migration script chạy test ok, deploy được không?	Database migra
 Mình test api trên postman, response time hơi lâu	Mình test api trên postman, response time hơi lâu
 Team deploy lúc 3h chiều, ai còn PR chưa review thì nhắn sớm	Team deploy lúc 3h chiều, ai còn PR chưa review thì nhắn sớm
 Có lỗi gì trên staging không? Mình đã push version 2.1	Có lỗi gì trên staging không? Mình đã push version 2.1
-Testing notification feature, nos work nhưng animation hơi lag	Testing notification feature, nó work nhưng animation hơi lag
+Testing notification feature, nó work nhưng animation hơi lag	Testing notification feature, nó work nhưng animation hơi lag
 Guys, cách làm cache invalidation ở project này như thế nào?	Guys, cách làm cache invalidation ở project này như thế nào?
 Deploy production được không, hay chờ thêm vài PR nữa?	Deploy production được không, hay chờ thêm vài PR nữa?
 Mình refactor code auth, complexity giảm đáng kể, xem giúp	Mình refactor code auth, complexity giảm đáng kể, xem giúp
@@ -32,7 +32,7 @@ Tối nay phải fix thêm vài edge case, task này còn chưa xong hoàn toàn
 Mình conflict ở 3 chỗ, có thể help merge không, bận quá	Mình conflict ở 3 chỗ, có thể help merge không, bận quá
 Performance test result: load time từ 3s xuống 800ms, pretty good	Performance test result: load time từ 3s xuống 800ms, pretty good
 Chờ deploy đi, mình còn test e2e ở local, xong sẽ push	Chờ deploy đi, mình còn test e2e ở local, xong sẽ push
-Cos issue gì urgent không? Hay proceed với sprint plan như thường?	Có issue gì urgent không? Hay proceed với sprint plan như thường?
+Có issue gì urgent không? Hay proceed với sprint plan như thường?	Có issue gì urgent không? Hay proceed với sprint plan như thường?
 PR review cần bao lâu? Deploy window là 2h nữa thôi	PR review cần bao lâu? Deploy window là 2h nữa thôi
 Lỗi deploy: Docker image không build được, dependency issue	Lỗi deploy: Docker image không build được, dependency issue
 Anh check test coverage đi, nó thấp hơn threshold của project	Anh check test coverage đi, nó thấp hơn threshold của project
@@ -88,7 +88,7 @@ DAU, MAU, churn rate, lifetime value, mấy cái metric này là core KPI	DAU, M
 chúng ta target launch market 2 vào tháng 10, timeline như vậy có khả thi không	chúng ta target launch market 2 vào tháng 10, timeline như vậy có khả thi không
 product roadmap sync hôm nay 3pm, room A, tất cả mọi người join	product roadmap sync hôm nay 3pm, room A, tất cả mọi người join
 Mấy bạn định đi đâu vào cuối tháng này không?	Mấy bạn định đi đâu vào cuối tháng này không?
-Hey guys, cos ai muốn đi Đà Nẵng không? Mình đang tìm deals	Hey guys, có ai muốn đi Đà Nẵng không? Mình đang tìm deals
+Hey guys, có ai muốn đi Đà Nẵng không? Mình đang tìm deals	Hey guys, có ai muốn đi Đà Nẵng không? Mình đang tìm deals
 Mình có xem vài khách sạn rồi, giá khá ok	Mình có xem vài khách sạn rồi, giá khá ok
 Booking.com hay Agoda cái nào rẻ hơn nhỉ?	Booking.com hay Agoda cái nào rẻ hơn nhỉ?
 Agoda thường có discount hơn cho người VN	Agoda thường có discount hơn cho người VN
@@ -250,7 +250,7 @@ Bạn nói copy trending ngành này không, em thấy competitor họ dùng emo
 Tôi suggest tăng bid strategy cho high-intent keywords, mình test cái này xem sao	Tôi suggest tăng bid strategy cho high-intent keywords, mình test cái này xem sao
 Cái banner này design lại đi, size không chuẩn với Facebook specs lắm đó	Cái banner này design lại đi, size không chuẩn với Facebook specs lắm đó
 Push notification open rate mình thấp quá, có lẽ message timing hoặc copy sai	Push notification open rate mình thấp quá, có lẽ message timing hoặc copy sai
-Nhóm data analytics sex output dashboard chỉ tiêu marketing tuần này khi nào	Nhóm data analytics sẽ output dashboard chỉ tiêu marketing tuần này khi nào
+Nhóm data analytics sẽ output dashboard chỉ tiêu marketing tuần này khi nào	Nhóm data analytics sẽ output dashboard chỉ tiêu marketing tuần này khi nào
 Chúng mình có nên paused cái campaign lơ-performing này không để tiết kiệm budget	Chúng mình có nên paused cái campaign low-performing này không để tiết kiệm budget
 Bốn content pieces nào sẽ publish tuần tới, em cần finalize video editing	Bốn content pieces nào sẽ publish tuần tới, em cần finalize video editing
 Bạn có sẵn template cho monthly performance report không, em cần ẤP	Bạn có sẵn template cho monthly performance report không, em cần ASAP
@@ -440,7 +440,7 @@ tao biết, nhưng portfolio mình 80  cash, nên ổn	tao biết, nhưng portfo
 What's your allocation right now, stocks or crypto?
 70  	What's your allocation right now, stocks or crypto?
 70  
-stocks, 30  crypto, crypto nos volatile hơn nhưng return cao hơn	stocks, 30  crypto, crypto nó volatile hơn nhưng return cao hơn
+stocks, 30  crypto, crypto nó volatile hơn nhưng return cao hơn	stocks, 30  crypto, crypto nó volatile hơn nhưng return cao hơn
 chứng khoán công nghệ nó cũng volatile lắm, NVIDIA, Broadcom cứ giơ giáng	chứng khoán công nghệ nó cũng volatile lắm, NVIDIA, Broadcom cứ giơ giáng
 Broadcom bao nhiêu tiền lúc này
  150 	Broadcom bao nhiêu tiền lúc này
@@ -480,7 +480,7 @@ try clearing cache đi, hoặc dùng incognito mode xem	try clearing cache đi, 
 vừa rồi em thử rồi nhưng vẫn chậm lắm	vừa rồi em thử rồi nhưng vẫn chậm lắm
 ok để em check backend logs xem có issue gì không	ok để em check backend logs xem có issue gì không
 em chờ chút nhé, đang xem database query performance	em chờ chút nhé, đang xem database query performance
-cos bao lâu nữa không? em đang urgent cần làm report	có bao lâu nữa không? em đang urgent cần làm report
+có bao lâu nữa không? em đang urgent cần làm report	có bao lâu nữa không? em đang urgent cần làm report
 tìm được rồi, có một query chạy slow, đang optimize	tìm được rồi, có một query chạy slow, đang optimize
 thanks anh, chờ em xíu	thanks anh, chờ em xíu
 query đã fix xong rồi, refresh lại xem	query đã fix xong rồi, refresh lại xem
@@ -544,16 +544,16 @@ Ngoài ra còn có cái segment analysis nữa, mình đang làm	Ngoài ra còn 
 Segment analysis thì cần pull thêm customer profile data không?	Segment analysis thì cần pull thêm customer profile data không?
 Có, tớ đang join với customer table, nhưng data bị duplicate	Có, tớ đang join với customer table, nhưng data bị duplicate
 Duplicate vì sao? có phải do LEFT JOIN sai không?	Duplicate vì sao? có phải do LEFT JOIN sai không?
-Chắc là bảng customer cos multiple records per ID rồi	Chắc là bảng customer có multiple records per ID rồi
+Chắc là bảng customer có multiple records per ID rồi	Chắc là bảng customer có multiple records per ID rồi
 Bạn check distinct count xem sao?	Bạn check distinct count xem sao?
 SELECT COUNT(DISTINCT customer id) FROM customer segments;	SELECT COUNT(DISTINCT customer id) FROM customer segments;
 Kết quả là 50k, nhưng bảng gốc có 70k rớ	Kết quả là 50k, nhưng bảng gốc có 70k rows
 Chắc có trùng lắm, có thể filter active customers thôi	Chắc có trùng lắm, có thể filter active customers thôi
 Ừ, mình filter WHERE status   'active' xong rồi	Ừ, mình filter WHERE status   'active' xong rồi
 Thế dashboard hiển thị đúng chưa?	Thế dashboard hiển thị đúng chưa?
-Còn một cái issue nữa là cái timestamp, nó store á string	Còn một cái issue nữa là cái timestamp, nó store as string
+Còn một cái issue nữa là cái timestamp, nó store as string	Còn một cái issue nữa là cái timestamp, nó store as string
 Bạn cần convert sang datetime format trước khi join	Bạn cần convert sang datetime format trước khi join
-CÁT(timestamp column Á DATETIME) hoặc thử TO DATE() function	CAST(timestamp column AS DATETIME) hoặc thử TO DATE() function
+CÁT(timestamp column AS DATETIME) hoặc thử TO DATE() function	CAST(timestamp column AS DATETIME) hoặc thử TO DATE() function
 Mình dùng database gì để biết dùng function nào hợp lý	Mình dùng database gì để biết dùng function nào hợp lý
 Bạn dùng PostgreSQL hay MySQL?	Bạn dùng PostgreSQL hay MySQL?
 Chúng tớ xài PostgreSQL ở production, MySQL ở dev	Chúng tớ xài PostgreSQL ở production, MySQL ở dev
@@ -656,7 +656,7 @@ Kubernetes autoscaling cứ delay mãi, response time 5s rồi	Kubernetes autosc
 Rollback version cũ thử xem	Rollback version cũ thử xem
 Đang rollback, chờ chút	Đang rollback, chờ chút
 Yeah we're seeing errors spike across all regions now	Yeah we're seeing errors spike across all regions now
-Cos proxy issue không bác?	Có proxy issue không bác?
+Có proxy issue không bác?	Có proxy issue không bác?
 Check haproxy config, có thể config sai	Check haproxy config, có thể config sai
 Firewall rule có thay đổi hôm nay không?	Firewall rule có thay đổi hôm nay không?
 AWS security group được modify bởi ai vậy?	AWS security group được modify bởi ai vậy?
@@ -715,9 +715,9 @@ The rejection reason is related to user data handling, I'll fix it ASAP	The reje
 Mình có 10 testers sẵn sàng, pass link TestFlight đi	Mình có 10 testers sẵn sàng, pass link TestFlight đi
 TestFlight hơi slow hôm nay, network issue hay gì?	TestFlight hơi slow hôm nay, network issue hay gì?
 Cần check app permissions trước khi submit tiếp	Cần check app permissions trước khi submit tiếp
-Permissions request popup cos display đúng không?	Permissions request popup có display đúng không?
+Permissions request popup có display đúng không?	Permissions request popup có display đúng không?
 Ai setup Firebase crashlytics rồi? Cần nó để monitor	Ai setup Firebase crashlytics rồi? Cần nó để monitor
-Version 2.1 sex ready submit tuần sau	Version 2.1 sẽ ready submit tuần sau
+Version 2.1 sẽ ready submit tuần sau	Version 2.1 sẽ ready submit tuần sau
 Em test rồi, onboarding flow smooth, no issues detected	Em test rồi, onboarding flow smooth, no issues detected
 Cái background sync feature vẫn còn bug, delay lại đi	Cái background sync feature vẫn còn bug, delay lại đi
 App Store approval time thường bao lâu? First time submit	App Store approval time thường bao lâu? First time submit
@@ -796,7 +796,7 @@ gà kho tiêu đó, gọi một phần cho em ăn cơm trưa	gà kho tiêu đó,
 cả nhóm mình vừa ăn xong buffet lẩu kia, bao cơm, bao nước	cả nhóm mình vừa ăn xong buffet lẩu kia, bao cơm, bao nước
 mấy cái dimsum bây giờ ship xa lắm, chắc sẽ không còn warm	mấy cái dimsum bây giờ ship xa lắm, chắc sẽ không còn warm
 looking for a good Vietnamese banh mi place that delivers, suggestions?	looking for a good Vietnamese banh mi place that delivers, suggestions?
-cos ai order Phở từ Foodpanda chưa, giao tới mất bao lâu	có ai order Phở từ Foodpanda chưa, giao tới mất bao lâu
+có ai order Phở từ Foodpanda chưa, giao tới mất bao lâu	có ai order Phở từ Foodpanda chưa, giao tới mất bao lâu
 bánh flan from that French bakery is literally the best thing ever	bánh flan from that French bakery is literally the best thing ever
 mình thêm lục lại order, nhớ bỏ hành tây đi, mình ko ăn hành	mình thêm lục lại order, nhớ bỏ hành tây đi, mình ko ăn hành
 vừa mở app Grab, thấy surge pricing, giao mắt gạo quá	vừa mở app Grab, thấy surge pricing, giao mắt gạo quá
@@ -880,7 +880,7 @@ cơ mà lúc nào team mình cũng post những cái không quan trọng vào đ
 slack app trên điện thoại tao bị crash, phải reinstall. Chết tiệt	slack app trên điện thoại tao bị crash, phải reinstall. Chết tiệt
 thử clear cache trước, reinstall quá mất thời gian	thử clear cache trước, reinstall quá mất thời gian
 không được, lỗi vẫn còn. Tao phải reinstall thôi, hopefully lần này ok	không được, lỗi vẫn còn. Tao phải reinstall thôi, hopefully lần này ok
-The app há bên quite buggy lately, I've had similar issues before	The app has been quite buggy lately, I've had similar issues before
+The app has been quite buggy lately, I've had similar issues before	The app has been quite buggy lately, I've had similar issues before
 zoom call hôm nay mà không ai bật camera cả, nó kỳ quá	zoom call hôm nay mà không ai bật camera cả, nó kỳ quá
 mọi người ở nhà mà, có lẽ chưa trang điểm gì. Tao cũng tắt cam	mọi người ở nhà mà, có lẽ chưa trang điểm gì. Tao cũng tắt cam
 nhưng sao mấy cái call quan trọng lại yêu cầu phải bật camera?	nhưng sao mấy cái call quan trọng lại yêu cầu phải bật camera?
@@ -979,7 +979,7 @@ The authentication token expires too quickly, need to increase the TTL	The authe
 vừa merge 8 PR vào develop, staging environment chạy ngon lành	vừa merge 8 PR vào develop, staging environment chạy ngon lành
 Ai deploy production hôm nay? Cần confirm version trước khi announce	Ai deploy production hôm nay? Cần confirm version trước khi announce
 That's a duplicate of issue  389, let me close this one	That's a duplicate of issue  389, let me close this one
-mình add feature flag cho AB testing, sex deploy từng phần	mình add feature flag cho AB testing, sẽ deploy từng phần
+mình add feature flag cho AB testing, sẽ deploy từng phần	mình add feature flag cho AB testing, sẽ deploy từng phần
 Review xong, có 2 cái minor issue, request changes rồi nhé	Review xong, có 2 cái minor issue, request changes rồi nhé
 The mobile app cache needs to be cleared, users are seeing stale data	The mobile app cache needs to be cleared, users are seeing stale data
 team, release note cho v2.6 cần hoàn thành hôm nay, ai viết?	team, release note cho v2.6 cần hoàn thành hôm nay, ai viết?
@@ -996,7 +996,7 @@ Mình có need liên hệ với Analytics team không? Họ có raw data	Mình c
 Yes, I just reached out to them. They'll send dashboard by EOD	Yes, I just reached out to them. They'll send dashboard by EOD
 Cảm ơn. Vậy roadmap thì sao, có conflict nào không?	Cảm ơn. Vậy roadmap thì sao, có conflict nào không?
 Feature discovery đẩy lên priority sau. User feedback chỉ 30  positive	Feature discovery đẩy lên priority sau. User feedback chỉ 30  positive
-Vậy push nos sang sprint 2 được không? Sprint 1 đã packed rồi	Vậy push nó sang sprint 2 được không? Sprint 1 đã packed rồi
+Vậy push nó sang sprint 2 được không? Sprint 1 đã packed rồi	Vậy push nó sang sprint 2 được không? Sprint 1 đã packed rồi
 Được, nhưng PM nó sẽ không hài lòng. Đã commit rồi	Được, nhưng PM nó sẽ không hài lòng. Đã commit rồi
 Chúng mình cần prioritize based on business impact, không phải commitment	Chúng mình cần prioritize based on business impact, không phải commitment
 You're right. Let me re-align with product team	You're right. Let me re-align with product team
@@ -1017,7 +1017,7 @@ Cost estimation cos finalize chưa? Presentation cần exact numbers	Cost estima
 Not finalized yet. Waiting for cloud pricing confirmation	Not finalized yet. Waiting for cloud pricing confirmation
 Bao giờ confirm được? Investor meeting tuần sau rồi	Bao giờ confirm được? Investor meeting tuần sau rồi
 By Friday. Asking cloud team expedite quote	By Friday. Asking cloud team expedite quote
-Toots. Vậy adoption target của feature mới bao nhiêu percent?	Tốt. Vậy adoption target của feature mới bao nhiêu percent?
+Tốt. Vậy adoption target của feature mới bao nhiêu percent?	Tốt. Vậy adoption target của feature mới bao nhiêu percent?
 We're targeting 40  DAU adoption within 3 months
 3 	We're targeting 40  DAU adoption within 3 months
 3 
@@ -1328,7 +1328,7 @@ Thế cơ, tiếp theo phải cẩn thận hơn	Thế cơ, tiếp theo phải c�
 Ừ, lần này tớ đọc từ từ, đảm bảo không miss gì hết	Ừ, lần này tớ đọc từ từ, đảm bảo không miss gì hết
 Tớ đợi tới lúc tớ code xong rồi, tớ sẽ review kỹ lại requirements để check	Tớ đợi tới lúc tớ code xong rồi, tớ sẽ review kỹ lại requirements để check
 Good idea, cross-check with requirements before submission	Good idea, cross-check with requirements before submission
-Mình nên submit trước deadline 2-3 tiếng, vì server submission nos cos khi lag	Mình nên submit trước deadline 2-3 tiếng, vì server submission nó có khi lag
+Mình nên submit trước deadline 2-3 tiếng, vì server submission nó có khi lag	Mình nên submit trước deadline 2-3 tiếng, vì server submission nó có khi lag
 Đúng, lần trước tớ submit cách deadline 5 phút, xui xẻo server down	Đúng, lần trước tớ submit cách deadline 5 phút, xui xẻo server down
 Chết tiệt, vậy thì deadline bị miss à?	Chết tiệt, vậy thì deadline bị miss à?
 May mà không, sau 10 phút server lên lại, tớ submit được kịp	May mà không, sau 10 phút server lên lại, tớ submit được kịp
@@ -1434,7 +1434,7 @@ thanks, sẽ check liên tục từ đây	thanks, sẽ check liên tục từ đ
 Bạn muốn tôi tạo webhook không? Cái này sẽ send notification khi có issue	Bạn muốn tôi tạo webhook không? Cái này sẽ send notification khi có issue
 Webhook là gì vậy? Nghe phức tạp lắm, có hướng dẫn không?	Webhook là gì vậy? Nghe phức tạp lắm, có hướng dẫn không?
 Mình có dóc đầy đủ tại đây, cũng không khó đâu bạn	Mình có docs đầy đủ tại đây, cũng không khó đâu bạn
-Okay, let me read this first, will contact you lại if cos problem	Okay, let me read this first, will contact you lại if có problem
+Okay, let me read this first, will contact you lại if có problem	Okay, let me read this first, will contact you lại if có problem
 đợi một chút, tôi muốn bổ sung thêm 5 users vào account	đợi một chút, tôi muốn bổ sung thêm 5 users vào account
 Sure, what's your current plan?	Sure, what's your current plan?
 Tôi đang dùng Business plan, muốn upgrade lên Premium được không?	Tôi đang dùng Business plan, muốn upgrade lên Premium được không?
@@ -1493,7 +1493,7 @@ SELECT u.user id, u.name, o.order id, o.amount, p.product name FROM users u LEFT
 Ơi query này không group by mà sum amount à?	Ơi query này không group by mà sum amount à?
 Nếu muốn sum theo user thì phải group by user id	Nếu muốn sum theo user thì phải group by user id
 À nhỉ, tao quên, mình add GROUP BY	À nhỉ, tao quên, mình add GROUP BY
-Performance sao? Cos bao nhiêu rớ?	Performance sao? Có bao nhiêu rows?
+Performance sao? Có bao nhiêu rớ?	Performance sao? Có bao nhiêu rows?
 Khoảng 2 triệu rớ	Khoảng 2 triệu rows
 Need to add index on created at và user id	Need to add index on created at và user id
 Dashboard team yêu cầu gì mới?	Dashboard team yêu cầu gì mới?
@@ -1635,7 +1635,7 @@ Status: healthy, 99.9  request success rate	Status: healthy, 99.9  request succe
 Thật không? Vậy incident resolved rồi hả?	Thật không? Vậy incident resolved rồi hả?
 Chưa hoàn toàn, cần xem lại architecture	Chưa hoàn toàn, cần xem lại architecture
 Application chạy trên bao nhiêu instances hiện tại?	Application chạy trên bao nhiêu instances hiện tại?
-AWS cos 4 instances, mỗi cái 2 vCPU	AWS có 4 instances, mỗi cái 2 vCPU
+AWS có 4 instances, mỗi cái 2 vCPU	AWS có 4 instances, mỗi cái 2 vCPU
 Load balancing có cấu hình round-robin không?	Load balancing có cấu hình round-robin không?
 Đúng rồi, nhưng pool connections chưa optimal	Đúng rồi, nhưng pool connections chưa optimal
 Need to do a proper post-mortem after this	Need to do a proper post-mortem after this
@@ -1665,7 +1665,7 @@ Ai có thời gian kiểm tra lại API response không? Có lỗi dữ liệu g
 Mình vừa build lại version mới, lần này fix hết bugs từ trước	Mình vừa build lại version mới, lần này fix hết bugs từ trước
 Test payment gateway xong rồi, hoạt động bình thường, có thể submit App Store được	Test payment gateway xong rồi, hoạt động bình thường, có thể submit App Store được
 Can anyone test the video upload feature? Found a bug that needs verification	Can anyone test the video upload feature? Found a bug that needs verification
-Barn test trên TestFlight nó không hiện notification, sao vậy	Bản test trên TestFlight nó không hiện notification, sao vậy
+Bản test trên TestFlight nó không hiện notification, sao vậy	Bản test trên TestFlight nó không hiện notification, sao vậy
 Em restart máy rồi test lại, notification hoạt động bình thường	Em restart máy rồi test lại, notification hoạt động bình thường
 Ai prepare document cho App Store review chưa? Mình cần hôm nay	Ai prepare document cho App Store review chưa? Mình cần hôm nay
 App Store review team có thể reject nếu chúng mình không fix cái permission issue này	App Store review team có thể reject nếu chúng mình không fix cái permission issue này
@@ -1688,7 +1688,7 @@ Em đang chờ QA team cuối cùng check, thì submit luôn được rồi	Em �
 TestFlight build mới lên rồi, các bạn help test tính năng thanh toán nhé	TestFlight build mới lên rồi, các bạn help test tính năng thanh toán nhé
 Bị reject từ App Store vì lỗi metadata, em fix lại và resubmit rồi	Bị reject từ App Store vì lỗi metadata, em fix lại và resubmit rồi
 One more round of testing needed before we can confidently submit to App Store	One more round of testing needed before we can confidently submit to App Store
-Mình vừa check lại cái certificate, nos expire tháng sau, phải renew	Mình vừa check lại cái certificate, nó expire tháng sau, phải renew
+Mình vừa check lại cái certificate, nó expire tháng sau, phải renew	Mình vừa check lại cái certificate, nó expire tháng sau, phải renew
 Đã submit version 1.3.0 lên App Store, chờ review team feedback	Đã submit version 1.3.0 lên App Store, chờ review team feedback
 Mày có dùng ChatGPT chưa? Cái này thực sự hữu ích cho công việc	Mày có dùng ChatGPT chưa? Cái này thực sự hữu ích cho công việc
 I've been using it for like 3 weeks now, game changer for content creation	I've been using it for like 3 weeks now, game changer for content creation
@@ -1713,12 +1713,12 @@ Nhưng strategic thinking và creativity nó làm được mà, tớ sợ thật
 Tớ đang test các AI tools khác nữa, Claude, Gemini, mấy cái gì đó	Tớ đang test các AI tools khác nữa, Claude, Gemini, mấy cái gì đó
 Chất lượng của Claude hơi tốt hơn ChatGPT cho viết dài	Chất lượng của Claude hơi tốt hơn ChatGPT cho viết dài
 Mình dùng ChatGPT API trong ứng dụng của công ty, pretty powerful stuff	Mình dùng ChatGPT API trong ứng dụng của công ty, pretty powerful stuff
-Cái prompt template của mình có khoảng 500 characters, nos consistent lắm	Cái prompt template của mình có khoảng 500 characters, nó consistent lắm
+Cái prompt template của mình có khoảng 500 characters, nó consistent lắm	Cái prompt template của mình có khoảng 500 characters, nó consistent lắm
 Vấn đề là khi prompt quá dài thì nó hay bỏ qua context ở cuối	Vấn đề là khi prompt quá dài thì nó hay bỏ qua context ở cuối
 Mình học được trick là chia prompt thành multiple messages, tốt hơn	Mình học được trick là chia prompt thành multiple messages, tốt hơn
 Có ai dùng prompt injection để test security không?	Có ai dùng prompt injection để test security không?
 It's a real concern for production systems, gotta be careful with user inputs	It's a real concern for production systems, gotta be careful with user inputs
-Mình sợ user sex "jailbreak" prompt của mình để lấy sensitive info	Mình sợ user sẽ "jailbreak" prompt của mình để lấy sensitive info
+Mình sợ user sẽ "jailbreak" prompt của mình để lấy sensitive info	Mình sợ user sẽ "jailbreak" prompt của mình để lấy sensitive info
 Ơi khoá các edge case bằng guardrails, đừng tin tưởng user input	Ơi khoá các edge case bằng guardrails, đừng tin tưởng user input
 Bao nhiêu token là limit cho một request? Mình hay timeout	Bao nhiêu token là limit cho một request? Mình hay timeout
 Cái context window của GPT-4 lên tới 8k hoặc 32k tokens tuỳ model	Cái context window của GPT-4 lên tới 8k hoặc 32k tokens tuỳ model
@@ -1763,14 +1763,14 @@ sao không gọi đồ ăn hôm qua, tao thấy nó bình thường thôi	sao kh
 mấy ông đã ăn bánh hoai hay chưa, tao muốn thử lần đầu	mấy ông đã ăn bánh hoai hay chưa, tao muốn thử lần đầu
 i want to order but the restaurant doesn't have the item i want anymore	i want to order but the restaurant doesn't have the item i want anymore
 cơm gà Hainanese bên kia mình ở còn ngon không ta	cơm gà Hainanese bên kia mình ở còn ngon không ta
-mình point order được không, app tracking system nos lag lắm	mình point order được không, app tracking system nó lag lắm
+mình point order được không, app tracking system nó lag lắm	mình point order được không, app tracking system nó lag lắm
 tớ sợ giao nhầm địa chỉ, bao giờ mình verify lại không	tớ sợ giao nhầm địa chỉ, bao giờ mình verify lại không
 quán mặn quá, đặt lại yêu cầu không mặn lần sau nhé	quán mặn quá, đặt lại yêu cầu không mặn lần sau nhé
 app notification của mình nó bị delay, không biết order ready chưa	app notification của mình nó bị delay, không biết order ready chưa
 bạn gọi chưa, mà gọi luôn cho tao nữa đi	bạn gọi chưa, mà gọi luôn cho tao nữa đi
 bánh tráng nướng bên quán Phương thì chuẩn lắm, recommend 100 	bánh tráng nướng bên quán Phương thì chuẩn lắm, recommend 100 
 shipping fee đắt quá, tao quyết định mua hàng trong siêu thị rồi	shipping fee đắt quá, tao quyết định mua hàng trong siêu thị rồi
-mấy ông thích ăn buffet hay à la carte hơn	mấy ông thích ăn buffet hay à la carte hơn
+mấy ông thích ăn buffet hay af la carte hơn	mấy ông thích ăn buffet hay à la carte hơn
 tớ order rồi, nó đang prep, khoảng 15 phút nữa là giao	tớ order rồi, nó đang prep, khoảng 15 phút nữa là giao
 the payment method is not working, can you try another card	the payment method is not working, can you try another card
 tao ăn phở đã 3 ngày liên tiếp rồi, muốn đổi một cái gì đó mới	tao ăn phở đã 3 ngày liên tiếp rồi, muốn đổi một cái gì đó mới

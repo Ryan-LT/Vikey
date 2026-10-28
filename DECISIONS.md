@@ -23,6 +23,30 @@ If every listed change is intended, accept them with `Tools/autoswitch/check.sh 
 
 ---
 
+## 22. Ties: frequency ratio decides, a clearly English neighbor guards
+
+**Status:** Done 2026-10-28 (1.0.11). Rule cases D22. Tony picked option A.
+
+**Asked by Tony.** Ties (keys that are a real word in both languages) caused most manual switches. Use look-behind/look-forward and the frequency ratio; which works better? Run scenarios.
+
+**Measured** (simulator, manual switches for a switch-by-hand typist / wrong words for a lazy one):
+
+| Variant | Chat | Viblo |
+|---|---|---|
+| Before (1.0.10) | 166 / 87 | 1,113 / 773 |
+| Ratio ≥10x both directions | 64 / 52 | 992 / 909 (worse: "mô tả" → "mô tar") |
+| Ratio ≥10x in EN mode only | 76 / 52 | 813 / 728 |
+| + "thí" look-behind | 63 / 48 | 808 / 724 (breaks D5.3) |
+| **Option A (shipped)** | **94 / 60** | **861 / 729** |
+
+Neighbors as the main signal made things worse (mixed text puts English nouns next to Vietnamese words: "test lại"); the ratio does most of the work.
+
+**Decided (option A).**
+- EN mode: an English word converts to its Telex reading when that Vietnamese word is at least 10x more common (cos → có, nos → nó, sex → sẽ, toots → tốt). The old "only if the English word is under ~1 per million" floor is gone.
+- Except right after a clearly English word: "the theme of rust", "video call cos" stay English, so D5.3's cases still pass.
+- VN mode: a tie leaning English (3x+) right after a clearly English word goes English ("video call thí" → "this"). The Vietnamese floor is kept: tech Vietnamese ("mô tả", "ít", "rút") must not lose to rarer English words.
+- Option B (convert ties even inside English text, 63 / 808) was not chosen.
+
 ## 21. Pause auto switch for 5 seconds after a manual switch
 
 **Status:** Done 2026-10-28 (1.0.9).
