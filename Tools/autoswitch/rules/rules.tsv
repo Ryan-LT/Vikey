@@ -99,3 +99,4 @@ D27	0	ddc 	đc 	1	and switches from English
 D27	1	con NAS 	con NAS 	0	an all-caps word right after a lowercase word is an acronym even if the syllable is used in chat (ná)
 D27	1	meme 	meme 	0	English used in Vietnamese chat (en_extra)
 D27	1	xin visa 	xin visa 	0	a formal-only syllable (vía) loses to the English word people mean
+D28	0	aj 	ạ 	1	"aj" is no English word (subtitle junk): the particle ạ, also after English ("esports ạ")

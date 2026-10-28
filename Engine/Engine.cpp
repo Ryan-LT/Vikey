@@ -1303,6 +1303,8 @@ static inline bool asEnabled() {
 }
 
 /** Vietnamese mode: a word was ended by a single space and stays Vietnamese. Keep it for look-back. */
+int vAutoSwitchLastSide = -1;
+
 static void asRememberWord() {
 #ifdef AS_NO_LOOKBACK
     _asPrevCount = 0; return;
@@ -1317,6 +1319,7 @@ static void asRememberWord() {
     if (_stateIndex <= 0 || _index <= 0 || _stateIndex >= MAX_BUFF || _longWordHelper.size() > 0) { _asPrevCount = 0; return; }
     for (int x = 0; x < _stateIndex; x++) w.raw[x] = KeyStates[x];
     for (int x = 0; x < _index; x++) w.shown[x] = GET(TypingWord[x]);
+    vAutoSwitchLastSide = _asWordStartOk ? vAutoSwitchWordSide(KeyStates, _stateIndex) : -1;
     char word[AS_KEY_LEN], raw[AS_KEY_LEN];
     bool transformed;
     w.en = w.vn = AS_MISSING;
@@ -2105,3 +2108,21 @@ bool vAutoSwitchIsVietnameseSpelling(const char* letters) {
     asRestoreState(saved);
     return valid;
 }
+
+/** Early Switch (D28): which language a finished word can only be. 1 = only Vietnamese (a Vietnamese reading,
+ *  no English word: "tôi", "khong"), 0 = only English (an English word with no Vietnamese reading: "hello",
+ *  "makes"), -1 = both or neither ("an", "con", names). */
+int vAutoSwitchWordSide(const Uint32* keys, const int& count) {
+    if (!asEnabled() || count < 2 || count >= MAX_BUFF - 1) return -1;
+    asInitLetters();
+    char raw[AS_KEY_LEN];
+    if (!asRawWord(keys, count, raw) || !asFewCapitals(keys, count)) return -1;
+    int en = asEnglishScore(raw);
+    Uint32 result[MAX_BUFF];
+    int resultCount;
+    int vn = asReplay(keys, count, result, resultCount);
+    if (en != AS_MISSING && vn == AS_MISSING) return 0;
+    if (vn != AS_MISSING && en == AS_MISSING) return 1;
+    return -1;
+}
+

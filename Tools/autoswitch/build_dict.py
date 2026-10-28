@@ -116,6 +116,10 @@ for w, c in en_rows:
     if re.fullmatch('[a-z]{2,}', w) and w in spell_ok:
         en[w] = max(en.get(w, -999), score(c, en_total))
 
+# Subtitle junk the spell checker lets through that are common Vietnamese particles in Telex (aj = ạ): D28
+for w in ('aj', 'ej', 'oj', 'ix'):
+    en.pop(w, None)
+
 # English inside Vietnamese text (visa, meme, deadline): at least as common as there (D27)
 if inf_total and os.environ.get('VIKEY_EN_IN_VI', '1') == '1':
     for line in open(os.path.join(INF, 'en_in_vi.txt'), encoding='utf-8'):

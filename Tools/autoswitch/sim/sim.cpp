@@ -25,8 +25,10 @@ struct Platform {                    // everything VikeyCore.mm keeps outside th
     Uint32 prevKeys[2][MAX_BUFF]; int prevCounts[2] = {0, 0}; int prevN = 0;
     bool undoActive = false; int undoRemove = 0; U undoText;
     int autoSwitches = 0, undos = 0;
+    int runSide = -1, runCount = 0, earlySwitches = 0;   // Early Switch (D28)
 };
 static Platform P;
+static int earlyN() { static int n = getenv("SIM_EARLY") ? atoi(getenv("SIM_EARLY")) : 0; return n; }
 
 static Uint16 letterKey(char c) {
     static const Uint16 k[26] = {KEY_A,KEY_B,KEY_C,KEY_D,KEY_E,KEY_F,KEY_G,KEY_H,KEY_I,KEY_J,KEY_K,KEY_L,KEY_M,KEY_N,KEY_O,KEY_P,KEY_Q,KEY_R,KEY_S,KEY_T,KEY_U,KEY_V,KEY_W,KEY_X,KEY_Y,KEY_Z};
@@ -76,14 +78,28 @@ static void rememberFix(int corrected, Uint16 key, bool shift) {
 }
 static void switchTo(int lang) { vLanguage = lang; startNewSession(); vAutoSwitchForget(); P.autoSwitches++; }
 
+static void switchTo(int lang);
+/** Early Switch (D28): N words in a row that can only be one language switch to it, before any word needs fixing. */
+static void earlyWord(int side) {
+    if (side < 0) { P.runCount = 0; return; }
+    if (side == P.runSide) P.runCount++; else { P.runSide = side; P.runCount = 1; }
+    static int dir = getenv("SIM_EARLY_DIR") ? atoi(getenv("SIM_EARLY_DIR")) : -1;   // only to this language (tests)
+    if (earlyN() > 0 && P.runCount >= earlyN() && side != vLanguage && (dir < 0 || dir == side)) {
+        switchTo(side); P.earlySwitches++;
+        P.enCount = 0; P.enValid = true; P.prevN = 0; P.enAfterDouble = false;
+    }
+}
+
 static void press(Uint16 key, bool shift) {
     P.undoActive = false;
     if (vLanguage == 1) {
         vAutoSwitchRequest = -1;
+        vAutoSwitchLastSide = -2;
         vKeyHandleEvent(vKeyEvent::Keyboard, vKeyEventState::KeyDown, key, shift ? 1 : 0, false);
         if (H->code == vDoNothing) {
             if (key == KEY_DELETE) { if (!P.screen.empty()) P.screen.pop_back(); }
             else { char16_t ch = typedChar(key, shift); if (ch) P.screen.push_back(ch); }
+            if (vAutoSwitchLastSide != -2) earlyWord(vAutoSwitchLastSide);
         } else {
             bool atBreak = vAutoSwitchRequest == 0 && !isLetterKey(key);
             int corrected = H->newCharCount;
@@ -121,6 +137,7 @@ static void press(Uint16 key, bool shift) {
     const Uint32* prev[2] = {P.prevKeys[0], P.prevKeys[1]};
     bool converted = wordEnd && valid && count >= 2 &&
         (getenv("SIM_NO_LOOKBACK") ? vAutoSwitchCheckEnglishWord(P.enKeys, count) : vAutoSwitchCheckEnglishWord(P.enKeys, count, prev, P.prevCounts, P.prevN));
+    if (!converted && wordEnd && valid && count >= 2) earlyWord(vAutoSwitchWordSide(P.enKeys, count));
     if (!converted && key == KEY_SPACE && valid && count >= 1) {
         memcpy(P.prevKeys[1], P.prevKeys[0], sizeof(P.prevKeys[0])); P.prevCounts[1] = P.prevCounts[0];
         memcpy(P.prevKeys[0], P.enKeys, count * sizeof(Uint32)); P.prevCounts[0] = count; if (P.prevN < 2) P.prevN++;
@@ -137,7 +154,7 @@ static void press(Uint16 key, bool shift) {
 
 static void hotkey() {                        // switchLanguage(): a plain switch (undo is Backspace)
     P.undoActive = false;
-    P.enCount = 0; P.enValid = true; P.prevN = 0; P.enAfterDouble = false; vAutoSwitchForget();
+    P.enCount = 0; P.enValid = true; P.prevN = 0; P.enAfterDouble = false; vAutoSwitchForget(); P.runCount = 0;
     vLanguage = vLanguage ? 0 : 1;
     startNewSession();
 }

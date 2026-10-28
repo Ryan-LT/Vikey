@@ -156,6 +156,10 @@ int vAutoSwitchWordScore(const int& vietnamese, const char* letters, Uint16* ren
  *  normalized Telex keys), best first. Returns how many. */
 /** Whether these keys, typed in Telex, spell a valid Vietnamese syllable (spelling rules, not the list). */
 bool vAutoSwitchIsVietnameseSpelling(const char* letters);
+/** Early Switch (D28): 1 = the word can only be Vietnamese, 0 = only English, -1 = either or neither. */
+int vAutoSwitchWordSide(const Uint32* keys, const int& count);
+/** The side of the word just finished in Vietnamese mode with nothing to fix (set at its space), -1 if none. */
+extern int vAutoSwitchLastSide;
 
 int vAutoSwitchCompletions(const int& vietnamese, const char* prefix, char out[][32], int* scores, const int& maxOut);
 
