@@ -5,6 +5,7 @@
 #include <cstring>
 #include <string>
 #include <chrono>
+#include <cstdlib>
 
 int vLanguage = 1, vSwitchKeyStatus = 0, vCheckSpelling = 1, vUseModernOrthography = 1, vRestoreIfWrongSpelling = 1,
     vFixRecommendBrowser = 1, vUseSmartSwitchKey = 1, vOtherLanguage = 1, vAutoSwitchByTyping = 1;
@@ -92,6 +93,7 @@ static std::string utf8(const std::u16string& s) {
 // usage: harness <startLang 0|1> <keys>   or   harness bench
 int main(int argc, char** argv) {
     H = (vKeyHookState*)vKeyInit();
+    if (getenv("VIKEY_AUTO_OFF")) { vAutoSwitchByTyping = 0; vRestoreIfWrongSpelling = 0; }   // a plain Telex input method, for comparison
     if (argc >= 2 && strcmp(argv[1], "lines") == 0) {
         // stdin: "<lang>\t<keys>" per line -> prints "<final text>\t<switches>\t<final lang>"
         char buf[4096];

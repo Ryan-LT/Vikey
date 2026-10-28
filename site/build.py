@@ -67,6 +67,11 @@ def build():
         page += NAV + body + ("" if one else FOOTER) + "</body></html>\n"
         for k, v in {"VERSION": rel.get("version"), "DOWNLOAD_URL": rel.get("download_url"), "SHA256": rel.get("sha256")}.items():
             if v: page = page.replace(k, v)
+        # cache-bust assets: /assets/x.png -> /assets/x.png?v=<mtime>, so browsers never show a stale screenshot
+        def bust(m):
+            f = os.path.join(ROOT, m.group(1).lstrip("/"))
+            return m.group(0) if not os.path.exists(f) else f'{m.group(1)}?v={int(os.path.getmtime(f))}"'
+        page = re.sub(r'(/assets/[\w./-]+\.(?:png|json|svg|jpg))"', bust, page)
         out = os.path.join(DIST, "index.html" if slug == "index" else f"{slug}.html")
         open(out, "w", encoding="utf-8").write(page)
     open(os.path.join(DIST, "_headers"), "w").write("/*\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: strict-origin-when-cross-origin\n/downloads/*\n  Content-Disposition: attachment\n")

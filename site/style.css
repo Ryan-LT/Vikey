@@ -248,31 +248,36 @@ h1 span{white-space:nowrap}
 .act .empty{padding:14px;border-radius:12px;background:var(--bg2);color:var(--muted);font-size:14px}.act .empty.ok{background:#effaf3;color:#145a32}
 .act-foot{margin-top:22px;font-size:14px;text-align:center}
 @media(max-width:560px){.act-card{padding:20px}.act .step{grid-template-columns:28px minmax(0,1fr);gap:10px}.act-go,.act .small{padding-left:0;margin-left:0}.act #mgr .row{flex-direction:column}.act #mgr .row .btn{justify-content:center}}
-/* typing demo (home) */
-.demo{background:#fff;border-radius:14px;box-shadow:0 30px 80px -20px rgba(20,40,90,.35),0 0 0 1px rgba(0,0,0,.06);overflow:hidden;max-width:620px}
-.demo-bar{display:flex;align-items:center;gap:10px;padding:11px 14px;background:#f4f5f8;border-bottom:1px solid var(--line)}
-.demo-bar .dots{display:flex;gap:7px}.demo-bar .dots i{width:12px;height:12px;border-radius:50%;background:#e2e4ea}
+/* typing demo (home): the app window sits behind, the demo card in front; fixed row heights, no layout shift */
+.stage{position:relative;height:620px;width:100%}
+.stage .pop{position:absolute;right:0;top:0;width:430px;height:auto;border-radius:14px;box-shadow:0 30px 80px -20px rgba(20,40,90,.35),0 0 0 1px rgba(0,0,0,.06);cursor:zoom-in}
+.stage .demo{position:absolute;left:0;bottom:24px;width:min(560px,92%);z-index:2}
+.demo{background:#fff;border-radius:14px;box-shadow:0 34px 90px -18px rgba(20,40,90,.45),0 0 0 1px rgba(0,0,0,.07);overflow:hidden}
+.demo-bar{position:relative;display:flex;align-items:center;gap:10px;height:44px;padding:0 14px;background:#f4f5f8;border-bottom:1px solid var(--line)}
+.demo-bar .dots{display:flex;gap:7px}.demo-bar .dots i{width:12px;height:12px;border-radius:50%}
 .demo-bar .dots i:nth-child(1){background:#ff5f57}.demo-bar .dots i:nth-child(2){background:#febc2e}.demo-bar .dots i:nth-child(3){background:#28c840}
-.demo-title{flex:1;text-align:center;font-size:13px;font-weight:600;color:var(--muted);margin-right:38px}
-.vk{width:26px;height:22px;border-radius:6px;background:var(--blue);color:#fff;font-weight:800;font-size:13px;display:grid;place-items:center;transition:background .2s}
+.demo-title{position:absolute;left:0;right:0;text-align:center;font-size:13px;font-weight:600;color:var(--muted);pointer-events:none}
+.demo-bar .toast{margin-left:auto;font-size:12px;font-weight:700;color:var(--blue);opacity:0;white-space:nowrap}
+.demo-bar .toast.show{animation:toast 2.2s ease forwards}
+@keyframes toast{0%{opacity:0;transform:translateX(6px)}12%,75%{opacity:1;transform:none}100%{opacity:0}}
+.vk{width:26px;height:22px;border-radius:6px;background:var(--blue);color:#fff;font-weight:800;font-size:13px;display:grid;place-items:center;flex:none;transition:background .2s}
+.demo-bar .toast:empty+.vk,.demo-bar .vk{margin-left:auto}.demo-bar .toast+.vk{margin-left:8px}
 .vk.en{background:#3b3f4a}.vk.flip{animation:vkflip .5s ease}
 @keyframes vkflip{0%{transform:scale(1)}40%{transform:scale(1.35)}100%{transform:scale(1)}}
-.demo-body{position:relative;padding:22px 24px 30px;display:grid;gap:16px}
-.demo .row{display:grid;gap:6px}.demo .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.06em;font-weight:600;color:var(--muted)}
-.demo .keys{font-size:15px;min-height:1.6em;background:#f1f3f7;padding:8px 12px;border-radius:8px;white-space:pre-wrap;word-break:break-word}
-.demo .out{font-size:clamp(20px,2vw,26px);font-weight:600;min-height:1.5em;color:var(--ink);white-space:pre-wrap;word-break:break-word}
+.demo-body{padding:18px 22px 22px;display:grid;gap:14px}
+.demo .row{display:grid;gap:5px}.demo .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.06em;font-weight:700;color:var(--muted)}
+.demo .keys{display:block;font-size:14px;height:38px;line-height:22px;background:#f1f3f7;padding:8px 12px;border-radius:8px;white-space:pre;overflow:hidden}
+.demo .txt{height:34px;line-height:34px;white-space:pre;overflow:hidden}
+.demo .plain .txt{font-size:18px;color:#8a92a0}
+.demo .vikey .txt{font-size:23px;font-weight:700;color:var(--ink)}
+.demo mark{background:none;color:inherit;border-radius:4px;padding:0 2px;margin:0 -2px}
+.demo mark.bad{color:#d14343;text-decoration:underline wavy #d14343;text-decoration-thickness:1.5px;text-underline-offset:4px}
+.demo mark.good{background:#e9e8ff;color:var(--blue)}
 .caret{display:inline-block;width:2px;height:1.05em;background:var(--blue);vertical-align:-.15em;margin-left:1px;animation:blink 1s steps(1) infinite}
 @keyframes blink{50%{opacity:0}}
-.toast{position:absolute;right:18px;bottom:10px;font-size:12px;font-weight:600;color:var(--blue);opacity:0;transform:translateY(4px)}
-.toast.show{animation:toast 2.4s ease forwards}
-@keyframes toast{0%{opacity:0;transform:translateY(4px)}12%,75%{opacity:1;transform:none}100%{opacity:0}}
-.one-r{position:relative}.one-r .pop{position:absolute;right:-10px;bottom:-60px;width:min(220px,34%);border-radius:12px;box-shadow:0 24px 60px -16px rgba(20,40,90,.45),0 0 0 1px rgba(0,0,0,.06);cursor:zoom-in}
-@media(max-width:900px){.one-r .pop{position:static;width:min(320px,80%);margin:28px auto 0}.demo-title{margin-right:0}}
-/* Vikey hero: demo and app window side by side, never overlapping */
-.one-r{display:flex;align-items:center;gap:28px}.one-r .demo{flex:1;min-width:0}
-.one-r .pop{position:static;flex:none;width:min(240px,34%);border-radius:12px;box-shadow:0 24px 60px -16px rgba(20,40,90,.45),0 0 0 1px rgba(0,0,0,.06);cursor:zoom-in}
+@media(max-width:1100px) and (min-width:901px){.stage .pop{width:360px}.stage{height:560px}}
+@media(max-width:900px){.stage{height:auto;display:flex;flex-direction:column-reverse;gap:24px}.stage .pop,.stage .demo{position:static;width:100%}.stage .pop{width:min(320px,82%);margin:0 auto}.demo .vikey .txt{font-size:19px}.demo .plain .txt{font-size:15px}.demo .keys{font-size:12px}}
 .one .lead{max-width:none;text-wrap:balance}
-@media(max-width:900px){.one-r{flex-direction:column;align-items:stretch}.one-r .pop{width:min(300px,80%);margin:8px auto 0}}
 /* the download button stays visible on phones: it leads to /download, which explains Vikey is for Mac */
 @media(max-width:900px){.btn.dl-mac{display:inline-flex!important}}
 /* footer credit line: links inline, not stacked */
