@@ -36,7 +36,7 @@ struct MainView: View {
                         Tip("Tự chuyển Anh/Việt khi gõ", "Gõ một từ tiếng Anh khi đang ở tiếng Việt (hoặc ngược lại), Vikey tự sửa từ đó và chuyển chế độ. Bấm Xoá ngay sau đó để hoàn tác.")
                     }
                     Toggle(isOn: flag($pauseAfterManual)) {
-                        Tip("Tạm dừng 15 giây sau khi chuyển tay", "Khi bạn tự bấm chuyển Anh/Việt, Vikey không tự chuyển trong 15 giây, để giữ đúng lựa chọn của bạn.")
+                        Tip("Tạm dừng 5 giây sau khi chuyển tay", "Khi bạn tự bấm chuyển Anh/Việt, Vikey không tự chuyển trong 5 giây, để giữ đúng lựa chọn của bạn.")
                     }
                     .disabled(autoSwitch == 0)
                     Toggle(isOn: flag($smartSwitch)) {

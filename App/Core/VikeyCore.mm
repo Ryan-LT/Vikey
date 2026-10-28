@@ -262,7 +262,7 @@ extern "C" {
 
     /// Reads Vikey's settings into the engine. Called at start and whenever a setting changes.
     // ---- Pause auto switch after a manual switch ----------------------------------------
-    // The user just chose the language by hand: for 15 s auto switch stays out of the way (D21).
+    // The user just chose the language by hand: for 5 s auto switch stays out of the way (D21).
     static CFAbsoluteTime _autoPauseUntil = 0;
 
     static bool AutoSwitchPaused() { return CFAbsoluteTimeGetCurrent() < _autoPauseUntil; }
@@ -270,9 +270,9 @@ extern "C" {
     void PauseAutoSwitchAfterManual() {
         id v = [[NSUserDefaults standardUserDefaults] objectForKey:@"PauseAutoAfterManual"];
         if (v != nil && ![v boolValue]) return;
-        _autoPauseUntil = CFAbsoluteTimeGetCurrent() + 15;
+        _autoPauseUntil = CFAbsoluteTimeGetCurrent() + 5;
         vAutoSwitchByTyping = 0;
-        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(15.05 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(5.05 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
             if (AutoSwitchPaused()) return;   // a later manual switch extended it
             id on = [[NSUserDefaults standardUserDefaults] objectForKey:@"AutoSwitchByTyping"];
             vAutoSwitchByTyping = on == nil ? 1 : [on intValue];

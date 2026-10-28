@@ -23,15 +23,15 @@ If every listed change is intended, accept them with `Tools/autoswitch/check.sh 
 
 ---
 
-## 21. Pause auto switch for 15 seconds after a manual switch
+## 21. Pause auto switch for 5 seconds after a manual switch
 
 **Status:** Done 2026-10-28 (1.0.9).
 
 **Asked by Tony.** "When a manual switch is triggered, disable auto switch for 15 seconds, this should be an option, enabled by default."
 
 **Decided.**
-- A switch by hand (hotkey, menu bar, main window) turns auto switch off for 15 s; another manual switch restarts the 15 s. Afterwards the word being typed is skipped and checking starts with the next word.
-- Option "Tạm dừng 15 giây sau khi chuyển tay", on by default (`PauseAutoAfterManual`). App-level only: engine rules and their tests are unchanged.
+- A switch by hand (hotkey, menu bar, main window) turns auto switch off for 5 s (first 15 s; Tony: "make it 5s", 1.0.10); another manual switch restarts it. Afterwards the word being typed is skipped and checking starts with the next word.
+- Option "Tạm dừng 5 giây sau khi chuyển tay", on by default (`PauseAutoAfterManual`). App-level only: engine rules and their tests are unchanged.
 
 ## 20. Words after ( and ", and no Backspace undo for multi-word fixes
 
