@@ -6,7 +6,7 @@
 1	tooi ddi hocj owr truwowngf ddaij hocj 	tôi đi học ở trường đại học 	1
 1	anh owi, mai minh ddi uoongs cafe nhes. 	anh ơi, mai minh đi uống cafe nhé. 	1
 1	deploy leen server nhes 	deploy lên server nhé 	1
-1	last week i lost my test, it is the best 	lát week i lost my test, it is the best 	0
+1	last week i lost my test, it is the best 	last week i lost my test, it is the best 	0
 1	the best test must pass 	the best test must pass 	0
 1	Server 	Server 	0
 1	khoer khoong 	khoẻ không 	1
@@ -31,9 +31,13 @@
 0	var x = 1 	var x = 1 	0
 1	var x 	vả x 	1
 0	const deps = refs.uri 	const deps = refs.uri 	0
-0	cors gif 	cors gì 	1
+0	cors gif 	có gì 	1
 0	image.gif nginx.conf 	image.gif nginx.conf 	0
 0	obj.dir os.path.dirs 	obj.dir os.path.dirs 	0
 0	my_dir ok 	my_dir ok 	0
 1	tooi nghix gif ddos 	tôi nghĩ gì đó 	1
 1	char 	chả 	1
+1	this makes sense 	this makes sense 	0
+1	cais testflight build 	cái testflight build 	0
+0	nos theer 	nó thể 	1
+0	check mail cos theer 	check mail có thể 	1

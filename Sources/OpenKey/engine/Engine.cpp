@@ -1313,6 +1313,29 @@ static char _asLetter[256];
 static bool _asLetterReady = false;
 static bool _asWordStartOk = true;   //the current word began after a space, Enter, Tab or a fresh start (not inside foo.bar or my_var)
 
+/* Look-back: when a word confidently switches the language, the 1-2 words typed just before it
+ * (separated by single spaces) are fixed too if they were ambiguous, e.g. "thí make" -> "this make".
+ * An earlier word follows the switch unless its current reading is AS_LOOKBACK_MARGIN points more common. */
+#ifndef AS_LOOKBACK_WORDS
+#define AS_LOOKBACK_WORDS 2
+#endif
+#ifndef AS_LOOKBACK_MARGIN
+#define AS_LOOKBACK_MARGIN 10
+#endif
+struct AsWord {
+    Uint32 raw[MAX_BUFF];   //keys as typed
+    int rawCount;
+    Uint32 shown[MAX_BUFF]; //what is on screen (engine character data)
+    int shownCount;
+    int en, vn;             //scores of the raw keys as English and of the Vietnamese reading
+    bool lookbackOk;        //could follow a switch to English
+    bool same;              //looks the same in both modes (nothing to fix)
+};
+static AsWord _asPrev[AS_LOOKBACK_WORDS];
+static int _asPrevCount = 0;
+
+void vAutoSwitchForget() { _asPrevCount = 0; }
+
 static void asInitLetters() {
     if (_asLetterReady) return;
     memset(_asLetter, 0, sizeof(_asLetter));
@@ -1395,6 +1418,39 @@ static inline bool asEnabled() {
     return vAutoSwitchByTyping && vInputType != vVNI;
 }
 
+/** Vietnamese mode: a word was ended by a single space and stays Vietnamese. Keep it for look-back. */
+static void asRememberWord() {
+#ifdef AS_NO_LOOKBACK
+    _asPrevCount = 0; return;
+#endif
+    if (!asEnabled()) return;
+    asInitLetters();
+    AsWord w;
+    w.lookbackOk = false;
+    w.same = false;
+    w.rawCount = _stateIndex;
+    w.shownCount = _index;
+    if (_stateIndex <= 0 || _index <= 0 || _stateIndex >= MAX_BUFF || _longWordHelper.size() > 0) { _asPrevCount = 0; return; }
+    for (int x = 0; x < _stateIndex; x++) w.raw[x] = KeyStates[x];
+    for (int x = 0; x < _index; x++) w.shown[x] = GET(TypingWord[x]);
+    char word[AS_KEY_LEN], raw[AS_KEY_LEN];
+    bool transformed;
+    w.en = w.vn = AS_MISSING;
+    if (_asWordStartOk && _stateIndex >= _index && asWordKey(word, transformed) && asRawWord(KeyStates, _stateIndex, raw)) {
+        w.en = asEnglishScore(raw);
+        if (transformed) {        //ambiguous: a real word both ways, and English not much rarer
+            w.vn = asVietnameseScore(word);
+            w.lookbackOk = w.en != AS_MISSING && w.vn != AS_MISSING && w.en >= w.vn - AS_LOOKBACK_MARGIN;
+        } else {                  //looks the same in both modes: look-back passes through English-only words ("makes")
+            w.lookbackOk = w.en != AS_MISSING && asVietnameseScore(raw) == AS_MISSING;
+            w.same = true;
+        }
+    }
+    for (int x = AS_LOOKBACK_WORDS - 1; x > 0; x--) _asPrev[x] = _asPrev[x - 1];
+    _asPrev[0] = w;
+    if (_asPrevCount < AS_LOOKBACK_WORDS) _asPrevCount++;
+}
+
 /** Vietnamese mode, at a word break: are the raw keys an English word the user clearly meant? */
 static bool asShouldRestoreToEnglish() {
     if (!asEnabled() || _hasHandledMacro || !_asWordStartOk) return false;
@@ -1405,25 +1461,65 @@ static bool asShouldRestoreToEnglish() {
     if (!asWordKey(word, transformed) || !transformed) return false;
     if (!asRawWord(KeyStates, _stateIndex, raw)) return false;
     int en = asEnglishScore(raw);
-    if (en == AS_MISSING) return false;
     int vn = asVietnameseScore(word);
+#ifndef AS_RESTORE_UNKNOWN
+#define AS_RESTORE_UNKNOWN 3   //min letters for restoring a word that is neither Vietnamese nor in the English list
+#endif
+#if AS_RESTORE_UNKNOWN > 0
+    //not a Vietnamese syllable and not a known English word either: a foreign word (TestFlight, analytics)
+    if (en == AS_MISSING) {
+        if (vn != AS_MISSING || _stateIndex < AS_RESTORE_UNKNOWN) return false;
+        //rare but valid syllables (riệt, chịt) are not in the list: require the spelling rules to fail too
+        bool savedTemp = tempDisableKey;
+        checkSpelling(true);
+        bool invalid = tempDisableKey;
+        tempDisableKey = savedTemp;
+        return invalid;
+    }
+#else
+    if (en == AS_MISSING) return false;
+#endif
     return vn == AS_MISSING || (vn < AS_VN_FLOOR && en - vn >= AS_PREFER);
 }
 
-/** Puts the raw keys back (like "restore if wrong spelling") and asks for English. */
+/** Puts the raw keys back (like "restore if wrong spelling") and asks for English.
+ *  Ambiguous words just before it (look-back) are put back to their keys too. */
 static void asRestoreToEnglish(const int& handleCode) {
+    //how many earlier words follow the switch: consecutive, ambiguous, and fitting in the output buffer
+    int back = 0, newCount = _stateIndex, deleteCount = _index;
+    while (back < _asPrevCount && _asPrev[back].lookbackOk &&
+           newCount + _asPrev[back].rawCount + 1 < MAX_BUFF && deleteCount + _asPrev[back].shownCount + 1 < MAX_BUFF) {
+        newCount += _asPrev[back].rawCount + 1;
+        deleteCount += _asPrev[back].shownCount + 1;
+        back++;
+    }
+    while (back > 0 && _asPrev[back - 1].same) {         //no need to retype unchanged words at the far end
+        back--;
+        newCount -= _asPrev[back].rawCount + 1;
+        deleteCount -= _asPrev[back].shownCount + 1;
+    }
+    Uint32 out[MAX_BUFF];
+    int n = 0;
     vAutoSwitchUndoCount = 0;
-    for (int x = 0; x < _index && x < MAX_BUFF; x++) {
+    for (int b = back - 1; b >= 0; b--) {
+        for (int x = 0; x < _asPrev[b].rawCount; x++) out[n++] = _asPrev[b].raw[x];
+        out[n++] = KEY_SPACE;
+        for (int x = 0; x < _asPrev[b].shownCount; x++) vAutoSwitchUndoData[vAutoSwitchUndoCount++] = _asPrev[b].shown[x];
+        vAutoSwitchUndoData[vAutoSwitchUndoCount++] = KEY_SPACE;
+    }
+    for (int x = 0; x < _index && vAutoSwitchUndoCount < MAX_BUFF; x++) {
         vAutoSwitchUndoData[vAutoSwitchUndoCount++] = GET(TypingWord[x]);
     }
-    hCode = handleCode;
-    hBPC = _index;
-    hNCC = _stateIndex;
     for (i = 0; i < _stateIndex; i++) {
         TypingWord[i] = KeyStates[i];
-        hData[_stateIndex - 1 - i] = TypingWord[i];
+        out[n++] = KeyStates[i];
     }
+    hCode = handleCode;
+    hBPC = deleteCount;
+    hNCC = n;
+    for (int x = 0; x < n; x++) hData[n - 1 - x] = out[x];
     _index = _stateIndex;
+    _asPrevCount = 0;
     vAutoSwitchRequest = 0;
 }
 
@@ -1434,34 +1530,62 @@ static bool asIsSwitchBreak(const vKeyEvent& event, const Uint16& data, const Ui
            (data == KEY_SLASH && capsStatus == 1) || (data == KEY_1 && capsStatus == 1);
 }
 
-bool vAutoSwitchCheckEnglishWord(const Uint32* keys, const int& count) {
-    if (!asEnabled() || count < 2 || count >= MAX_BUFF - 1) return false;
-    asInitLetters();
-    char raw[AS_KEY_LEN];
-    if (!asRawWord(keys, count, raw)) return false;
-    int capitals = 0;
-    for (int x = 0; x < count; x++) if (keys[x] & CAPS_MASK) capitals++;
-    if (capitals >= 2) return false;   //USA, EST, IRS, camelCase: acronyms and identifiers stay as typed
-    int en = asEnglishScore(raw);
+/** Everything the engine keeps between keys, so a word can be replayed on a scratch session. */
+struct AsEngineState {
+    Uint32 word[MAX_BUFF], states[MAX_BUFF];
+    Byte index, stateIndex, upperStatus;
+    bool tempDisable, macroHandled, useSpellingBefore, quickConsonant, tempOff, wordStartOk;
+    int spaceCount, checkSpelling, useMacro, upperFirst, language;
+    vector<Uint32> longWord, special, statesData;
+    list<vector<Uint32>> typing;
+    vKeyHookState hook;
+};
 
-    //replay the keys through the real Telex engine on a scratch session, then put everything back
-    Uint32 savedWord[MAX_BUFF], savedStates[MAX_BUFF];
-    memcpy(savedWord, TypingWord, sizeof(TypingWord));
-    memcpy(savedStates, KeyStates, sizeof(KeyStates));
-    Byte savedIndex = _index, savedStateIndex = _stateIndex, savedUpperStatus = _upperCaseStatus;
-    bool savedTempDisable = tempDisableKey, savedMacroHandled = _hasHandledMacro, savedUseSpellingBefore = _useSpellCheckingBefore;
-    bool savedQuickConsonant = _hasHandleQuickConsonant, savedTempOff = _willTempOffEngine;
-    int savedSpaceCount = _spaceCount, savedCheckSpelling = vCheckSpelling, savedUseMacro = vUseMacro, savedUpperFirst = vUpperCaseFirstChar;
-    vector<Uint32> savedLong, savedSpecial, savedStatesData;
-    list<vector<Uint32>> savedTyping;
-    savedLong.swap(_longWordHelper);
-    savedSpecial.swap(_specialChar);
-    savedStatesData.swap(_typingStatesData);
-    savedTyping.swap(_typingStates);
-    vKeyHookState savedHook = std::move(HookState);
+static void asSaveState(AsEngineState& st) {
+    memcpy(st.word, TypingWord, sizeof(TypingWord));
+    memcpy(st.states, KeyStates, sizeof(KeyStates));
+    st.index = _index; st.stateIndex = _stateIndex; st.upperStatus = _upperCaseStatus;
+    st.tempDisable = tempDisableKey; st.macroHandled = _hasHandledMacro; st.useSpellingBefore = _useSpellCheckingBefore;
+    st.quickConsonant = _hasHandleQuickConsonant; st.tempOff = _willTempOffEngine; st.wordStartOk = _asWordStartOk;
+    st.spaceCount = _spaceCount; st.checkSpelling = vCheckSpelling; st.useMacro = vUseMacro; st.upperFirst = vUpperCaseFirstChar;
+    st.language = vLanguage;
+    st.longWord.swap(_longWordHelper);
+    st.special.swap(_specialChar);
+    st.statesData.swap(_typingStatesData);
+    st.typing.swap(_typingStates);
+    st.hook = std::move(HookState);
     HookState.macroKey.clear();
     HookState.macroData.clear();
+}
 
+static void asRestoreState(AsEngineState& st) {
+    memcpy(TypingWord, st.word, sizeof(TypingWord));
+    memcpy(KeyStates, st.states, sizeof(KeyStates));
+    _index = st.index; _stateIndex = st.stateIndex; _upperCaseStatus = st.upperStatus;
+    tempDisableKey = st.tempDisable; _hasHandledMacro = st.macroHandled; _useSpellCheckingBefore = st.useSpellingBefore;
+    _hasHandleQuickConsonant = st.quickConsonant; _willTempOffEngine = st.tempOff; _asWordStartOk = st.wordStartOk;
+    _spaceCount = st.spaceCount; vCheckSpelling = st.checkSpelling; vUseMacro = st.useMacro; vUpperCaseFirstChar = st.upperFirst;
+    vLanguage = st.language;
+    _longWordHelper.swap(st.longWord);
+    _specialChar.swap(st.special);
+    _typingStatesData.swap(st.statesData);
+    _typingStates.swap(st.typing);
+    HookState = std::move(st.hook);
+}
+
+#ifdef AS_TESTING
+//test harness only: snapshot the whole engine so a word can be tried and taken back
+void* vTestSaveState() { AsEngineState* st = new AsEngineState(); asSaveState(*st); return st; }
+void vTestRestoreState(void* p) { AsEngineState* st = (AsEngineState*)p; asRestoreState(*st); delete st; }
+void vTestFreeState(void* p) { delete (AsEngineState*)p; }
+#endif
+
+/** Replays raw keys through the Telex engine on a scratch session. Returns the Vietnamese score of
+ *  the result (AS_MISSING if it isn't a real syllable or nothing changed) and the result characters. */
+static int asReplay(const Uint32* keys, const int& count, Uint32* result, int& resultCount, bool* changed = NULL) {
+    resultCount = 0;
+    AsEngineState saved;
+    asSaveState(saved);
     vUseMacro = 0;
     vUpperCaseFirstChar = 0;
     _spaceCount = 0;
@@ -1470,42 +1594,91 @@ bool vAutoSwitchCheckEnglishWord(const Uint32* keys, const int& count) {
     for (int x = 0; x < count; x++) {
         vKeyHandleEvent(vKeyEvent::Keyboard, vKeyEventState::KeyDown, (Uint16)(keys[x] & CHAR_MASK), (keys[x] & CAPS_MASK) ? 1 : 0, false);
     }
-
-    bool convert = false;
-    Uint32 result[MAX_BUFF];
-    int resultCount = 0;
+    int vn = AS_MISSING;
     char word[AS_KEY_LEN];
     bool transformed;
-    if (asWordKey(word, transformed) && transformed) {
-        int vn = asVietnameseScore(word);
-        convert = vn != AS_MISSING && (en == AS_MISSING || (en < AS_EN_FLOOR && vn - en >= AS_PREFER));
+    bool keyOk = asWordKey(word, transformed);
+    if (changed) *changed = keyOk ? transformed : true;
+    if (keyOk && transformed) {
+        vn = asVietnameseScore(word);
+        if (vn != AS_MISSING) {
+            for (int x = 0; x < _index; x++) result[resultCount++] = GET(TypingWord[x]);
+        }
     }
-    if (convert) {
-        for (int x = 0; x < _index; x++) result[resultCount++] = GET(TypingWord[x]);
+    asRestoreState(saved);
+    return vn;
+}
+
+static bool asFewCapitals(const Uint32* keys, const int& count) {
+    int capitals = 0;
+    for (int x = 0; x < count; x++) if (keys[x] & CAPS_MASK) capitals++;
+    return capitals < 2;   //USA, EST, IRS, camelCase: acronyms and identifiers stay as typed
+}
+
+bool vAutoSwitchCheckEnglishWord(const Uint32* keys, const int& count,
+                                 const Uint32* const* previous, const int* previousCounts, const int& previousN) {
+    if (!asEnabled() || count < 2 || count >= MAX_BUFF - 1) return false;
+    asInitLetters();
+    char raw[AS_KEY_LEN];
+    if (!asRawWord(keys, count, raw) || !asFewCapitals(keys, count)) return false;
+    int en = asEnglishScore(raw);
+
+    Uint32 result[MAX_BUFF];
+    int resultCount;
+    int vn = asReplay(keys, count, result, resultCount);
+    if (vn == AS_MISSING || !(en == AS_MISSING || (en < AS_EN_FLOOR && vn - en >= AS_PREFER))) return false;
+
+    //look-back: ambiguous words just before it (kept English because they are English words too)
+    Uint32 out[MAX_BUFF];
+    int n = 0, deleteCount = count, back = 0;
+    Uint32 earlier[AS_LOOKBACK_WORDS][MAX_BUFF];
+    int earlierCount[AS_LOOKBACK_WORDS];
+    bool earlierSame[AS_LOOKBACK_WORDS];
+    for (; back < previousN && back < AS_LOOKBACK_WORDS; back++) {
+        const Uint32* pk = previous[back];
+        int pc = previousCounts[back];
+        char praw[AS_KEY_LEN];
+        if (pc < 2 || !asRawWord(pk, pc, praw) || !asFewCapitals(pk, pc)) break;
+        int pen = asEnglishScore(praw);
+        bool changed;
+        int pvn = asReplay(pk, pc, earlier[back], earlierCount[back], &changed);
+        earlierSame[back] = !changed;
+        if (!changed) {           //looks the same in both modes: pass through Vietnamese-only words ("cho")
+            if (pen != AS_MISSING || asVietnameseScore(praw) == AS_MISSING) break;
+            earlierCount[back] = pc;
+            for (int x = 0; x < pc; x++) earlier[back][x] = pk[x];
+        } else if (pen == AS_MISSING || pvn == AS_MISSING || pvn < pen - AS_LOOKBACK_MARGIN) {
+            break;                //only ambiguous words that were kept English follow the switch
+        }
+        if (resultCount + n + earlierCount[back] + 1 >= MAX_BUFF || deleteCount + pc + 1 >= MAX_BUFF) break;
+        n += earlierCount[back] + 1;
+        deleteCount += pc + 1;
     }
-
-    memcpy(TypingWord, savedWord, sizeof(TypingWord));
-    memcpy(KeyStates, savedStates, sizeof(KeyStates));
-    _index = savedIndex; _stateIndex = savedStateIndex; _upperCaseStatus = savedUpperStatus;
-    tempDisableKey = savedTempDisable; _hasHandledMacro = savedMacroHandled; _useSpellCheckingBefore = savedUseSpellingBefore;
-    _hasHandleQuickConsonant = savedQuickConsonant; _willTempOffEngine = savedTempOff;
-    _spaceCount = savedSpaceCount; vCheckSpelling = savedCheckSpelling; vUseMacro = savedUseMacro; vUpperCaseFirstChar = savedUpperFirst;
-    _longWordHelper.swap(savedLong);
-    _specialChar.swap(savedSpecial);
-    _typingStatesData.swap(savedStatesData);
-    _typingStates.swap(savedTyping);
-    HookState = std::move(savedHook);
-
-    if (!convert) return false;
-
+    while (back > 0 && earlierSame[back - 1]) {          //no need to retype unchanged words at the far end
+        back--;
+        deleteCount -= previousCounts[back] + 1;
+    }
+    n = 0;
     vAutoSwitchUndoCount = 0;
+    for (int b = back - 1; b >= 0; b--) {
+        for (int x = 0; x < earlierCount[b]; x++) out[n++] = earlier[b][x];
+        out[n++] = KEY_SPACE;
+        for (int x = 0; x < previousCounts[b]; x++) vAutoSwitchUndoData[vAutoSwitchUndoCount++] = previous[b][x];
+        vAutoSwitchUndoData[vAutoSwitchUndoCount++] = KEY_SPACE;
+    }
+    for (int x = 0; x < resultCount; x++) out[n++] = result[x];
     for (int x = 0; x < count; x++) vAutoSwitchUndoData[vAutoSwitchUndoCount++] = keys[x];
-    hCode = vRestore;          //platform sends the new word, then the break key itself
-    hBPC = (Byte)count;
-    hNCC = (Byte)resultCount;
+
+    hCode = vRestore;          //platform sends the new text, then the break key itself
+    hBPC = (Byte)deleteCount;
+    hNCC = (Byte)n;
     hExt = 3;
-    for (int x = 0; x < resultCount; x++) hData[resultCount - 1 - x] = result[x];
+    for (int x = 0; x < n; x++) hData[n - 1 - x] = out[x];
     return true;
+}
+
+bool vAutoSwitchCheckEnglishWord(const Uint32* keys, const int& count) {
+    return vAutoSwitchCheckEnglishWord(keys, count, NULL, NULL, 0);
 }
 /*==========================================================================================================*/
 
@@ -1611,6 +1784,7 @@ void vKeyHandleEvent(const vKeyEvent& event,
             else
                 _upperCaseStatus = 0;
         }
+        _asPrevCount = 0;
         //the next word is a whole word only after whitespace, a click or a shortcut, not after . _ - / etc.
         _asWordStartOk = event == vKeyEvent::Mouse || otherControlKey || data == KEY_ENTER || data == KEY_RETURN || data == KEY_TAB;
     } else if (data == KEY_SPACE) {
@@ -1642,6 +1816,8 @@ void vKeyHandleEvent(const vKeyEvent& event,
         if (vUpperCaseFirstChar && _upperCaseStatus == 1) {
             _upperCaseStatus = 2;
         }
+        //look-back memory: only words separated by a single space count
+        if (hCode == vDoNothing && _spaceCount == 1) asRememberWord(); else if (_spaceCount > 1) _asPrevCount = 0;
         //save word
         if (_spaceCount == 1) {
             if (_specialChar.size() > 0) {
@@ -1654,6 +1830,7 @@ void vKeyHandleEvent(const vKeyEvent& event,
         _willTempOffEngine = false;
         _asWordStartOk = true;
     } else if (data == KEY_DELETE) {
+        _asPrevCount = 0;
         hCode = vDoNothing;
         hExt = 2; //delete
         if (_specialChar.size() > 0) {
@@ -1738,6 +1915,14 @@ void vKeyHandleEvent(const vKeyEvent& event,
             //auto switch: the same tone key pressed twice undoes the tone, a strong sign of English
             if (hCode == vRestore && asEnabled() && IS_MARK_KEY(data)) {
                 vAutoSwitchRequest = 0;
+#ifdef AS_DOUBLE_KEEP
+                //switching to English: keep the first press of the key too ("err", not Telex's "er")
+                if (hNCC < MAX_BUFF - 1) {
+                    for (int x = hNCC; x > 0; x--) hData[x] = hData[x - 1];
+                    hData[0] = data | (_isCaps ? CAPS_MASK : 0);
+                    hNCC++;
+                }
+#endif
             }
         }
 

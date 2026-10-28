@@ -15,6 +15,7 @@ int vLanguage = 1, vInputType = 0, vFreeMark = 0, vCodeTable = 0, vCheckSpelling
 static vKeyHookState* H;
 static std::u16string screen;
 static Uint32 enKeys[MAX_BUFF]; static int enCount = 0; static bool enValid = true;
+static Uint32 prevKeys[2][MAX_BUFF]; static int prevCounts[2]; static int prevN = 0;
 int switches = 0;
 
 static Uint16 keyOf(char c) {
@@ -55,7 +56,7 @@ static void press(char c) {
             else screen.push_back(keyCodeToCharacter(key | (caps ? CAPS_MASK : 0)));
         } else applyOutput(key, caps);
         if (vAutoSwitchRequest == 0) {
-            vAutoSwitchRequest = -1; vLanguage = 0; startNewSession(); switches++;
+            vAutoSwitchRequest = -1; vLanguage = 0; startNewSession(); vAutoSwitchForget(); prevN = 0; switches++;
             enCount = 0; enValid = (key == KEY_SPACE || key == KEY_RETURN);
         }
         return;
@@ -65,12 +66,18 @@ static void press(char c) {
         if (enCount < MAX_BUFF - 2) enKeys[enCount++] = key | (caps ? CAPS_MASK : 0); else enValid = false;
         screen.push_back(c); return;
     }
-    if (key == KEY_DELETE) { if (enCount > 0) enCount--; else enValid = false; if (!screen.empty()) screen.pop_back(); return; }
+    if (key == KEY_DELETE) { if (enCount == 0) prevN = 0; if (enCount > 0) enCount--; else enValid = false; if (!screen.empty()) screen.pop_back(); return; }
     if (lc >= '0' && lc <= '9') { enValid = false; screen.push_back(c); return; }
     bool wordEnd = key == KEY_SPACE || key == KEY_COMMA || key == KEY_DOT || key == KEY_RETURN;
     int count = enCount; bool valid = enValid; enCount = 0; enValid = (key == KEY_SPACE || key == KEY_RETURN);
-    if (wordEnd && valid && count >= 2 && vAutoSwitchCheckEnglishWord(enKeys, count)) {
-        applyOutput(key, caps); vLanguage = 1; startNewSession(); switches++; return;
+    const Uint32* prev[2] = {prevKeys[0], prevKeys[1]};
+    bool converted = wordEnd && valid && count >= 2 && vAutoSwitchCheckEnglishWord(enKeys, count, prev, prevCounts, prevN);
+    if (!converted && key == KEY_SPACE && valid && count >= 1) {
+        memcpy(prevKeys[1], prevKeys[0], sizeof(prevKeys[0])); prevCounts[1] = prevCounts[0];
+        memcpy(prevKeys[0], enKeys, count * sizeof(Uint32)); prevCounts[0] = count; if (prevN < 2) prevN++;
+    } else prevN = 0;
+    if (converted) {
+        applyOutput(key, caps); vLanguage = 1; startNewSession(); vAutoSwitchForget(); switches++; return;
     }
     screen.push_back(c == '\n' ? u'\n' : (char16_t)c);
 }
@@ -94,7 +101,7 @@ int main(int argc, char** argv) {
         while (fgets(buf, sizeof buf, stdin)) {
             char* tab = strchr(buf, '\t'); if (!tab) continue;
             buf[strcspn(buf, "\n")] = 0;
-            screen.clear(); switches = 0; enCount = 0; enValid = true; startNewSession();
+            screen.clear(); switches = 0; enCount = 0; enValid = true; prevN = 0; startNewSession(); vAutoSwitchForget();
             vLanguage = atoi(buf);
             for (char* p = tab + 1; *p; p++) press(*p == '|' ? '\n' : *p);
             printf("%s\t%d\t%d\n", utf8(screen).c_str(), switches, vLanguage);

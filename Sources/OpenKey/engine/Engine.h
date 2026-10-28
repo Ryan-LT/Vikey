@@ -216,6 +216,18 @@ extern int vAutoSwitchUndoCount;
 bool vAutoSwitchCheckEnglishWord(const Uint32* keys, const int& count);
 
 /**
+ * Same, with the words typed just before it (most recent first, separated by single spaces):
+ * ambiguous ones are converted together with it (look-back).
+ */
+bool vAutoSwitchCheckEnglishWord(const Uint32* keys, const int& count,
+                                 const Uint32* const* previous, const int* previousCounts, const int& previousN);
+
+/**
+ * Forget the words remembered for look-back (language switched by hand, app changed...).
+ */
+void vAutoSwitchForget();
+
+/**
  * Call this function first to receive data pointer
  */
 void* vKeyInit();

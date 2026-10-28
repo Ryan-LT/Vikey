@@ -102,12 +102,14 @@ extern "C" {
     struct AutoFixUndo {
         bool active;
         int removeCount;           // characters to delete: the corrected word plus the break character
-        UniChar text[MAX_BUFF + 1]; // what to type back: the original word plus the break character
+        UniChar text[MAX_BUFF + 1]; // what to type back: the original word
         int textCount;
+        int language;              // language before the automatic switch
     };
     static AutoFixUndo _autoFixUndo = {};
 
-    static void UndoAutoFixIfAny();
+    static bool UndoAutoFixWithBackspace();
+    static void TLUndo();
     int vTypingLogKeys = 1;                     // record the keys of each word in the typing log
     static NSString* _tlApp = @"";              // bundle id of the app being typed in, for the log
     void TLFlush();
@@ -116,10 +118,23 @@ extern "C" {
     static void TLAuto(NSString* rule, int to);
     void TLManual(NSString* via, int to);
 
-    static void ResetEnglishWord(bool valid) {
+    // words typed just before the current one in English mode, most recent first (look-back)
+    static Uint32 _enPrevKeys[2][MAX_BUFF];
+    static int _enPrevCounts[2];
+    static int _enPrevN = 0;
+
+    /// Starts a new English-mode word; the previous words stay for look-back.
+    static void StartEnglishWord(bool valid) {
         _enCount = 0;
         _enValid = valid;
         _enAfterShortcut = false;
+    }
+
+    /// Starts over: no current word and nothing to look back on.
+    static void ResetEnglishWord(bool valid) {
+        StartEnglishWord(valid);
+        _enPrevN = 0;
+        vAutoSwitchForget();
     }
 
     // ---- Smart switch per website -------------------------------------------------------
@@ -284,6 +299,12 @@ extern "C" {
         }
     }
     
+    /// Another app came to the front: forget the word in progress and the look-back history.
+    void OnFocusChanged() {
+        ResetEnglishWord(true);
+        _autoFixUndo.active = false;
+    }
+
     void RequestNewSession() {
         //send event signal to Engine
         vKeyHandleEvent(vKeyEvent::Mouse, vKeyEventState::MouseDown, 0);
@@ -393,6 +414,7 @@ extern "C" {
     }
     
     void OnInputMethodChanged() {
+        ResetEnglishWord(true);   // switched from the menu or the control panel: nothing to look back on
         if (vUseSmartSwitchKey) {
             queryFrontMostApp();
             setAppInputMethodStatus(SmartSwitchContextKey(), vLanguage | (vCodeTable << 1));
@@ -711,7 +733,7 @@ extern "C" {
     }
     
     void switchLanguage() {
-        UndoAutoFixIfAny();
+        _autoFixUndo.active = false;
         ResetEnglishWord(true);
         if (vLanguage == 0)
             vLanguage = 1;
@@ -996,13 +1018,24 @@ extern "C" {
         _tlSinceAuto = true;
     }
 
-    /// The user switched language: right after an automatic switch it counts as an undo.
+    /// The user switched language by hand. after_auto: right after an automatic switch.
     void TLManual(NSString* via, int to) {
         TLEndWord(@"switch");
-        bool undo = _tlSinceAuto;
+        bool afterAuto = _tlSinceAuto;
         _tlSinceAuto = false;
-        TLCount(undo ? @"undo" : @"manual");
-        TLWrite([@{@"e": undo ? @"undo" : @"manual", @"via": via, @"to": TLLang(to)} mutableCopy]);
+        TLCount(@"manual");
+        if (afterAuto) TLCount(@"manual_after_auto");
+        NSMutableDictionary* d = [@{@"e": @"manual", @"via": via, @"to": TLLang(to)} mutableCopy];
+        if (afterAuto) d[@"after_auto"] = @YES;
+        TLWrite(d);
+    }
+
+    /// Backspace undid an automatic correction.
+    static void TLUndo() {
+        TLEndWord(@"undo");
+        _tlSinceAuto = false;
+        TLCount(@"undo");
+        TLWrite([@{@"e": @"undo", @"via": @"backspace", @"to": TLLang(_autoFixUndo.language)} mutableCopy]);
     }
 
     static void TLContext(int to) {
@@ -1045,15 +1078,17 @@ extern "C" {
             if (c == 0) return;
             _autoFixUndo.text[n++] = c;
         }
-        _autoFixUndo.text[n++] = breakChar;
         _autoFixUndo.textCount = n;
         _autoFixUndo.removeCount = correctedCount + 1;
+        _autoFixUndo.language = vLanguage;
         _autoFixUndo.active = true;
     }
 
-    /// The switch hotkey right after an automatic correction puts the original word back.
-    static void UndoAutoFixIfAny() {
-        if (!_autoFixUndo.active) return;
+    /// Backspace right after an automatic correction puts the original word back (like macOS
+    /// autocorrect) and returns to the previous language. The switch hotkey stays a plain switch,
+    /// because right after a correction it usually means "the next word is in the other language".
+    static bool UndoAutoFixWithBackspace() {
+        if (!_autoFixUndo.active) return false;
         _autoFixUndo.active = false;
         int removeCount = _autoFixUndo.removeCount;
         if (shouldUseRecommendWorkaround(FRONT_APP)) {
@@ -1065,6 +1100,14 @@ extern "C" {
             CGEventTapPostEvent(_proxy, eventBackSpaceUp);
         }
         SendUnicodeText(_autoFixUndo.text, _autoFixUndo.textCount);
+        TLUndo();
+        if (vLanguage != _autoFixUndo.language) {
+            vLanguage = _autoFixUndo.language;
+            [appDelegate onImputMethodChanged:YES];
+        }
+        startNewSession();
+        ResetEnglishWord(false); // the cursor is at the end of a word we didn't see typed
+        return true;
     }
 
     static void AutoSwitchTo(int language, NSString* rule) {
@@ -1073,6 +1116,7 @@ extern "C" {
         vLanguage = language;
         [appDelegate onImputMethodChanged:YES]; // updates the menu bar and the per-app/per-site memory
         startNewSession();
+        vAutoSwitchForget();
     }
 
     static void ApplyAutoSwitchToEnglish(int correctedCount, bool atWordBreak) {
@@ -1112,6 +1156,7 @@ extern "C" {
             return false;
         }
         if (_keycode == KEY_DELETE) {
+            if (_enCount == 0) _enPrevN = 0; // editing the previous word
             if (_enCount > 0) _enCount--;
             else if (!_enAfterShortcut) _enValid = false; // deleting into the previous word: we don't know its letters
             return false;
@@ -1125,14 +1170,25 @@ extern "C" {
         int count = _enCount;
         bool valid = _enValid;
         // the next word is whole only after whitespace; after . _ - / ( etc. it's part of an identifier or path
-        ResetEnglishWord(IsWhitespaceKey(_keycode));
-        if (!wordEnd || !valid || count < 2) return false;
-        if (vOtherLanguage && OtherInputSourceActive()) return false;
-        if (!vAutoSwitchCheckEnglishWord(_enKeys, count)) return false;
+        StartEnglishWord(IsWhitespaceKey(_keycode));
+        bool checked = wordEnd && valid && count >= 2 && !(vOtherLanguage && OtherInputSourceActive());
+        const Uint32* previous[2] = {_enPrevKeys[0], _enPrevKeys[1]};
+        bool converted = checked && vAutoSwitchCheckEnglishWord(_enKeys, count, previous, _enPrevCounts, _enPrevN);
+        // remember this word for look-back only if it was followed by a single space
+        if (!converted && _keycode == KEY_SPACE && valid && count >= 1) {
+            memcpy(_enPrevKeys[1], _enPrevKeys[0], sizeof(_enPrevKeys[0]));
+            _enPrevCounts[1] = _enPrevCounts[0];
+            memcpy(_enPrevKeys[0], _enKeys, count * sizeof(Uint32));
+            _enPrevCounts[0] = count;
+            if (_enPrevN < 2) _enPrevN++;
+        } else {
+            _enPrevN = 0;
+        }
+        if (!converted) return false;
 
         if (IS_DOUBLE_CODE(vCodeTable)) { // VNI / Unicode compound track how many units each character took
             _syncKey.clear();
-            for (int x = 0; x < count; x++) InsertKeyLength(1);
+            for (int x = 0; x < pData->backspaceCount; x++) InsertKeyLength(1);
         }
         int correctedCount = pData->newCharCount;
         SendEngineOutput();
@@ -1243,7 +1299,10 @@ extern "C" {
             }
         }
 
-        // any key or click other than the switch hotkey ends the chance to undo an auto correction
+        // Backspace right after an automatic correction undoes it; any other key or click ends that chance
+        if (type == kCGEventKeyDown && _keycode == KEY_DELETE && _autoFixUndo.active && !(OTHER_CONTROL_KEY)) {
+            if (UndoAutoFixWithBackspace()) return NULL;
+        }
         if (type == kCGEventKeyDown || type == kCGEventLeftMouseDown || type == kCGEventRightMouseDown) {
             _autoFixUndo.active = false;
             if (type == kCGEventKeyDown) TLNoteKey(_keycode, _flag); else TLNoteClick();

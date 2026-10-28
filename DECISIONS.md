@@ -7,6 +7,42 @@ Status values: **Shipped** (in a build Tony has), **Agreed** (decided, not built
 
 ---
 
+## 8. Tuning with a mixed-text typing simulation
+
+**Status:** Built 2026-10-28 and sent as OpenKey-2.0.4-lookback. The double-key change is waiting for Tony.
+
+**Reported by Tony.** "I typed 'this makes' in VN mode and got 'thí makes'. Can we correct thí → this?" Then: "Run the engine over a large mixed Vietnamese/English text, key by key, to see how close it gets without manual switching."
+
+**Method.** `Tools/autoswitch/sim` types two corpora into the real engine and mirrors the macOS layer:
+- 21k words of chat-style messages;
+- 269k words of Viblo tech articles.
+
+Vietnamese words are typed in Telex with varied tone positions: 60% at the end, 25% after the vowel, 15% after the vowel cluster. Two user models:
+- **Ideal:** switches by hand only when the next word would come out wrong. Metric: manual switches per 100 words.
+- **Lazy:** never switches. Metric: wrong words, and the share of messages typed perfectly.
+
+**Results, manual switches per 100 words (chat / Viblo)**
+
+| Build | Chat | Viblo |
+|---|---|---|
+| Auto-switch off | 11.98 | 5.41 |
+| First auto-switch build | 1.82 | 1.41 |
+| This build | 1.51 | 1.12 |
+| This build + keep both letters on the double key | 0.95 | 1.00 |
+
+With no manual switching at all, wrong words go 9.8% → 1.2% (chat) and 3.2% → 1.0% (Viblo). With the double-key change, 94% of chat messages are typed perfectly.
+
+### Decisions
+
+- **Look-back.** When a word confidently switches the language, the 1–2 words just before it are fixed too, if they were ambiguous and joined by single spaces. "this makes sense" no longer leaves "thí"; "check mail cos theer" becomes "check mail có thể". Words that look the same in both modes ("makes", "cho") are passed through. It helps most when nobody switches by hand.
+- **Unknown foreign words.** In VN mode, a word that is neither a real syllable nor in the English list, and fails OpenKey's own spelling rules, is restored and switches to English: TestFlight, analytics, workflow, postgresql. Without the spelling-rule check, rare real syllables like riệt and chịt were wrongly restored. Minimum 3 letters.
+- **Undo moved to Backspace.** This changes decision 5. The simulation showed the hotkey can't mean both "undo that fix" and "the next word is in the other language": after "wifi" was correctly fixed, pressing the hotkey to type "tốt" reverted it to "ừii". Backspace right after an auto-fix now restores the original word and language, like macOS autocorrect. The hotkey is always a plain switch.
+- **"cors gif" in EN mode now becomes "có gì".** Look-back judges the common Vietnamese phrase more likely.
+- **Pending Tony: keep both letters on a double key.** Doubled-letter English words (issue, miss, sorry, pass, office, error, password, traffic) cause about a third of the remaining manual switches, because Telex drops one letter. Keeping both letters when the double key switches to English cuts chat manual switches from 1.51 to 0.95 per 100 words. Tony earlier asked to keep Telex's "er"; the numbers are sent to him for a decision.
+- **Bug fixed along the way.** Look-back history is now cleared when the language changes from the menu and on every app switch, so a rewrite can never use stale word lengths.
+
+---
+
 ## 7. Typing log to measure and tune auto-switch
 
 **Status:** Built 2026-10-28 and sent as OpenKey-2.0.4-log. Tony uses it and sends the log for tuning.

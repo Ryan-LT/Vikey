@@ -24,6 +24,7 @@ extern void OnInputMethodChanged(void);
 extern void RequestNewSession(void);
 extern void OnActiveAppChanged(void);
 extern void TLAppChanged(void);
+extern void OnFocusChanged(void);
 extern void TLManual(NSString* via, int to);
 extern void TLFlush(void);
 extern void TLClear(void);
@@ -144,7 +145,7 @@ extern int vTypingLogKeys;
     [_grid addRowWithViews:@[[self label:@"" bold:NO], [self label:@"Hôm nay" bold:YES], [self label:@"7 ngày" bold:YES], [self label:@"Tất cả" bold:YES]]];
     NSArray* rows = @[@[@"Từ đã gõ", @"words"], @[@"Chuyển tay", @"manual"], @[@"Tự chuyển", @"auto"],
                       @[@"    Tiếng Việt → Anh (cả từ)", @"auto_vi_word_to_en"], @[@"    Anh → Tiếng Việt (cả từ)", @"auto_en_word_to_vi"],
-                      @[@"    Gõ dấu hai lần → Anh", @"auto_double_key"], @[@"Hoàn tác tự chuyển", @"undo"],
+                      @[@"    Gõ dấu hai lần → Anh", @"auto_double_key"], @[@"Hoàn tác bằng Delete", @"undo"],
                       @[@"Đổi theo ứng dụng / trang web", @"context"], @[@"Chuyển tay mỗi 100 từ", @"rate"]];
     for (NSArray* r in rows) {
         NSMutableArray* views = [NSMutableArray arrayWithObject:[self label:r[0] bold:NO]];
@@ -212,7 +213,9 @@ extern int vTypingLogKeys;
                                     @"double_key": @"gõ dấu hai lần"};
             text = names[d[@"rule"]] ?: (d[@"rule"] ?: @"");
         } else if ([e isEqualToString:@"manual"] || [e isEqualToString:@"undo"]) {
-            text = [d[@"via"] isEqualToString:@"menu"] ? @"bằng menu" : @"bằng phím tắt";
+            if ([e isEqualToString:@"undo"]) text = @"bằng Delete";
+            else text = [NSString stringWithFormat:@"%@%@", [d[@"via"] isEqualToString:@"menu"] ? @"bằng menu" : @"bằng phím tắt",
+                         [d[@"after_auto"] boolValue] ? @", ngay sau tự chuyển" : @""];
         }
     }
     NSTextField* cell = [tableView makeViewWithIdentifier:ident owner:self];
@@ -447,7 +450,7 @@ extern bool convertToolDontAlertWhenCompleted;
     mnuAutoSwitch = [theMenu addItemWithTitle:@"Tự chuyển Anh/Việt khi gõ"
                                        action:@selector(onAutoSwitchSelected)
                                 keyEquivalent:@""];
-    mnuAutoSwitch.toolTip = @"Gõ nhầm chế độ thì tự sửa từ và chuyển ngôn ngữ. Bấm phím chuyển ngay sau đó để hoàn tác.";
+    mnuAutoSwitch.toolTip = @"Gõ nhầm chế độ thì tự sửa từ và chuyển ngôn ngữ. Bấm Delete ngay sau đó để hoàn tác.";
     [theMenu addItem:[NSMenuItem separatorItem]];
     NSMenuItem* menuInputType = [theMenu addItemWithTitle:@"Kiểu gõ" action:nil keyEquivalent:@""];
     
@@ -807,6 +810,8 @@ extern bool convertToolDontAlertWhenCompleted;
 
 -(void)activeAppChanged: (NSNotification*)note {
     TLAppChanged();
+    OnFocusChanged();
+    RequestNewSession();
     if (vUseSmartSwitchKey && [OpenKeyManager isInited]) {
         OnActiveAppChanged();
     }
