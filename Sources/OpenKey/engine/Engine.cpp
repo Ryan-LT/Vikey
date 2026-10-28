@@ -11,6 +11,7 @@
 #include <string.h>
 #include <list>
 #include "Macro.h"
+#include "AutoSwitchData.h"
 
 static vector<Uint8> _charKeyCode = {
     KEY_BACKQUOTE, KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9, KEY_0, KEY_MINUS, KEY_EQUALS,
@@ -1279,6 +1280,232 @@ bool checkQuickConsonant() {
     }
     return false;
 }
+
+/*==========================================================================================================*/
+/* Auto switch language from typing behavior.
+ * Everything here runs only at a word break (or on a doubled mark key), never per letter, and
+ * uses fixed tables compiled into the binary: no allocation, no file or system calls.
+ *
+ * Words are compared as a Telex-normalized ASCII key: circumflex -> doubled vowel (aa ee oo),
+ * breve/horn -> letter + w (aw ow uw), đ -> dd, tone letter (s f r x j) at the end.
+ * That makes the check independent of the code table and of old/new tone placement.
+ */
+#define AS_MISSING (-1000)
+#define AS_KEY_LEN 40
+//Scores are 10*log10(occurrences per million). When the keys read as a word in both languages,
+//leave the current language only if the word in the current language is rare (below its floor)
+//and the other reading is at least AS_PREFER points (AS_PREFER/10 orders of magnitude) more common.
+#ifndef AS_PREFER
+#define AS_PREFER 10
+#endif
+#ifndef AS_VN_FLOOR
+#define AS_VN_FLOOR 10      //Vietnamese words used at least ~10 per million are never switched away from
+#endif
+#ifndef AS_EN_FLOOR
+#define AS_EN_FLOOR 0       //any English word used at least ~1 per million is never converted
+#endif
+
+int vAutoSwitchRequest = -1;
+Uint32 vAutoSwitchUndoData[MAX_BUFF];
+int vAutoSwitchUndoCount = 0;
+
+static char _asLetter[256];
+static bool _asLetterReady = false;
+
+static void asInitLetters() {
+    if (_asLetterReady) return;
+    memset(_asLetter, 0, sizeof(_asLetter));
+    const Uint16 keys[26] = {KEY_A, KEY_B, KEY_C, KEY_D, KEY_E, KEY_F, KEY_G, KEY_H, KEY_I, KEY_J, KEY_K, KEY_L, KEY_M,
+                             KEY_N, KEY_O, KEY_P, KEY_Q, KEY_R, KEY_S, KEY_T, KEY_U, KEY_V, KEY_W, KEY_X, KEY_Y, KEY_Z};
+    for (int n = 0; n < 26; n++) _asLetter[keys[n] & 0xFF] = (char)('a' + n);
+    _asLetterReady = true;
+}
+
+static inline char asLetterOf(const Uint32& data) {
+    Uint32 code = data & CHAR_MASK;
+    return code < 256 ? _asLetter[code] : 0;
+}
+
+static int asLookup(const char* words, const unsigned int* offsets, const signed char* scores, const int& count, const char* word) {
+    int lo = 0, hi = count - 1;
+    while (lo <= hi) {
+        int mid = (lo + hi) >> 1;
+        int c = strcmp(words + offsets[mid], word);
+        if (c == 0) return scores[mid];
+        if (c < 0) lo = mid + 1; else hi = mid - 1;
+    }
+    return AS_MISSING;
+}
+
+static inline int asVietnameseScore(const char* key) {
+    return asLookup(kAutoSwitchVnWords, kAutoSwitchVnOffsets, kAutoSwitchVnScores, kAutoSwitchVnCount, key);
+}
+
+static inline int asEnglishScore(const char* word) {
+    return asLookup(kAutoSwitchEnWords, kAutoSwitchEnOffsets, kAutoSwitchEnScores, kAutoSwitchEnCount, word);
+}
+
+/** Normalized key of the word in TypingWord; transformed = it has a tone, ^, w-horn/breve or đ. */
+static bool asWordKey(char* out, bool& transformed) {
+    transformed = false;
+    if (_index == 0 || _longWordHelper.size() > 0) return false;
+    int n = 0;
+    char tone = 0;
+    for (int x = 0; x < _index; x++) {
+        Uint32 t = TypingWord[x];
+        char c = asLetterOf(t);
+        if (c == 0 || n + 3 >= AS_KEY_LEN) return false;
+        out[n++] = c;
+        if ((t & TONE_MASK) && (c == 'a' || c == 'e' || c == 'o' || c == 'd')) {
+            out[n++] = c;
+            transformed = true;
+        } else if ((t & TONEW_MASK) && (c == 'a' || c == 'o' || c == 'u')) {
+            out[n++] = 'w';
+            transformed = true;
+        }
+        switch (t & MARK_MASK) {
+            case MARK1_MASK: tone = 's'; break;
+            case MARK2_MASK: tone = 'f'; break;
+            case MARK3_MASK: tone = 'r'; break;
+            case MARK4_MASK: tone = 'x'; break;
+            case MARK5_MASK: tone = 'j'; break;
+        }
+    }
+    if (tone) {
+        out[n++] = tone;
+        transformed = true;
+    }
+    out[n] = 0;
+    return true;
+}
+
+/** Lowercase letters of raw key codes; false if any key isn't a letter. */
+static bool asRawWord(const Uint32* keys, const int& count, char* out) {
+    if (count <= 0 || count >= AS_KEY_LEN) return false;
+    for (int x = 0; x < count; x++) {
+        out[x] = asLetterOf(keys[x]);
+        if (out[x] == 0) return false;
+    }
+    out[count] = 0;
+    return true;
+}
+
+static inline bool asEnabled() {
+    return vAutoSwitchByTyping && vInputType != vVNI;
+}
+
+/** Vietnamese mode, at a word break: are the raw keys an English word the user clearly meant? */
+static bool asShouldRestoreToEnglish() {
+    if (!asEnabled() || _hasHandledMacro) return false;
+    asInitLetters();
+    if (_stateIndex < 2 || _stateIndex < _index) return false;
+    char word[AS_KEY_LEN], raw[AS_KEY_LEN];
+    bool transformed;
+    if (!asWordKey(word, transformed) || !transformed) return false;
+    if (!asRawWord(KeyStates, _stateIndex, raw)) return false;
+    int en = asEnglishScore(raw);
+    if (en == AS_MISSING) return false;
+    int vn = asVietnameseScore(word);
+    return vn == AS_MISSING || (vn < AS_VN_FLOOR && en - vn >= AS_PREFER);
+}
+
+/** Puts the raw keys back (like "restore if wrong spelling") and asks for English. */
+static void asRestoreToEnglish(const int& handleCode) {
+    vAutoSwitchUndoCount = 0;
+    for (int x = 0; x < _index && x < MAX_BUFF; x++) {
+        vAutoSwitchUndoData[vAutoSwitchUndoCount++] = GET(TypingWord[x]);
+    }
+    hCode = handleCode;
+    hBPC = _index;
+    hNCC = _stateIndex;
+    for (i = 0; i < _stateIndex; i++) {
+        TypingWord[i] = KeyStates[i];
+        hData[_stateIndex - 1 - i] = TypingWord[i];
+    }
+    _index = _stateIndex;
+    vAutoSwitchRequest = 0;
+}
+
+/** Break keys that end a word for auto switch (not arrows, tab, esc, mouse or shortcuts). */
+static bool asIsSwitchBreak(const vKeyEvent& event, const Uint16& data, const Uint8& capsStatus, const bool& otherControlKey) {
+    if (event != vKeyEvent::Keyboard || otherControlKey) return false;
+    return data == KEY_COMMA || data == KEY_DOT || data == KEY_SEMICOLON || data == KEY_ENTER || data == KEY_RETURN ||
+           (data == KEY_SLASH && capsStatus == 1) || (data == KEY_1 && capsStatus == 1);
+}
+
+bool vAutoSwitchCheckEnglishWord(const Uint32* keys, const int& count) {
+    if (!asEnabled() || count < 2 || count >= MAX_BUFF - 1) return false;
+    asInitLetters();
+    char raw[AS_KEY_LEN];
+    if (!asRawWord(keys, count, raw)) return false;
+    int capitals = 0;
+    for (int x = 0; x < count; x++) if (keys[x] & CAPS_MASK) capitals++;
+    if (capitals >= 2) return false;   //USA, EST, IRS, camelCase: acronyms and identifiers stay as typed
+    int en = asEnglishScore(raw);
+
+    //replay the keys through the real Telex engine on a scratch session, then put everything back
+    Uint32 savedWord[MAX_BUFF], savedStates[MAX_BUFF];
+    memcpy(savedWord, TypingWord, sizeof(TypingWord));
+    memcpy(savedStates, KeyStates, sizeof(KeyStates));
+    Byte savedIndex = _index, savedStateIndex = _stateIndex, savedUpperStatus = _upperCaseStatus;
+    bool savedTempDisable = tempDisableKey, savedMacroHandled = _hasHandledMacro, savedUseSpellingBefore = _useSpellCheckingBefore;
+    bool savedQuickConsonant = _hasHandleQuickConsonant, savedTempOff = _willTempOffEngine;
+    int savedSpaceCount = _spaceCount, savedCheckSpelling = vCheckSpelling, savedUseMacro = vUseMacro, savedUpperFirst = vUpperCaseFirstChar;
+    vector<Uint32> savedLong, savedSpecial, savedStatesData;
+    list<vector<Uint32>> savedTyping;
+    savedLong.swap(_longWordHelper);
+    savedSpecial.swap(_specialChar);
+    savedStatesData.swap(_typingStatesData);
+    savedTyping.swap(_typingStates);
+    vKeyHookState savedHook = std::move(HookState);
+    HookState.macroKey.clear();
+    HookState.macroData.clear();
+
+    vUseMacro = 0;
+    vUpperCaseFirstChar = 0;
+    _spaceCount = 0;
+    _willTempOffEngine = false;
+    startNewSession();
+    for (int x = 0; x < count; x++) {
+        vKeyHandleEvent(vKeyEvent::Keyboard, vKeyEventState::KeyDown, (Uint16)(keys[x] & CHAR_MASK), (keys[x] & CAPS_MASK) ? 1 : 0, false);
+    }
+
+    bool convert = false;
+    Uint32 result[MAX_BUFF];
+    int resultCount = 0;
+    char word[AS_KEY_LEN];
+    bool transformed;
+    if (asWordKey(word, transformed) && transformed) {
+        int vn = asVietnameseScore(word);
+        convert = vn != AS_MISSING && (en == AS_MISSING || (en < AS_EN_FLOOR && vn - en >= AS_PREFER));
+    }
+    if (convert) {
+        for (int x = 0; x < _index; x++) result[resultCount++] = GET(TypingWord[x]);
+    }
+
+    memcpy(TypingWord, savedWord, sizeof(TypingWord));
+    memcpy(KeyStates, savedStates, sizeof(KeyStates));
+    _index = savedIndex; _stateIndex = savedStateIndex; _upperCaseStatus = savedUpperStatus;
+    tempDisableKey = savedTempDisable; _hasHandledMacro = savedMacroHandled; _useSpellCheckingBefore = savedUseSpellingBefore;
+    _hasHandleQuickConsonant = savedQuickConsonant; _willTempOffEngine = savedTempOff;
+    _spaceCount = savedSpaceCount; vCheckSpelling = savedCheckSpelling; vUseMacro = savedUseMacro; vUpperCaseFirstChar = savedUpperFirst;
+    _longWordHelper.swap(savedLong);
+    _specialChar.swap(savedSpecial);
+    _typingStatesData.swap(savedStatesData);
+    _typingStates.swap(savedTyping);
+    HookState = std::move(savedHook);
+
+    if (!convert) return false;
+
+    vAutoSwitchUndoCount = 0;
+    for (int x = 0; x < count; x++) vAutoSwitchUndoData[vAutoSwitchUndoCount++] = keys[x];
+    hCode = vRestore;          //platform sends the new word, then the break key itself
+    hBPC = (Byte)count;
+    hNCC = (Byte)resultCount;
+    hExt = 3;
+    for (int x = 0; x < resultCount; x++) hData[resultCount - 1 - x] = result[x];
+    return true;
+}
 /*==========================================================================================================*/
 
 void vEnglishMode(const vKeyEventState& state, const Uint16& data, const bool& isCaps, const bool& otherControlKey) {
@@ -1330,6 +1557,8 @@ void vKeyHandleEvent(const vKeyEvent& event,
             hCode = vReplaceMaro;
             hBPC = (Byte)hMacroKey.size();
             _hasHandledMacro = true;
+        } else if (asIsSwitchBreak(event, data, capsStatus, otherControlKey) && asShouldRestoreToEnglish()) {
+            asRestoreToEnglish(vRestoreAndStartNewSession); //auto switch: an English word typed in Vietnamese mode
         } else if ((vQuickStartConsonant || vQuickEndConsonant) && !tempDisableKey && isMacroBreakCode(data)) {
             checkQuickConsonant();
         } else if (vRestoreIfWrongSpelling && isWordBreak(event, state, data)) { //restore key if wrong spelling with break-key
@@ -1390,6 +1619,9 @@ void vKeyHandleEvent(const vKeyEvent& event,
             hBPC = (Byte)hMacroKey.size();
             _spaceCount++;
             _hasHandledMacro = true;
+        } else if (asShouldRestoreToEnglish()) { //auto switch: an English word typed in Vietnamese mode
+            asRestoreToEnglish(vRestore);
+            _spaceCount++;
         } else if ((vQuickStartConsonant || vQuickEndConsonant) && !tempDisableKey && checkQuickConsonant()) {
             _spaceCount++;
         } else if (vRestoreIfWrongSpelling && tempDisableKey && !_hasHandledMacro) { //restore key if wrong spelling
@@ -1499,6 +1731,10 @@ void vKeyHandleEvent(const vKeyEvent& event,
             hCode = vDoNothing;
             hExt = 3; //normal key
             handleMainKey(data, _isCaps);
+            //auto switch: the same tone key pressed twice undoes the tone, a strong sign of English
+            if (hCode == vRestore && asEnabled() && IS_MARK_KEY(data)) {
+                vAutoSwitchRequest = 0;
+            }
         }
 
         if (!vFreeMark && !IS_KEY_D(data)) {

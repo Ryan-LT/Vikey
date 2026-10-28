@@ -90,6 +90,31 @@ extern "C" {
     
     NSString* _frontMostApp = @"UnknownApp";
 
+    // ---- Auto switch by typing ----------------------------------------------------------
+    // The engine decides when a word belongs to the other language. This layer collects the
+    // raw keys of the current word in English mode, sends the engine's output, flips the
+    // language, and lets the switch hotkey undo an automatic correction right after it happens.
+    static Uint32 _enKeys[MAX_BUFF];
+    static int _enCount = 0;
+    static bool _enValid = true;   // false when the word isn't whole (started mid-word, edited past its start, has digits)
+    static bool _enAfterShortcut = false; // last key was a ⌘/⌃ shortcut (select all, cut...): Backspace then deletes a selection
+
+    struct AutoFixUndo {
+        bool active;
+        int removeCount;           // characters to delete: the corrected word plus the break character
+        UniChar text[MAX_BUFF + 1]; // what to type back: the original word plus the break character
+        int textCount;
+    };
+    static AutoFixUndo _autoFixUndo = {};
+
+    static void UndoAutoFixIfAny();
+
+    static void ResetEnglishWord(bool valid) {
+        _enCount = 0;
+        _enValid = valid;
+        _enAfterShortcut = false;
+    }
+
     // ---- Smart switch per website -------------------------------------------------------
     // For browsers, the remembered language is keyed by "bundleId|hostname" instead of the
     // bundle id alone, so each site keeps its own language. The active tab's URL comes from
@@ -213,6 +238,8 @@ extern "C" {
         LOAD_DATA(vFixChromiumBrowser, vFixChromiumBrowser);
         
         LOAD_DATA(vPerformLayoutCompat, vPerformLayoutCompat);
+        id autoSwitch = [[NSUserDefaults standardUserDefaults] objectForKey:@"AutoSwitchByTyping"];
+        vAutoSwitchByTyping = autoSwitch == nil ? 1 : [autoSwitch intValue]; // on by default
         
         myEventSource = CGEventSourceCreate(kCGEventSourceStatePrivate);
         pData = (vKeyHookState*)vKeyInit();
@@ -311,11 +338,15 @@ extern "C" {
     void OnActiveAppChanged() { //use for smart switch key; improved on Sep 28th, 2019
         queryFrontMostApp();
         _siteHost = nil;          // the new app's tab is looked up below; until then use the app key
+        ResetEnglishWord(true);
+        _autoFixUndo.active = false;
         ApplySmartSwitch();
         UpdateSiteWatcher();
     }
 
     void OnSiteChanged() {
+        ResetEnglishWord(true);
+        _autoFixUndo.active = false;
         ApplySmartSwitch();
         startNewSession();
     }
@@ -668,6 +699,8 @@ extern "C" {
     }
     
     void switchLanguage() {
+        UndoAutoFixIfAny();
+        ResetEnglishWord(true);
         if (vLanguage == 0)
             vLanguage = 1;
         else
@@ -704,6 +737,193 @@ extern "C" {
             }
         }
         SendKeyCode(_keycode | (_flag & kCGEventFlagMaskShift ? CAPS_MASK : 0));
+    }
+
+    /// Sends the engine's result for the current key: backspaces, then the new characters.
+    void SendEngineOutput() {
+        //fix autocomplete
+        if (shouldUseRecommendWorkaround(FRONT_APP) && pData->extCode != 4) {
+            if (vFixChromiumBrowser && [_unicodeCompoundApp containsObject:FRONT_APP]) {
+                if (pData->backspaceCount > 0) {
+                    SendShiftAndLeftArrow();
+                    if (pData->backspaceCount == 1)
+                        pData->backspaceCount--;
+                }
+            } else {
+                SendEmptyCharacter();
+                pData->backspaceCount++;
+            
+            }
+        }
+
+        if (shouldUseSelectionReplacement(FRONT_APP) && pData->backspaceCount > 0) {
+            for (_i = 0; _i < pData->backspaceCount; _i++) {
+                SendShiftAndLeftArrow();
+            }
+            pData->backspaceCount = 0;
+        }
+        
+        //send backspace
+        if (pData->backspaceCount > 0 && pData->backspaceCount < MAX_BUFF) {
+            for (_i = 0; _i < pData->backspaceCount; _i++) {
+                SendBackspace();
+            }
+        }
+        
+        //send new character
+        if (!vSendKeyStepByStep) {
+            SendNewCharString();
+        } else {
+            if (pData->newCharCount > 0 && pData->newCharCount <= MAX_BUFF) {
+                for (int i = pData->newCharCount - 1; i >= 0; i--) {
+                    SendKeyCode(pData->charData[i]);
+                }
+            }
+            if (pData->code == vRestore || pData->code == vRestoreAndStartNewSession) {
+                SendKeyCode(_keycode | ((_flag & kCGEventFlagMaskAlphaShift) || (_flag & kCGEventFlagMaskShift) ? CAPS_MASK : 0));
+            }
+            if (pData->code == vRestoreAndStartNewSession) {
+                startNewSession();
+            }
+        }
+    }
+
+    static bool IsLetterKey(const Uint16& key) {
+        switch (key) {
+            case KEY_A: case KEY_B: case KEY_C: case KEY_D: case KEY_E: case KEY_F: case KEY_G: case KEY_H: case KEY_I:
+            case KEY_J: case KEY_K: case KEY_L: case KEY_M: case KEY_N: case KEY_O: case KEY_P: case KEY_Q: case KEY_R:
+            case KEY_S: case KEY_T: case KEY_U: case KEY_V: case KEY_W: case KEY_X: case KEY_Y: case KEY_Z:
+                return true;
+        }
+        return false;
+    }
+
+    static void SendUnicodeText(const UniChar* text, int count) {
+        for (int start = 0; start < count; start += 16) {
+            int n = MIN(16, count - start);
+            CGEventRef down = CGEventCreateKeyboardEvent(myEventSource, 0, true);
+            CGEventRef up = CGEventCreateKeyboardEvent(myEventSource, 0, false);
+            CGEventSetIntegerValueField(down, kCGEventSourceUserData, OPENKEY_EVENT_TAG);
+            CGEventSetIntegerValueField(up, kCGEventSourceUserData, OPENKEY_EVENT_TAG);
+            CGEventKeyboardSetUnicodeString(down, n, text + start);
+            CGEventKeyboardSetUnicodeString(up, n, text + start);
+            CGEventTapPostEvent(_proxy, down);
+            CGEventTapPostEvent(_proxy, up);
+            CFRelease(down);
+            CFRelease(up);
+        }
+    }
+
+    /// Engine character data to UTF-16. Only valid for the Unicode code table.
+    static UniChar CharacterOf(const Uint32& data) {
+        if (data & CHAR_CODE_MASK) return (UniChar)(data & 0xFFFF);
+        return (UniChar)keyCodeToCharacter(data);
+    }
+
+    /// Remembers how to undo the correction just sent: the original word and the break key.
+    static void RememberAutoFix(int correctedCount) {
+        _autoFixUndo.active = false;
+        if (vCodeTable != 0 || vAutoSwitchUndoCount <= 0 || correctedCount <= 0) return; // one character per letter only in Unicode
+        Uint16 breakChar = keyCodeToCharacter(_keycode | ((_flag & kCGEventFlagMaskAlphaShift) || (_flag & kCGEventFlagMaskShift) ? CAPS_MASK : 0));
+        if (breakChar == 0) return; // Enter and the like have already acted
+        int n = 0;
+        for (int x = 0; x < vAutoSwitchUndoCount && n < MAX_BUFF; x++) {
+            UniChar c = CharacterOf(vAutoSwitchUndoData[x]);
+            if (c == 0) return;
+            _autoFixUndo.text[n++] = c;
+        }
+        _autoFixUndo.text[n++] = breakChar;
+        _autoFixUndo.textCount = n;
+        _autoFixUndo.removeCount = correctedCount + 1;
+        _autoFixUndo.active = true;
+    }
+
+    /// The switch hotkey right after an automatic correction puts the original word back.
+    static void UndoAutoFixIfAny() {
+        if (!_autoFixUndo.active) return;
+        _autoFixUndo.active = false;
+        int removeCount = _autoFixUndo.removeCount;
+        if (shouldUseRecommendWorkaround(FRONT_APP)) {
+            SendEmptyCharacter();
+            removeCount++;
+        }
+        for (int x = 0; x < removeCount; x++) {
+            CGEventTapPostEvent(_proxy, eventBackSpaceDown);
+            CGEventTapPostEvent(_proxy, eventBackSpaceUp);
+        }
+        SendUnicodeText(_autoFixUndo.text, _autoFixUndo.textCount);
+    }
+
+    static void AutoSwitchTo(int language) {
+        if (vLanguage == language) return;
+        vLanguage = language;
+        [appDelegate onImputMethodChanged:YES]; // updates the menu bar and the per-app/per-site memory
+        startNewSession();
+    }
+
+    static void ApplyAutoSwitchToEnglish(int correctedCount, bool atWordBreak) {
+        vAutoSwitchRequest = -1;
+        if (atWordBreak) RememberAutoFix(correctedCount); else _autoFixUndo.active = false;
+        AutoSwitchTo(0);
+        ResetEnglishWord(atWordBreak); // mid-word: the rest of this word is not a whole word
+    }
+
+    static bool OtherInputSourceActive() {
+        TISInputSourceRef isource = TISCopyCurrentKeyboardInputSource();
+        if (isource == NULL) return false;
+        BOOL other = NO;
+        CFArrayRef languages = (CFArrayRef)TISGetInputSourceProperty(isource, kTISPropertyInputSourceLanguages);
+        if (languages != NULL && CFArrayGetCount(languages) > 0) {
+            NSString* lang = (__bridge NSString*)(CFStringRef)CFArrayGetValueAtIndex(languages, 0);
+            other = ![lang isLike:@"en"];
+        }
+        CFRelease(isource);
+        return other;
+    }
+
+    /// English mode key: collect the word; at its end ask the engine whether it was Vietnamese.
+    /// Returns true when the key was consumed (the word was replaced and the break key re-sent).
+    static bool HandleEnglishKeyForAutoSwitch() {
+        if (OTHER_CONTROL_KEY) {
+            ResetEnglishWord(true);
+            _enAfterShortcut = (_flag & (kCGEventFlagMaskCommand | kCGEventFlagMaskControl)) != 0;
+            return false;
+        }
+        bool shift = _flag & kCGEventFlagMaskShift;
+        bool caps = shift || (_flag & kCGEventFlagMaskAlphaShift);
+        if (IsLetterKey(_keycode)) {
+            if (_enCount < MAX_BUFF - 2) _enKeys[_enCount++] = _keycode | (caps ? CAPS_MASK : 0);
+            else _enValid = false;
+            _enAfterShortcut = false;
+            return false;
+        }
+        if (_keycode == KEY_DELETE) {
+            if (_enCount > 0) _enCount--;
+            else if (!_enAfterShortcut) _enValid = false; // deleting into the previous word: we don't know its letters
+            return false;
+        }
+        if (IS_NUMBER_KEY(_keycode) && !shift) {
+            _enValid = false;
+            return false;
+        }
+        bool wordEnd = _keycode == KEY_SPACE || _keycode == KEY_COMMA || _keycode == KEY_DOT || _keycode == KEY_SEMICOLON ||
+                       _keycode == KEY_RETURN || _keycode == KEY_ENTER || (shift && (_keycode == KEY_SLASH || _keycode == KEY_1));
+        int count = _enCount;
+        bool valid = _enValid;
+        ResetEnglishWord(true); // any other key starts a new word too
+        if (!wordEnd || !valid || count < 2) return false;
+        if (vOtherLanguage && OtherInputSourceActive()) return false;
+        if (!vAutoSwitchCheckEnglishWord(_enKeys, count)) return false;
+
+        if (IS_DOUBLE_CODE(vCodeTable)) { // VNI / Unicode compound track how many units each character took
+            _syncKey.clear();
+            for (int x = 0; x < count; x++) InsertKeyLength(1);
+        }
+        int correctedCount = pData->newCharCount;
+        SendEngineOutput();
+        RememberAutoFix(correctedCount);
+        AutoSwitchTo(1);
+        return true;
     }
 
     // TODO: Research API to convert character into CGKeyCode more elegantly!
@@ -750,6 +970,7 @@ extern "C" {
         if (CGEventGetIntegerValueField(event, kCGEventSourceStateID) == CGEventSourceGetSourceStateID(myEventSource)) {
             return event;
         }
+        _proxy = proxy;
         
         _flag = CGEventGetFlags(event);
         _keycode = (CGKeyCode)CGEventGetIntegerValueField(event, kCGKeyboardEventKeycode);
@@ -807,6 +1028,11 @@ extern "C" {
             }
         }
 
+        // any key or click other than the switch hotkey ends the chance to undo an auto correction
+        if (type == kCGEventKeyDown || type == kCGEventLeftMouseDown || type == kCGEventRightMouseDown) {
+            _autoFixUndo.active = false;
+        }
+
         // Also check correct event hooked
         if ((type != kCGEventKeyDown) && (type != kCGEventKeyUp) &&
             (type != kCGEventLeftMouseDown) && (type != kCGEventRightMouseDown) &&
@@ -817,17 +1043,30 @@ extern "C" {
         
         //If is in english mode
         if (vLanguage == 0) {
-            if (vUseMacro && vUseMacroInEnglishMode && type == kCGEventKeyDown) {
-                vEnglishMode((type == kCGEventKeyDown ? vKeyEventState::KeyDown : vKeyEventState::MouseDown),
+            if (type == kCGEventLeftMouseDown || type == kCGEventRightMouseDown) {
+                ResetEnglishWord(true);
+                if (vUseSmartSwitchKey) NudgeSiteCheck();
+                return event;
+            }
+            if (type != kCGEventKeyDown)
+                return event;
+            if (vUseSmartSwitchKey && (_flag & (kCGEventFlagMaskCommand | kCGEventFlagMaskControl))) {
+                NudgeSiteCheck();
+            }
+            if (vUseMacro && vUseMacroInEnglishMode) {
+                vEnglishMode(vKeyEventState::KeyDown,
                              _keycode,
                              (_flag & kCGEventFlagMaskShift) || (_flag & kCGEventFlagMaskAlphaShift),
                              OTHER_CONTROL_KEY);
                 
                 if (pData->code == vReplaceMaro) { //handle macro in english mode
                     handleMacro();
+                    ResetEnglishWord(true);
                     return NULL;
                 }
             }
+            if (vAutoSwitchByTyping && HandleEnglishKeyForAutoSwitch())
+                return NULL;
             return event;
         }
         
@@ -861,6 +1100,7 @@ extern "C" {
         //handle keyboard
         if (type == kCGEventKeyDown) {
             //send event signal to Engine
+            vAutoSwitchRequest = -1;
             vKeyHandleEvent(vKeyEvent::Keyboard,
                             vKeyEventState::KeyDown,
                             _keycode,
@@ -887,51 +1127,10 @@ extern "C" {
                 return event;
             } else if (pData->code == vWillProcess || pData->code == vRestore || pData->code == vRestoreAndStartNewSession) { //handle result signal
                 
-                //fix autocomplete
-                if (shouldUseRecommendWorkaround(FRONT_APP) && pData->extCode != 4) {
-                    if (vFixChromiumBrowser && [_unicodeCompoundApp containsObject:FRONT_APP]) {
-                        if (pData->backspaceCount > 0) {
-                            SendShiftAndLeftArrow();
-                            if (pData->backspaceCount == 1)
-                                pData->backspaceCount--;
-                        }
-                    } else {
-                        SendEmptyCharacter();
-                        pData->backspaceCount++;
-                    
-                    }
-                }
-
-                if (shouldUseSelectionReplacement(FRONT_APP) && pData->backspaceCount > 0) {
-                    for (_i = 0; _i < pData->backspaceCount; _i++) {
-                        SendShiftAndLeftArrow();
-                    }
-                    pData->backspaceCount = 0;
-                }
-                
-                //send backspace
-                if (pData->backspaceCount > 0 && pData->backspaceCount < MAX_BUFF) {
-                    for (_i = 0; _i < pData->backspaceCount; _i++) {
-                        SendBackspace();
-                    }
-                }
-                
-                //send new character
-                if (!vSendKeyStepByStep) {
-                    SendNewCharString();
-                } else {
-                    if (pData->newCharCount > 0 && pData->newCharCount <= MAX_BUFF) {
-                        for (int i = pData->newCharCount - 1; i >= 0; i--) {
-                            SendKeyCode(pData->charData[i]);
-                        }
-                    }
-                    if (pData->code == vRestore || pData->code == vRestoreAndStartNewSession) {
-                        SendKeyCode(_keycode | ((_flag & kCGEventFlagMaskAlphaShift) || (_flag & kCGEventFlagMaskShift) ? CAPS_MASK : 0));
-                    }
-                    if (pData->code == vRestoreAndStartNewSession) {
-                        startNewSession();
-                    }
-                }
+                bool autoSwitchAtBreak = vAutoSwitchRequest == 0 && !IsLetterKey(_keycode);
+                int correctedCount = pData->newCharCount;
+                SendEngineOutput();
+                if (vAutoSwitchRequest == 0) ApplyAutoSwitchToEnglish(correctedCount, autoSwitchAtBreak);
             } else if (pData->code == vReplaceMaro) { //MACRO
                 handleMacro();
             }

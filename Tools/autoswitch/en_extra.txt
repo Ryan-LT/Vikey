@@ -1,0 +1,6 @@
+# Extra English words treated as very common (chat shorthand without apostrophes, dev vocabulary).
+im ive id ill hes shes its isnt dont doesnt didnt cant couldnt wont wouldnt shouldnt wasnt werent arent
+havent hasnt hadnt thats whats wheres theres heres lets youre youve youll youd theyre theyve theyll weve
+were ok okay lol lmao omg btw idk tbh imo imho thx pls plz ya yea yeah yep nope nah gonna wanna gotta
+api apis json http https url urls sql css html js ts npm git github repo repos regex async await kubectl sudo
+ssh dns ios macos xcode swift rust golang deno bun cli gui ui ux todo todos env dev devs prod config

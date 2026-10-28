@@ -188,6 +188,34 @@ extern int vOtherLanguage;
 extern int vTempOffOpenKey;
 
 /**
+ * Auto switch language from typing behavior (Telex family only).
+ * 0: No; 1: Yes
+ */
+extern int vAutoSwitchByTyping;
+
+/**
+ * Set by the engine when a keystroke should switch the language:
+ * -1: no request, 0: switch to English, 1: switch to Vietnamese.
+ * The platform layer applies it after sending the key's output, then resets it to -1.
+ */
+extern int vAutoSwitchRequest;
+
+/**
+ * What was on screen before the last automatic correction (engine character data),
+ * so the platform can put it back when the user immediately presses the switch hotkey.
+ */
+extern Uint32 vAutoSwitchUndoData[MAX_BUFF];
+extern int vAutoSwitchUndoCount;
+
+/**
+ * English mode, at a word break: if the raw keys of the finished word are clearly a
+ * Vietnamese word typed in Telex, fills the hook state (code vRestore) with that word and
+ * returns true. The platform then replaces the word and switches to Vietnamese.
+ * keys: key codes with CAPS_MASK, count: number of keys.
+ */
+bool vAutoSwitchCheckEnglishWord(const Uint32* keys, const int& count);
+
+/**
  * Call this function first to receive data pointer
  */
 void* vKeyInit();

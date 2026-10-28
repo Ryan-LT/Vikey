@@ -9,38 +9,51 @@ Status values: **Shipped** (in a build Tony has), **Agreed** (decided, not built
 
 ## 5. Auto-switch language from correction behavior
 
-**Status:** Agreed, waiting for "go" (2026-10-28)
+**Status:** Built 2026-10-28 and sent as OpenKey-2.0.4-autoswitch. Tony is testing.
 
 **User story.** As someone who types Vietnamese and English all day, I want OpenKey to notice when I'm typing in the wrong mode and switch for me, so I rarely press the switch hotkey.
 
-**Rules**
+### Tony's rules (2026-10-28)
 
-1. **Double modifier key, VN → EN.** When I press a tone or mark key twice inside a word (for example, e r r), OpenKey switches to English immediately.
-   - The output stays the normal Telex result ("er", not "err"). Telex has a good reason for that, so keep it.
-2. **Word boundary in VN mode, VN → EN.** At space or punctuation, OpenKey restores the raw keys and switches to English when both of these hold:
-   - the raw keys, exactly as typed and in that order, form an English word;
-   - the Vietnamese result is not a real Vietnamese syllable.
-   - Key order matters. Typing m-o-r-e means "more", so restore and switch. Typing m-o-e-r means the odd Vietnamese "mỏe", so leave it.
-   - If the raw keys are English but the result is a real syllable (box → bõ, tax → tã), it's ambiguous. Leave it.
-   - If the raw keys aren't English either (a typo), don't switch.
-3. **Word boundary in EN mode, EN → VN.** OpenKey converts the word and switches to Vietnamese when all three hold:
-   - the raw keys are not an English word;
-   - replaying them through OpenKey's own Telex engine gives a real Vietnamese syllable;
-   - that result differs from the raw keys.
-   - Telex modifiers can sit anywhere in the word, so don't parse markers by hand. "truowfng", "truongwf" and "truwownfg" must all give "trường".
-   - Plain words that look the same in both modes ("con", "ban") never trigger.
+1. **Double modifier key, VN → EN.** Pressing a tone or mark key twice inside a word (e r r) switches to English immediately. The output stays the normal Telex result ("er", not "err"). Telex has a good reason for that.
+2. **Word end in VN mode, VN → EN.** If the raw keys, exactly as typed and in that order, are an English word, and the Vietnamese result isn't a real syllable, restore the keys and switch.
+   - m-o-r-e means "more", so it switches.
+   - m-o-e-r is meant as the odd Vietnamese "mỏe", so it stays.
+3. **Word end in EN mode, EN → VN.** If the raw keys aren't English, and replaying them through OpenKey's own Telex engine gives a real Vietnamese syllable, convert and switch.
+   - Modifiers can sit anywhere: "truowfng", "truongwf" and "truwownfg" all give "trường".
+   - Plain words that look the same in both languages never trigger.
+4. **Scope.** Good enough for day-to-day use, not every edge case.
+5. **Performance.** Nothing we add may affect the app's performance.
 
-**Scope.** Good enough for day-to-day use, not every edge case.
+### Decisions made while building (Otto)
 
-**Proposed defaults (not yet confirmed)**
+- **Word lists.** Two lists are compiled into the binary, so nothing is loaded or parsed at runtime:
+  - about 6.9k real Vietnamese syllables;
+  - about 41k English words, with subtitle frequencies (FrequencyWords, CC BY-SA 4.0).
+  - The English list keeps only words the macOS spell checker accepts, lowercase or capitalized. It also gets chat shorthand without apostrophes (dont, hes, im, lol) and developer words (rust, json, repo).
+- **When both readings are real words.** The keys could be an English word and also give a real syllable (box → bõ, last → lát). Then the current language is kept unless both of these hold:
+  - its word is rare: under about 10 per million for Vietnamese, or under about 1 per million for English;
+  - the other reading is at least 10x more common.
+- **What that means in practice:**
+  - In VN mode, "best", "must", "test", "most", "rest", "list", "now", "how", "his", "is", "of" all restore to English.
+  - "last" and "lost" stay "lát" and "lót", because those are common Vietnamese words. The point is to protect tô, thí, á, sê.
+  - In EN mode, real English words like "theme", "rust", "sex", "car" and "been" are never converted.
+- **Acronyms and identifiers.** A word with 2 or more capital letters is never converted (USA, EST, camelCase).
+- **Word ends.** The checks run on space, comma, period, semicolon, Enter, ? and !. They don't run on arrows, Tab, Esc, clicks, shortcuts or apostrophes, so "hasn" in "hasn't" is never checked.
+- **Undo.** Pressing the switch hotkey right after an auto-fix puts the original word and language back. Any other key or click cancels the undo. Text undo works in the Unicode code table; in other code tables the hotkey only switches the language.
+- **Smart switch memory.** An auto-switch behaves like the hotkey, so it updates the per-app and per-site memory.
+- **Setting.** The menu item "Tự chuyển Anh/Việt khi gõ" is on by default. It works in the Telex family only; it's disabled for VNI.
+- **Performance, measured.**
+  - Nothing runs per letter.
+  - At a word end in EN mode, the check is a replay of up to 30 keys plus two binary searches, about 1 µs.
+  - In VN mode, the check is two binary searches.
+  - No allocation, file access or system calls on the typing path.
+- **Platform.** macOS only. The Windows build would need `vAutoSwitchByTyping` defined.
 
-- Add a list of real Vietnamese syllables (about 7k) and a common English word list.
-- Add a settings toggle, on by default.
-- Pressing the switch hotkey right after an auto-fix undoes that fix.
-- An auto-switch updates the per-app and per-site smart-switch memory.
-- Runs in all apps except ignored ones.
+### Tests
 
-**Known limits.** A word that is valid in both languages ("as" → á, "or" → ỏ) can't be caught on its own. The next word usually corrects the mode.
+- `Tools/autoswitch/test`: 28 regression cases on the real engine, plus a bulk accuracy test.
+- Live tests on the real app with synthetic keystrokes: 18 cases in a native text view and 8 in a Chrome textarea, all passing, including undo.
 
 ---
 

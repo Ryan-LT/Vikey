@@ -56,6 +56,7 @@ int vPerformLayoutCompat = 0;
 
 //beta feature
 int vFixChromiumBrowser = 0; //new on version 2.0
+int vAutoSwitchByTyping = 1; //switch language from typing behavior
 
 extern int convertToolHotKey;
 extern bool convertToolDontAlertWhenCompleted;
@@ -89,6 +90,7 @@ extern bool convertToolDontAlertWhenCompleted;
     NSMenuItem* mnuVietnameseLocaleCP1258;
     
     NSMenuItem* mnuQuickConvert;
+    NSMenuItem* mnuAutoSwitch;
 }
 
 -(void)askPermission {
@@ -210,6 +212,10 @@ extern bool convertToolDontAlertWhenCompleted;
     menuInputMethod = [theMenu addItemWithTitle:@"Bật Tiếng Việt"
                                                      action:@selector(onInputMethodSelected)
                                               keyEquivalent:@""];
+    mnuAutoSwitch = [theMenu addItemWithTitle:@"Tự chuyển Anh/Việt khi gõ"
+                                       action:@selector(onAutoSwitchSelected)
+                                keyEquivalent:@""];
+    mnuAutoSwitch.toolTip = @"Gõ nhầm chế độ thì tự sửa từ và chuyển ngôn ngữ. Bấm phím chuyển ngay sau đó để hoàn tác.";
     [theMenu addItem:[NSMenuItem separatorItem]];
     NSMenuItem* menuInputType = [theMenu addItemWithTitle:@"Kiểu gõ" action:nil keyEquivalent:@""];
     
@@ -377,6 +383,10 @@ extern bool convertToolDontAlertWhenCompleted;
         statusItem.button.alternateImage = [NSImage imageNamed:@"StatusHighlightedEng"];
     }
     vLanguage = (int)intInputMethod;
+    id autoSwitch = [[NSUserDefaults standardUserDefaults] objectForKey:@"AutoSwitchByTyping"];
+    vAutoSwitchByTyping = autoSwitch == nil ? 1 : [autoSwitch intValue];
+    [mnuAutoSwitch setState:(vAutoSwitchByTyping ? NSControlStateValueOn : NSControlStateValueOff)];
+    [mnuAutoSwitch setEnabled:(vInputType != 1)]; // Telex family only
     
     NSInteger intInputType = [[NSUserDefaults standardUserDefaults] integerForKey:@"InputType"];
     [mnuTelex setState:NSControlStateValueOff];
@@ -441,6 +451,12 @@ extern bool convertToolDontAlertWhenCompleted;
 }
 
 #pragma mark -StatusBar menu action
+- (void)onAutoSwitchSelected {
+    vAutoSwitchByTyping = vAutoSwitchByTyping ? 0 : 1;
+    [[NSUserDefaults standardUserDefaults] setInteger:vAutoSwitchByTyping forKey:@"AutoSwitchByTyping"];
+    [self fillData];
+}
+
 - (void)onInputMethodSelected {
     [self onImputMethodChanged:YES];
 }
