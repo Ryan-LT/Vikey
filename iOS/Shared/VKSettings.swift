@@ -3,7 +3,9 @@ import Foundation
 /// Settings the host app writes and the keyboard reads (shared app group; the keyboard only reads).
 enum VKSettings {
     static let group = "group.com.devuap.vikey"
-    static var defaults: UserDefaults { UserDefaults(suiteName: group) ?? .standard }
+    /// Reads of the shared defaults; the performance tests check typing never reads them.
+    static var reads = 0
+    static var defaults: UserDefaults { reads += 1; return UserDefaults(suiteName: group) ?? .standard }
 
     enum Key {
         static let autoSwitch = "AutoSwitchByTyping"

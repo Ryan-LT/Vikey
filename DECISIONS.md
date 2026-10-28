@@ -23,6 +23,17 @@ If every listed change is intended, accept them with `Tools/autoswitch/check.sh 
 
 ---
 
+## 24. Performance is locked by tests
+
+**Status:** Done 2026-10-28.
+
+**Asked by Tony.** The first iOS builds felt laggy. "We should have tests guarantee performance in case we do something that make it slow in the future."
+
+**Decided.**
+- `check.sh` (and CI) types the chat corpus through Engine/Driver and fails when a key takes more than 1 µs on average or 20 µs at the 99.9th percentile. Today: ~155 ns average, ~1.8 µs p99.9, so slower CI machines still pass.
+- `check.sh` also checks the driver (what the iOS keyboard runs) gives exactly the simulator's output.
+- iOS tests (`iOS/Tests`, CI job "ios"): at most one read of the text field per key (each is a cross-process call on a device), no shared-settings reads while typing, every key shadow has a fixed path (no offscreen rendering), and under 300 µs of keyboard logic per key in the simulator (~51 µs today). The lag in build 2 came from exactly these, not from the engine.
+
 ## 23. Capitals, Caps Lock Vietnamese and Wi-Fi
 
 **Status:** Done 2026-10-28 (1.0.12). Rule cases D23.

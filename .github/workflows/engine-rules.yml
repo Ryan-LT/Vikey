@@ -20,3 +20,13 @@ jobs:
           brew install xcodegen
           xcodegen generate
           xcodebuild -project Vikey.xcodeproj -scheme Vikey -configuration Release CODE_SIGNING_ALLOWED=NO build
+  ios:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: iOS keyboard tests (correctness + performance lock)
+        run: |
+          brew install xcodegen
+          cd iOS && xcodegen generate
+          SIM=$(xcrun simctl list devices available | grep -E "iPhone" | head -1 | grep -oE "[0-9A-F-]{36}")
+          xcodebuild test -project VikeyiOS.xcodeproj -scheme Vikey -destination "id=$SIM" CODE_SIGNING_ALLOWED=NO

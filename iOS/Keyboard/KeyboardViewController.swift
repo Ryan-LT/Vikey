@@ -11,6 +11,8 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
     private var lastSpace: TimeInterval = 0
     private var fieldLanguage: Int?           // language to restore after a web/email field
     private let languageKey = "Language"
+    /// The text field. Tests swap in a counting proxy (performance lock: one text read per key).
+    lazy var proxy: UITextDocumentProxy = textDocumentProxy
     // settings, read once when the keyboard appears (reading shared defaults per key is slow)
     private var webFieldsEnglish = true, autoCapitalize = true, doubleSpacePeriod = true
 
@@ -73,7 +75,7 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
     /// A new text field: start fresh; web addresses and email start in English (and go back after).
     private func startField() {
         driver.resetContext()
-        let type = textDocumentProxy.keyboardType ?? .default
+        let type = proxy.keyboardType ?? .default
         let webField = type == .URL || type == .emailAddress || type == .webSearch
         if webField && webFieldsEnglish {
             if fieldLanguage == nil { fieldLanguage = driver.language }
@@ -82,17 +84,17 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
             driver.language = l
             fieldLanguage = nil
         }
-        lastContext = textDocumentProxy.documentContextBeforeInput
+        lastContext = proxy.documentContextBeforeInput
         updateAutoShift(lastContext ?? "")
     }
 
     private var now: Double { ProcessInfo.processInfo.systemUptime }
 
     private func refresh() {
-        keyboard.dark = textDocumentProxy.keyboardAppearance == .dark || traitCollection.userInterfaceStyle == .dark
+        keyboard.dark = proxy.keyboardAppearance == .dark || traitCollection.userInterfaceStyle == .dark
         keyboard.languageTitle = driver.language == 1 ? "Tiếng Việt" : "English"
         keyboard.languageShort = driver.language == 1 ? "VI" : "EN"
-        let (title, blue) = Self.returnTitle(textDocumentProxy.returnKeyType ?? .default)
+        let (title, blue) = Self.returnTitle(proxy.returnKeyType ?? .default)
         keyboard.returnTitle = title
         keyboard.returnIsBlue = blue
     }
@@ -126,7 +128,7 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
     }
 
     private func externalChange() {
-        let ctx = textDocumentProxy.documentContextBeforeInput
+        let ctx = proxy.documentContextBeforeInput
         if ctx != lastContext {
             driver.resetContext()
             lastContext = ctx
@@ -175,8 +177,8 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
         let before = lastContext ?? ""
         if doubleSpacePeriod, now - lastSpace < 0.6, before.hasSuffix(" "),
            let prev = before.dropLast().last, prev.isLetter || prev.isNumber {
-            textDocumentProxy.deleteBackward()
-            textDocumentProxy.insertText(". ")
+            proxy.deleteBackward()
+            proxy.insertText(". ")
             driver.resetContext()
             lastSpace = 0
             afterEdit()
@@ -197,14 +199,14 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
     }
 
     private func apply(_ e: VKEditResult) {
-        for _ in 0..<e.deleteCount { textDocumentProxy.deleteBackward() }
-        if !e.text.isEmpty { textDocumentProxy.insertText(e.text) }
+        for _ in 0..<e.deleteCount { proxy.deleteBackward() }
+        if !e.text.isEmpty { proxy.insertText(e.text) }
         if e.languageChanged { saveLanguage(); refresh() }
         afterEdit()
     }
 
     private func afterEdit() {
-        lastContext = textDocumentProxy.documentContextBeforeInput   // one text read per key
+        lastContext = proxy.documentContextBeforeInput   // one text read per key
         updateAutoShift(lastContext ?? "")
     }
 
@@ -213,15 +215,15 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
     /// Capital letter at the start of a sentence, like the system keyboard.
     private func updateAutoShift(_ before: String) {
         guard keyboard.layer_ == .letters, keyboard.shift != .locked else { return }
-        guard autoCapitalize, (textDocumentProxy.autocapitalizationType ?? .sentences) != .none else {
+        guard autoCapitalize, (proxy.autocapitalizationType ?? .sentences) != .none else {
             if keyboard.shift == .on { keyboard.shift = .off }
             return
         }
         let trimmed = before.replacingOccurrences(of: " ", with: "")
         var start = before.isEmpty || before.hasSuffix("\n")
         if !start, before.hasSuffix(" "), let last = trimmed.last { start = ".?!".contains(last) }
-        if textDocumentProxy.autocapitalizationType == .allCharacters { keyboard.shift = .on; return }
-        if textDocumentProxy.autocapitalizationType == .words && (before.isEmpty || before.hasSuffix(" ")) { start = true }
+        if proxy.autocapitalizationType == .allCharacters { keyboard.shift = .on; return }
+        if proxy.autocapitalizationType == .words && (before.isEmpty || before.hasSuffix(" ")) { start = true }
         keyboard.shift = start ? .on : .off
     }
 }

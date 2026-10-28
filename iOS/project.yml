@@ -79,3 +79,28 @@ targets:
         SWIFT_OBJC_BRIDGING_HEADER: Keyboard/Keyboard-Bridging-Header.h
         HEADER_SEARCH_PATHS: ["$(SRCROOT)/../Engine", "$(SRCROOT)/../Engine/platforms", "$(SRCROOT)/Shared"]
         APPLICATION_EXTENSION_API_ONLY: YES
+  VikeyTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: Tests
+      - path: Keyboard
+        excludes: ["Info.plist", "*.entitlements"]
+      - path: Shared
+      - path: ../Engine
+        excludes:
+          - "platforms/win32.h"
+          - "platforms/linux.h"
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.devuap.vikey.ios.tests
+        SWIFT_OBJC_BRIDGING_HEADER: Keyboard/Keyboard-Bridging-Header.h
+        HEADER_SEARCH_PATHS: ["$(SRCROOT)/../Engine", "$(SRCROOT)/../Engine/platforms", "$(SRCROOT)/Shared"]
+        GENERATE_INFOPLIST_FILE: YES
+schemes:
+  Vikey:
+    build:
+      targets:
+        Vikey: all
+    test:
+      targets: [VikeyTests]
