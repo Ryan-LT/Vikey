@@ -111,7 +111,7 @@ final class EmojiPanel: NSPanel {
     override func keyDown(with e: NSEvent) {
         let cmd = e.modifierFlags.contains(.command), opt = e.modifierFlags.contains(.option)
         switch e.keyCode {
-        case 53: onClose?()                                                    // Esc
+        case 53: model.raw.isEmpty ? onClose?() : model.setRaw("")             // Esc: clears the search, then closes
         case 36, 76: if let x = model.current { EmojiPicker.shared.choose(x) }  // Return
         // the first emoji is selected from the start (Tony); the arrows move from there
         case 123: model.allSelected = false; model.move(-1)
@@ -144,6 +144,7 @@ final class EmojiPanel: NSPanel {
 final class EmojiPickerModel: ObservableObject {
     @Published private(set) var raw = ""
     @Published var allSelected = false   // ⌘A: the next key replaces the query
+    @Published private(set) var opened = 0   // each open starts at the top of the list (Tony)
     @Published private(set) var vietnamese = true
     @Published private(set) var results: [Emoji] = []          // what the grid shows when searching
     @Published var selected = 0
@@ -179,7 +180,7 @@ final class EmojiPickerModel: ObservableObject {
 
     func reset(vietnamese: Bool) {
         self.vietnamese = vietnamese
-        raw = ""; allSelected = false; results = []; selected = 0; lastMouse = NSEvent.mouseLocation
+        raw = ""; allSelected = false; results = []; selected = 0; lastMouse = NSEvent.mouseLocation; opened += 1
         let byChar = Dictionary(all.map { ($0.char, $0) }, uniquingKeysWith: { a, _ in a })
         recents = EmojiUsage.frequent(in: .standard, count: EmojiGridView.columns * 3).compactMap { byChar[$0] }
         relayout()
@@ -208,7 +209,9 @@ final class EmojiPickerModel: ObservableObject {
     private(set) var allRows: [Row] = []
     private(set) var visible: [Emoji] = []          // everything the arrows walk through, in grid order
     /// Rebuilt when the content changes, never per row while drawing.
+    private var generation = 0
     private func relayout() {
+        generation += 1   // new row identities: rows keyed by position alone were drawn stale after a search (Tony)
         visible = searching ? results : recents + all
         sections = makeSections()
         allRows = sections.flatMap(\.rows)
@@ -219,7 +222,7 @@ final class EmojiPickerModel: ObservableObject {
         func add(_ title: String, _ n: Int) {
             var rows: [Row] = []
             var i = 0
-            while i < n { rows.append(Row(id: rid, section: out.count, start: start + i, count: min(cols, n - i))); rid += 1; i += cols }
+            while i < n { rows.append(Row(id: generation * 100_000 + rid, section: out.count, start: start + i, count: min(cols, n - i))); rid += 1; i += cols }
             out.append((title, rows)); start += n
         }
         if searching { add("", results.count) }
@@ -317,7 +320,8 @@ struct EmojiGridView: View {
             .onChange(of: model.selected) { i in
                 if model.selectedByKeys, let r = model.row(of: i) { proxy.scrollTo(r.id) }   // the least scrolling that shows it
             }
-            .onChange(of: model.raw) { _ in proxy.scrollTo(0, anchor: .top) }
+            .onChange(of: model.raw) { _ in if let r = model.allRows.first { proxy.scrollTo(r.id, anchor: .top) } }
+            .onChange(of: model.opened) { _ in if let r = model.allRows.first { proxy.scrollTo(r.id, anchor: .top) } }
         }
     }
 

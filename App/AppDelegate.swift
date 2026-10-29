@@ -3,6 +3,10 @@ import SwiftUI
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
+        #if DEBUG
+        // before anything else: no event tap, no windows, no focus taken (it runs while others use the Mac)
+        if let dir = UserDefaults.standard.string(forKey: "emojiSelfTest") { EmojiSelfTest.run(dir: dir); return }
+        #endif
         Migration.fromOpenKeyIfNeeded()
         // people who already use Vikey (permission granted) don't get the first-run guide on update
         if UserDefaults.standard.object(forKey: OnboardingView.doneKey) == nil && VikeyCore.isAccessibilityTrusted() {
