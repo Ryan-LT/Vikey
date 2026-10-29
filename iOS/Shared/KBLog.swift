@@ -16,19 +16,24 @@ enum KBLog {
         if buffer.count >= 20 { flush() }
     }
 
+    private static let queue = DispatchQueue(label: "vikey.kblog", qos: .utility)
+
+    /// Writes on a background queue: file work on the main thread would itself cause lag.
     static func flush() {
         guard !buffer.isEmpty, let url else { buffer.removeAll(); return }
         let text = buffer.joined(separator: "\n") + "\n"
         buffer.removeAll()
-        if let h = try? FileHandle(forWritingTo: url) {
-            h.seekToEndOfFile(); h.write(Data(text.utf8)); try? h.close()
-        } else {
-            try? Data(text.utf8).write(to: url)
-        }
-        // keep the last ~200 KB
-        if let size = (try? FileManager.default.attributesOfItem(atPath: url.path)[.size] as? Int) ?? nil, size > 400_000,
-           let d = try? Data(contentsOf: url) {
-            try? d.suffix(200_000).write(to: url)
+        queue.async {
+            if let h = try? FileHandle(forWritingTo: url) {
+                h.seekToEndOfFile(); h.write(Data(text.utf8)); try? h.close()
+            } else {
+                try? Data(text.utf8).write(to: url)
+            }
+            // keep the last ~200 KB
+            if let size = (try? FileManager.default.attributesOfItem(atPath: url.path)[.size] as? Int) ?? nil, size > 400_000,
+               let d = try? Data(contentsOf: url) {
+                try? d.suffix(200_000).write(to: url)
+            }
         }
     }
 

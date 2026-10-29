@@ -71,12 +71,14 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
         loadSettings()
         startField()
         refresh()
+        if Diag.on { startStallWatch() }
         if Diag.on {
             KBLog.add("open: fullAccess=\(hasFullAccess) haptics=\(keyboard.haptics) field=\(proxy.keyboardType?.rawValue ?? -1) return=\(proxy.returnKeyType?.rawValue ?? -1) width=\(Int(view.bounds.width))")
         }
     }
 
     override func viewWillDisappear(_ animated: Bool) {
+        stallWatch?.invalidate(); stallWatch = nil
         KBLog.flush()
         super.viewWillDisappear(animated)
     }
@@ -366,8 +368,8 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
             let hold = max(0, Diag.touchUp - Diag.touchStart) * 1000, work = max(0, end - Diag.touchUp) * 1000
             keyboard.diagnostics = "finger down \(Self.time(hold)) · lift→text \(Self.time(work)) · read \(Self.time(Diag.readMs))\n"
                 + "vibrations \(Diag.haptics) · touches \(Diag.touches) · edits \(Diag.edits)"
-            KBLog.add("key=\(Diag.lastKind) hold=\(Self.time(hold)) work=\(Self.time(work)) read=\(Self.time(Diag.readMs)) vib=\(Diag.haptics) touches=\(Diag.touches) edits=\(Diag.edits) lang=\(driver.language)")
-            Diag.haptics = 0; Diag.touches = 0; Diag.edits = 0
+            KBLog.add("key=\(Diag.lastKind) hold=\(Self.time(hold)) work=\(Self.time(work)) read=\(Self.time(Diag.readMs)) vib=\(Diag.haptics) late=\(Diag.late) delay=\(Self.time(Diag.delayMs)) touches=\(Diag.touches) edits=\(Diag.edits) suggest=\(Self.time(Diag.suggestMs)) lang=\(driver.language)")
+            Diag.haptics = 0; Diag.touches = 0; Diag.edits = 0; Diag.late = 0; Diag.suggestMs = 0; Diag.delayMs = 0
         }
     }
 
@@ -408,7 +410,26 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
     }
     private func updateSuggestionsIfNeeded() {
         guard suggestionsDirty else { return }
+        let t0 = CACurrentMediaTime()
         updateSuggestions()
+        Diag.suggestMs = max(Diag.suggestMs, (CACurrentMediaTime() - t0) * 1000)
+    }
+
+    /// Debug log only: any main-thread freeze over 50 ms, and the key it followed. Touches that arrive
+    /// during a freeze are what feel like lag (and, before, like double vibrations).
+    private var stallWatch: CADisplayLink?
+    private var lastFrame: CFTimeInterval = 0
+    private func startStallWatch() {
+        stallWatch?.invalidate()
+        lastFrame = 0
+        let link = CADisplayLink(target: self, selector: #selector(frameTick(_:)))
+        link.add(to: .main, forMode: .common)
+        stallWatch = link
+    }
+    @objc private func frameTick(_ link: CADisplayLink) {
+        let gap = lastFrame == 0 ? 0 : link.timestamp - lastFrame
+        lastFrame = link.timestamp
+        if gap > 0.05 { KBLog.add("stall \(Self.time(gap * 1000)) after key=\(Diag.lastKind)") }
     }
 
     func updateSuggestions() {

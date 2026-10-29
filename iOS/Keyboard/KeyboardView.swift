@@ -5,7 +5,8 @@ enum Diag {
     static var on = false
     static var touchStart: CFTimeInterval = 0
     static var touchUp: CFTimeInterval = 0
-    static var touches = 0, haptics = 0, edits = 0
+    static var touches = 0, haptics = 0, edits = 0, late = 0
+    static var suggestMs = 0.0, delayMs = 0.0   // delay: finger down → the keyboard sees the touch
     static var readMs = 0.0
     static var lastKind = "letter"
 }
@@ -302,8 +303,11 @@ final class KeyboardView: UIView {
         feedback.impactOccurred(intensity: 0.75)   // 1.0 felt too strong next to the system keyboard, 0.5 too light (Tony)
     }
 
-    private func press(_ c: KeyCap) {
+    /// `late`: the touch reached us long after the finger landed (the keyboard was busy). Its vibration is
+    /// skipped, or a backlog of touches would buzz two or three times in a row.
+    private func press(_ c: KeyCap, late: Bool = false) {
         c.backgroundColor = c.pressedColor
+        if late { Diag.late += 1; return }
         if haptics { tick() } else { UIDevice.current.playInputClick() }
     }
     private func release(_ c: KeyCap) { c.backgroundColor = c.normalColor }
@@ -314,6 +318,7 @@ final class KeyboardView: UIView {
             let p = t.location(in: self)
             Diag.touches += 1
             Diag.touchStart = CACurrentMediaTime()
+            Diag.delayMs = max(Diag.delayMs, (Diag.touchStart - t.timestamp) * 1000)
             guard var c = cap(at: p), var k = kind(of: c), k != .globe else { continue }
             // fat-finger: a touch near a letter's border goes to the letter most likely next in this word
             if case .char = k, layer_ == .letters, let ctx = wordContext?(), !letterRects.isEmpty {
@@ -323,7 +328,7 @@ final class KeyboardView: UIView {
             // a new touch while another is down: the earlier key is typed now (fast two-thumb typing)
             if let prev = touch, let pk = touchKey { finish(prev, on: pk) }
             touch = t; touchKey = c; touchStart = p; slideFromLayer = false
-            press(c)
+            press(c, late: CACurrentMediaTime() - t.timestamp > 0.05)
             switch k {
             case .char:
                 if traitCollection.horizontalSizeClass == .compact { popup.show(over: c, in: self) }
