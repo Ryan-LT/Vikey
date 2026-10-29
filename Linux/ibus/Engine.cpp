@@ -47,13 +47,15 @@ static std::string frontAppX11() {
     static Display* d = nullptr; static bool tried = false;
     if (!d && !tried) { tried = true; d = XOpenDisplay(nullptr); }
     if (!d) return "";
-    Atom a = XInternAtom(d, "_NET_ACTIVE_WINDOW", True); if (a == None) return "";
-    Atom type; int fmt; unsigned long n, after; unsigned char* data = nullptr;
-    if (XGetWindowProperty(d, DefaultRootWindow(d), a, 0, 1, False, XA_WINDOW, &type, &fmt, &n, &after, &data) != Success || !data) return "";
-    Window w = *(Window*)data; XFree(data); if (!w) return "";
-    XClassHint h; std::string name;
-    if (XGetClassHint(d, w, &h)) { if (h.res_class) { name = h.res_class; XFree(h.res_class); } if (h.res_name) XFree(h.res_name); }
-    return name;
+    // XGetInputFocus works on XWayland too (its root has no _NET_ACTIVE_WINDOW); walk up to the window with a class
+    Window w = 0; int revert = 0; XGetInputFocus(d, &w, &revert);
+    for (int depth = 0; w && w != DefaultRootWindow(d) && depth < 8; depth++) {
+        XClassHint h = {};
+        if (XGetClassHint(d, w, &h)) { std::string name = h.res_class ? h.res_class : ""; if (h.res_class) XFree(h.res_class); if (h.res_name) XFree(h.res_name); if (!name.empty()) return name; }
+        Window root = 0, parent = 0, *kids = nullptr; unsigned n = 0;
+        if (!XQueryTree(d, w, &root, &parent, &kids, &n)) break; if (kids) XFree(kids); w = parent;
+    }
+    return "";
 #else
     return "";
 #endif

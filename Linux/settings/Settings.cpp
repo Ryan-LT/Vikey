@@ -78,7 +78,7 @@ static GtkWidget* switchRow(GtkWidget* group, const char* label, const char* tip
 static GtkWidget* group(GtkWidget* page, const char* title) { GtkWidget* g = adw_preferences_group_new(); if (title) adw_preferences_group_set_title(ADW_PREFERENCES_GROUP(g), title); adw_preferences_page_add(ADW_PREFERENCES_PAGE(page), ADW_PREFERENCES_GROUP(g)); return g; }
 
 static void buildMain(GtkApplication* app) {
-    GtkWidget* win = adw_application_window_new(app); gtk_window_set_title(GTK_WINDOW(win), "Vikey"); gtk_window_set_default_size(GTK_WINDOW(win), 480, 760); gtk_window_set_resizable(GTK_WINDOW(win), FALSE);
+    GtkWidget* win = adw_application_window_new(app); gtk_window_set_title(GTK_WINDOW(win), "Vikey"); gtk_window_set_default_size(GTK_WINDOW(win), 480, 690);
     GtkWidget* tv = adw_toolbar_view_new(); GtkWidget* hb = adw_header_bar_new(); adw_header_bar_set_show_title(ADW_HEADER_BAR(hb), FALSE); adw_toolbar_view_add_top_bar(ADW_TOOLBAR_VIEW(tv), hb);
     GtkWidget* page = adw_preferences_page_new();
     // header: icon, wordmark + hint, segmented Tiếng Việt / English
