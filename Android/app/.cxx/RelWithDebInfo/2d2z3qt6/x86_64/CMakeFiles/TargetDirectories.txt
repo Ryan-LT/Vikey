@@ -1,0 +1,3 @@
+/Users/tonymini/Work/Vikey-android/Android/app/.cxx/RelWithDebInfo/2d2z3qt6/x86_64/CMakeFiles/vikey.dir
+/Users/tonymini/Work/Vikey-android/Android/app/.cxx/RelWithDebInfo/2d2z3qt6/x86_64/CMakeFiles/edit_cache.dir
+/Users/tonymini/Work/Vikey-android/Android/app/.cxx/RelWithDebInfo/2d2z3qt6/x86_64/CMakeFiles/rebuild_cache.dir

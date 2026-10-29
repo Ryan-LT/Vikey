@@ -23,6 +23,25 @@ If every listed change is intended, accept them with `Tools/autoswitch/check.sh 
 
 ---
 
+## 41. Vikey for Android
+
+**Status:** Built 2026-10-29 on branch `android` (release build signed, live test 14/14 on the emulator). Publishing waits for a try on Tony's phone.
+
+**User story.** As a Vikey user on Android, I want the same keyboard as on iPhone: Telex, auto switch, suggestions, auto-correct, emoji, in the same layout and with the same settings.
+
+**Decisions**
+
+- An `InputMethodService` with one Canvas-drawn keyboard view, not Compose: touches are handled by the view itself so fast two-thumb typing never loses a key, the same reason the iOS keyboard handles touches in one `UIView`.
+- Same engine, same driver: `Engine/` is built with the NDK; `vikey_jni.cpp` is the Android twin of `VKDriver.mm`, and the IME logic is a port of `KeyboardViewController.swift` (text context kept locally; one `getTextBeforeCursor` only when the app reports an outside change).
+- The keyboard owns its background and keeps the keys above the gesture bar (Android 15 edge-to-edge).
+- Haptics don't need a permission on Android, so "Rung khi gõ" is on without the Full Access step; the onboarding's step 4 is "switch to Vikey" instead.
+- Emoji: the device's font decides what is shown (`Paint.hasGlyph`) instead of an OS-version table.
+- Distribution: a signed APK on the GitHub release + vikey.app first (the download page already has the Android card); Google Play once the company account exists (D-U-N-S found, signup in progress, [[google-play-console]]).
+- Minimum Android 8.0 (API 26); arm64 + x86_64 (emulator) only.
+
+**Details:** `Android/PLAN.md`.
+
+---
 ## 40. "sê" is not a Vietnamese word
 
 **Status:** Shipped 2026-10-29.

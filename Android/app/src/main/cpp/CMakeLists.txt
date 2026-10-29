@@ -1,0 +1,8 @@
+cmake_minimum_required(VERSION 3.22)
+project(vikey LANGUAGES CXX)
+set(CMAKE_CXX_STANDARD 17)
+set(ENGINE ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../Engine)
+add_library(vikey SHARED vikey_jni.cpp ${ENGINE}/Engine.cpp ${ENGINE}/Vietnamese.cpp ${ENGINE}/SmartSwitchKey.cpp ${ENGINE}/Driver.cpp ${ENGINE}/TouchModel.cpp)
+target_include_directories(vikey PRIVATE ${ENGINE} ${ENGINE}/platforms)
+target_compile_options(vikey PRIVATE -w -O2 -fvisibility=hidden)
+target_link_libraries(vikey log)

@@ -1,6 +1,6 @@
 # Vikey
 
-Vietnamese typing for macOS, Windows and Linux that switches between Vietnamese and English for you.
+Vietnamese typing for macOS, Windows, Linux, iOS and Android that switches between Vietnamese and English for you.
 
 Made by [Tony Dinh](https://tonydinh.com) (Đinh Quang Trung, [@trungdq88](https://github.com/trungdq88)). Free and open source under GPL-3.0; based on [OpenKey](https://github.com/tuyenvm/OpenKey) by Tuyen Mai.
 

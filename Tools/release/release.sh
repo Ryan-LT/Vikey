@@ -6,6 +6,7 @@
 set -e
 if [ "$1" = "--windows" ]; then exec "$(dirname "$0")/release_windows.sh" "${@:2}"; fi   # Windows lane, after the Mac release
 if [ "$1" = "--linux" ]; then exec "$(dirname "$0")/release_linux.sh" "${@:2}"; fi         # Linux lane
+if [ "$1" = "--android" ]; then exec "$(dirname "$0")/release_android.sh" "${@:2}"; fi   # Android lane
 VER=${1:?usage: release.sh <version> | release.sh --windows <version>}
 cd "$(dirname "$0")/../.."
 ROOT=$PWD

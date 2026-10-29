@@ -1,0 +1,3 @@
+/Users/tonymini/Work/Vikey-android/Android/app/.cxx/Debug/283x382i/arm64-v8a/CMakeFiles/vikey.dir
+/Users/tonymini/Work/Vikey-android/Android/app/.cxx/Debug/283x382i/arm64-v8a/CMakeFiles/edit_cache.dir
+/Users/tonymini/Work/Vikey-android/Android/app/.cxx/Debug/283x382i/arm64-v8a/CMakeFiles/rebuild_cache.dir

@@ -1,0 +1,8 @@
+# ninja log v5
+1	442	1793262695368057198	CMakeFiles/vikey.dir/Users/tonymini/Work/Vikey-android/Engine/Driver.cpp.o	cbdebca6c6368bb7
+1	470	1793262695397813195	CMakeFiles/vikey.dir/Users/tonymini/Work/Vikey-android/Engine/TouchModel.cpp.o	82951eddfc5aec0b
+1	488	1793262695418153015	CMakeFiles/vikey.dir/Users/tonymini/Work/Vikey-android/Engine/SmartSwitchKey.cpp.o	cb860e8aacdd6904
+0	518	1793262695448751516	CMakeFiles/vikey.dir/vikey_jni.cpp.o	1bc2142a65b5129f
+0	1174	1793262696100371556	CMakeFiles/vikey.dir/Users/tonymini/Work/Vikey-android/Engine/Vietnamese.cpp.o	68ea3b91cdf47057
+0	1300	1793262696223323732	CMakeFiles/vikey.dir/Users/tonymini/Work/Vikey-android/Engine/Engine.cpp.o	95a09d24a8bf5e97
+1300	1338	1793262696267478891	/Users/tonymini/Work/Vikey-android/Android/app/build/intermediates/cxx/RelWithDebInfo/2d2z3qt6/obj/x86_64/libvikey.so	b4ecf112c0bbd148
