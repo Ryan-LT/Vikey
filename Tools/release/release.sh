@@ -4,7 +4,8 @@
 # Steps: bump version → engine rule lock → universal Release build → Developer ID sign → notarize app
 #        → DMG (signed, notarized, stapled) → site/downloads + release.json → GitHub Release → deploy site.
 set -e
-VER=${1:?usage: release.sh <version>}
+if [ "$1" = "--windows" ]; then exec "$(dirname "$0")/release_windows.sh" "${@:2}"; fi   # Windows lane, after the Mac release
+VER=${1:?usage: release.sh <version> | release.sh --windows <version>}
 cd "$(dirname "$0")/../.."
 ROOT=$PWD
 KC=~/Library/Keychains/s10w-signing.keychain-db
@@ -69,24 +70,7 @@ printf '{"version": "%s", "download_url": "/downloads/Vikey-%s.dmg", "sha256": "
 # Sparkle feed: EdDSA-signed DMG, notes from the changelog
 SIG=$(~/.tools/sparkle/bin/sign_update --ed-key-file ~/.secrets/vikey_sparkle_ed25519 "$DMG")
 NOTES=$(sed -n "/<!-- release $VER -->/,/<!-- \/release -->/p" site/pages/changelog.html | grep -v '<h2>\|<!--')
-cat > site/appcast.xml <<XML
-<?xml version="1.0" encoding="utf-8"?>
-<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
-<channel>
-<title>Vikey</title>
-<link>https://vikey.app</link>
-<item>
-<title>Vikey $VER</title>
-<pubDate>$(LC_ALL=C date -u "+%a, %d %b %Y %H:%M:%S +0000")</pubDate>
-<sparkle:version>$BUILD</sparkle:version>
-<sparkle:shortVersionString>$VER</sparkle:shortVersionString>
-<sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
-<description><![CDATA[$NOTES]]></description>
-<enclosure url="https://vikey.app/downloads/Vikey-$VER.dmg" type="application/octet-stream" $SIG/>
-</item>
-</channel>
-</rss>
-XML
+python3 Tools/release/appcast.py mac "$VER" "$BUILD" "https://vikey.app/downloads/Vikey-$VER.dmg" "$SIG" "$NOTES"
 setopt null_glob; for old in site/downloads/Vikey-*.dmg; do [ "$old" = "site/downloads/Vikey-$VER.dmg" ] || rm "$old"; done
 git add project.yml site/release.json site/appcast.xml && git commit -q -m "Release $VER" && git push -q origin main
 gh release create "v$VER" "$DMG" -R tonyminibot/Vikey --title "Vikey $VER" --notes-file <(sed -n "/<!-- release $VER -->/,/<!-- \/release -->/p" site/pages/changelog.html | sed 's/<li>/- /; s/<[^>]*>//g' | sed '/^\s*$/d') 2>/dev/null \
