@@ -33,5 +33,10 @@
 "sha256": "b7711086875d1b7f40363ee5b142694398de4fef356ffb20a7f5c554cb15b684"
 },
 "version": "1.0.15"
+},
+"android": {
+"version": "1.0.23",
+"download_url": "/downloads/Vikey-1.0.23.apk",
+"sha256": "2c695d9d39839a2f5fb804cbadc4585a7b664eb05de432bfe46aa385238d4b0e"
 }
 }
