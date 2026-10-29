@@ -14,6 +14,7 @@
 
 | macOS feature (DECISIONS) | Windows counterpart | Notes |
 |---|---|---|
+| **Status 2026-10-29** | Phases 0–5 done; live suite 14/14 on ARM64 and x64 (emulated); update flow verified; code signing: Certum OSS cloud cert ordered (Tony pays), signing step added when it lands | |
 | Telex, modern/classic tone, spell check, restore-if-invalid | same engine, unchanged | compiled into the app; `check.sh` lock runs on Windows CI too |
 | Auto switch EN/VI (D5–D29), doubled key, look-back, Backspace undo, pause after manual | `Engine/Driver` already does all of it | the Windows layer just feeds keys and applies `VKEdit` |
 | Switch hotkey (key+modifiers or modifiers alone, beep) | LL hook sees modifier-only chords | default ⌥Z → Alt+Z |
@@ -22,7 +23,7 @@
 | Dvorak/other layouts, step aside for other input languages | `GetKeyboardLayout` + `ToUnicode`; ignore when IME language ≠ en/vi | |
 | Menu-bar icon V/E, compact settings window, onboarding (Accessibility) | tray icon V/E, settings window, first-run page (no permission needed on Windows; "run as admin" optional for games/elevated apps) | |
 | Typing log (opt-in, privacy exclusions: password managers, terminals, secure input) | same file format; exclusions by process name (1Password, Bitwarden, KeePassXC, Windows Terminal, PuTTY…) + skip when a password edit control has focus (UIA `IsPassword`) | |
-| Auto update (Sparkle, appcast on vikey.app) | WinSparkle (C++, same appcast format, EdDSA-capable) or Velopack | WinSparkle keeps one appcast + release.sh |
+| Auto update (Sparkle, appcast on vikey.app) | own updater (`Windows/App/Updater.cpp`): same appcast, Windows items `sparkle:os="windows" vikey:arch=…`, same EdDSA key (TweetNaCl verify), daily check, install on quit/launch | one appcast + `release.sh --windows` |
 | Launch at login | HKCU Run key (or Task Scheduler when elevated) | |
 | Migration from OpenKey settings | read `HKCU\SOFTWARE\TuyenMai\OpenKey` | |
 | Browser autocomplete workaround | OpenKey's Chromium fix (already in the old code) | |
@@ -58,7 +59,7 @@ Recommendation: **A**, with the window rebuilt to match the macOS layout (langua
 | 2 | Core: hook + output (1–2 days) | tray app that types Vietnamese in Notepad, Edge, Word, Terminal; Backspace/arrow/click handling; Telex + auto switch + undo via `Driver`; hotkey; per-app memory; layout compat; run-at-login | live test harness: synthetic keys → read back text; cases ported from the macOS live suite (18 native + 8 browser) |
 | 3 | Per-site memory + browser fixes (1 day) | UIA URL reading for Chromium browsers + Firefox; autocomplete fix | browser live cases |
 | 4 | App parity (1–2 days) | settings window, onboarding/first run, typing-log window, migration, about/credits, icons, Vietnamese strings | screenshots side by side with macOS |
-| 5 | Update + packaging + CI (1 day) | WinSparkle + appcast; Inno Setup installer + portable zip; GitHub Actions ARM64/x64 build+test+release; `release.sh --windows` | CI green; install → update from a local appcast works in the VM |
+| 5 | Update + packaging + CI (1 day) | own updater in `Updater.cpp` (same appcast + EdDSA key as Sparkle; WinSparkle dropped: no ARM64 build, extra DLL); Inno Setup per-user installer + portable zip; GitHub Actions ARM64/x64 build+test, `package` job on tags; `release.sh --windows` | CI green; install → update from a local appcast works in the VM |
 | 6 | QA + ship (1 day) | full live suite on a clean snapshot (ARM64) and on x64 emulation; Tony tests on a real Windows machine if he has one; vikey.app gets a Windows download page | Tony sign-off |
 
 Total ≈ 6–8 working days of my time; I'll report per phase with screenshots/recordings from the VM.

@@ -23,6 +23,25 @@ If every listed change is intended, accept them with `Tools/autoswitch/check.sh 
 
 ---
 
+## 31. Vikey for Windows
+
+**Status:** Agreed 2026-10-29, built on branch `windows` (Phases 0–5 of `Windows/PLAN.md` done); ships after the code-signing certificate arrives.
+
+**User story.** As a Windows user, I want the same Vikey as on the Mac: same engine, same auto switch, same settings window, same words.
+
+**Decided**
+
+- Same engine, byte for byte: the Windows app feeds keys to `Engine/` and applies its output; the Windows CI runs the same rule lock (`check.ps1`) on x64 and ARM64.
+- UI 1:1 with the Mac app (window, tray menu, onboarding, About, typing log), native Win32 + GDI+, no framework. Hotkey default Alt+Z.
+- Per-site memory reads the address bar through UI Automation (Chrome, Edge, Brave, Vivaldi, Opera, Firefox).
+- Per-user install (no admin prompt), Inno Setup, plus a portable zip. Auto update through the Mac appcast with Windows items, signed with the same EdDSA key.
+- Code signing with a Certum Open Source Code Signing certificate in Tony's name (individuals only); unsigned builds are not published.
+- Versions follow `project.yml` MARKETING_VERSION, released with `Tools/release/release.sh --windows <ver>` after the Mac release.
+
+**Verified.** 14 live typing cases pass in a Windows 11 VM on ARM64 and on the x64 build under emulation; update from a local appcast installs and relaunches.
+
+---
+
 ## 30. Word pairs decide ties
 
 **Asked by Tony.** "yes, try 4" (context beyond one word, for true ties like bus/bú, been/bên, mix/mĩ).
