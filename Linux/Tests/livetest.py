@@ -19,7 +19,10 @@ class App(Gtk.Application):
         self.entry = Gtk.Entry(); self.win.set_child(self.entry); self.win.present()
         GLib.timeout_add(800, self.run_cases)
     def run_cases(self):
-        xdo('search', '--name', 'VikeyLiveTest', 'windowactivate', '--sync'); time.sleep(0.3)
+        xdo('search', '--sync', '--name', 'VikeyLiveTest', 'windowraise'); xdo('search', '--sync', '--name', 'VikeyLiveTest', 'windowfocus'); time.sleep(0.5)
+        xdo('type', '--delay', '30', 'ok'); time.sleep(0.4)
+        while GLib.MainContext.default().iteration(False): pass
+        print('smoke: entry has', repr(self.entry.get_text()), 'focus', self.entry.has_focus(), flush=True)
         total = fails = 0
         for line in open(cases, encoding='utf-8'):
             if not line.strip() or line.startswith('#'): continue
