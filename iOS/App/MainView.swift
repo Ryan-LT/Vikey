@@ -53,10 +53,10 @@ struct MainView: View {
                         }
                 }
                 Section("Tự chuyển") {
-                    Toggle(isOn: $autoSwitch) { Tip("Tự chuyển Anh/Việt khi gõ", "Gõ một từ tiếng Anh khi đang ở tiếng Việt (hoặc ngược lại), Vikey tự sửa từ đó và chuyển chế độ. Bấm xoá ngay sau đó để hoàn tác.") }
-                    Toggle(isOn: $pause) { Tip("Tạm dừng 5 giây sau khi chuyển tay", "Khi bạn tự bấm phím VI/EN, Vikey không tự chuyển trong 5 giây, để giữ đúng lựa chọn của bạn.") }
+                    Toggle(isOn: $autoSwitch) { Tip("Tự chuyển Anh/Việt", "Gõ một từ tiếng Anh khi đang ở tiếng Việt (hoặc ngược lại), Vikey tự sửa từ đó và chuyển chế độ. Bấm xoá ngay sau đó để hoàn tác.") }
+                    Toggle(isOn: $pause) { Tip("Tạm dừng 5 giây", "Khi bạn tự bấm phím VI/EN, Vikey không tự chuyển trong 5 giây, để giữ đúng lựa chọn của bạn.") }
                         .disabled(!autoSwitch)
-                    Toggle(isOn: $webEnglish) { Tip("Ô địa chỉ web và email gõ tiếng Anh", "Trong ô nhập địa chỉ web, email hoặc tìm kiếm web, Vikey bắt đầu bằng tiếng Anh và quay lại ngôn ngữ cũ khi bạn rời ô đó.") }
+                    Toggle(isOn: $webEnglish) { Tip("Tiếng Anh cho web, email", "Trong ô nhập địa chỉ web, email hoặc tìm kiếm web, Vikey bắt đầu bằng tiếng Anh và quay lại ngôn ngữ cũ khi bạn rời ô đó.") }
                 }
                 Section("Gõ tiếng Việt") {
                     Picker(selection: $modern) {
@@ -64,18 +64,18 @@ struct MainView: View {
                         Text("hòa, thúy").tag(false)
                     } label: { Tip("Đặt dấu", "Vị trí dấu thanh với oa, oe, uy: kiểu mới (hoà, thuý) hoặc kiểu cũ (hòa, thúy).") }
                     Toggle(isOn: $spelling) { Tip("Kiểm tra chính tả", "Chỉ bỏ dấu khi từ đang gõ đúng quy tắc chính tả tiếng Việt.") }
-                    Toggle(isOn: $restore) { Tip("Từ không phải tiếng Việt thì giữ nguyên phím gõ", "Khi gõ xong một từ sai chính tả tiếng Việt, Vikey trả lại đúng các phím bạn đã gõ.") }
+                    Toggle(isOn: $restore) { Tip("Trả lại phím khi sai", "Khi gõ xong một từ sai chính tả tiếng Việt, Vikey trả lại đúng các phím bạn đã gõ.") }
                         .disabled(!spelling)
                 }
                 Section("Bàn phím") {
                     Toggle(isOn: $suggestions) { Tip("Gợi ý từ", "Hiện các từ gợi ý phía trên bàn phím, cả tiếng Việt lẫn tiếng Anh. Chạm vào một từ để dùng nó.") }
                     Toggle(isOn: $autoCorrect) { Tip("Tự sửa lỗi gõ", "Khi bạn chạm lệch phím (\"teh\" thay vì \"the\"), Vikey sửa từ đó khi bạn bấm phím cách. Bấm xoá ngay sau đó để giữ lại từ bạn gõ.") }
-                    Toggle(isOn: $autoCap) { Tip("Tự viết hoa đầu câu", "Chữ đầu tiên của câu được viết hoa, như bàn phím của iPhone.") }
-                    Toggle(isOn: $haptics) { Tip("Rung khi gõ phím", "Rung nhẹ mỗi khi chạm phím, như bàn phím của iPhone. Cần bật Cho phép Truy cập đầy đủ: Cài đặt › Vikey › Bàn phím. Vikey chỉ dùng quyền này để rung, không bao giờ gửi gì ra khỏi máy.") }
-                    Toggle(isOn: $doubleSpace) { Tip("Chạm hai lần phím cách để thêm dấu chấm", "Chạm nhanh hai lần phím cách để thêm dấu chấm và một khoảng trắng.") }
+                    Toggle(isOn: $autoCap) { Tip("Tự viết hoa", "Chữ đầu tiên của câu được viết hoa, như bàn phím của iPhone.") }
+                    Toggle(isOn: $haptics) { Tip("Rung khi gõ", "Rung nhẹ mỗi khi chạm phím, như bàn phím của iPhone. Cần bật Cho phép Truy cập đầy đủ: Cài đặt › Vikey › Bàn phím. Vikey chỉ dùng quyền này để rung, không bao giờ gửi gì ra khỏi máy.") }
+                    Toggle(isOn: $doubleSpace) { Tip("Phím tắt dấu chấm", "Chạm nhanh hai lần phím cách để thêm dấu chấm và một khoảng trắng.") }
                 }
                 Section {
-                    Toggle(isOn: $diagnostics) { Tip("Gỡ lỗi bàn phím", "Phía trên các phím hiện thời gian xử lý mỗi lần chạm, số lần rung và số lần chạm iOS gửi tới, và ghi vào nhật ký. Nhật ký không chứa chữ bạn gõ, chỉ có thời gian và loại phím (chữ, dấu cách, xoá…). Cần Truy cập đầy đủ để bàn phím ghi được nhật ký.") }
+                    Toggle(isOn: $diagnostics) { Tip("Hiện thông số", "Phía trên các phím hiện thời gian xử lý mỗi lần chạm, số lần rung và số lần chạm iOS gửi tới, và ghi vào nhật ký. Nhật ký không chứa chữ bạn gõ, chỉ có thời gian và loại phím (chữ, dấu cách, xoá…). Cần Truy cập đầy đủ để bàn phím ghi được nhật ký.") }
                     if diagnostics {
                         ShareLink(item: logText.isEmpty ? "(nhật ký trống)" : logText, subject: Text("Vikey keyboard log")) {
                             Label("Gửi nhật ký", systemImage: "square.and.arrow.up")
