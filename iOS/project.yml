@@ -10,7 +10,7 @@ settings:
     SWIFT_VERSION: "5.10"
     CLANG_CXX_LANGUAGE_STANDARD: c++17
     MARKETING_VERSION: "1.0"
-    CURRENT_PROJECT_VERSION: "17"
+    CURRENT_PROJECT_VERSION: "18"
     ENABLE_USER_SCRIPT_SANDBOXING: NO
     DEVELOPMENT_LANGUAGE: en
     LOCALIZATION_PREFERS_STRING_CATALOGS: YES
@@ -99,6 +99,7 @@ targets:
         excludes: ["Info.plist", "*.entitlements"]
       - path: Shared
       - path: ../App/Model/EmojiSearch.swift
+      - path: ../App/Resources/Emoji.json
       - path: ../Engine
         excludes:
           - "*.inc"

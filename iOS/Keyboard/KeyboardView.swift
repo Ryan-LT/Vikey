@@ -82,7 +82,7 @@ final class KeyboardView: UIView {
     private var repeatCount = 0
     private var cursorMode = false
     private var cursorAnchor: CGFloat = 0
-    private let feedback = UIImpactFeedbackGenerator(style: .light)
+    let feedback = KeyHaptics()
 
     // geometry (portrait iPhone; scaled for other widths; landscape rows are shorter)
     /// The suggestion strip is shown when suggestions or auto-correct are on; without it the keys
@@ -210,6 +210,7 @@ final class KeyboardView: UIView {
         let dh = Self.diagH(compactHeight: compactHeight)
         diagLabel.frame = CGRect(x: 8, y: 2, width: W - 16, height: max(dh - 4, 20))
         bar.isHidden = !Self.barOn || Self.searchTop != nil
+        diagLabel.isHidden = diagnostics == nil || Self.searchTop != nil   // the emoji search field sits there
         bar.frame = CGRect(x: side, y: dh + 2, width: W - 2 * side, height: Self.barH - 4)
         letterRects = []; letterCaps = [:]
         for i in keys.indices where i < frames.count {
@@ -304,7 +305,7 @@ final class KeyboardView: UIView {
         guard t - lastHaptic > 0.04 else { return }
         lastHaptic = t
         Diag.haptics += 1
-        feedback.impactOccurred(intensity: 0.75)   // 1.0 felt too strong next to the system keyboard, 0.5 too light (Tony)
+        feedback.tick()
     }
 
     /// `late`: the touch reached us long after the finger landed (the keyboard was busy). Its vibration is
@@ -317,7 +318,6 @@ final class KeyboardView: UIView {
     private func release(_ c: KeyCap) { c.backgroundColor = c.normalColor }
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        if haptics { feedback.prepare() }
         for t in touches {
             let p = t.location(in: self)
             Diag.touches += 1

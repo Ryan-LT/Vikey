@@ -30,7 +30,7 @@ final class EmojiIndex {
     let all: [Emoji]
 
     init(bundle: Bundle = .main) {
-        guard let url = bundle.url(forResource: "Emoji", withExtension: "json"),
+        guard let url = bundle.url(forResource: "Emoji", withExtension: "json") ?? Bundle(for: EmojiIndex.self).url(forResource: "Emoji", withExtension: "json"),
               let data = try? Data(contentsOf: url),
               let rows = try? JSONSerialization.jsonObject(with: data) as? [[Any]] else { all = []; return }
         all = rows.compactMap { r in

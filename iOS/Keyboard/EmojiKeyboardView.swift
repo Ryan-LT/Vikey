@@ -35,7 +35,7 @@ final class EmojiKeyboardView: UIView, UICollectionViewDataSource, UICollectionV
     private let abc = UIButton(type: .system)
     private let del = UIButton(type: .system)
     private var catButtons: [UIButton] = []
-    private let feedback = UIImpactFeedbackGenerator(style: .light)
+    var feedback: KeyHaptics?
     private let skinPopup = SkinTonePopup()
     private var deleteTimer: Timer?
 
@@ -148,31 +148,46 @@ final class EmojiKeyboardView: UIView, UICollectionViewDataSource, UICollectionV
         setNeedsLayout()
     }
 
+    /// One margin everywhere; the magnifier, the section title and the first emoji line up (like iOS).
+    private static let margin: CGFloat = 8
+    private var glyphPad: CGFloat = 0   // space between a cell's edge and its emoji
+
     override func layoutSubviews() {
         super.layoutSubviews()
-        let W = bounds.width, H = bounds.height
-        field.frame = CGRect(x: 8, y: 6, width: W - 16, height: 36)
-        fieldIcon.frame = CGRect(x: 10, y: 9, width: 18, height: 18)
-        let tw = min(fieldText.intrinsicContentSize.width, field.bounds.width - 50)
-        fieldText.frame = CGRect(x: 34, y: 0, width: tw, height: 36)
-        caret.frame = CGRect(x: searching && fieldText.textColor == .secondaryLabel ? 33 : 35 + tw, y: 8, width: 2, height: 20)
+        let W = bounds.width, H = bounds.height, M = Self.margin
+        let fieldH: CGFloat = 36
+        field.frame = CGRect(x: M, y: M, width: W - 2 * M, height: fieldH)
+        let inner = M                                       // magnifier inset inside the field
+        fieldIcon.frame = CGRect(x: inner, y: (fieldH - 18) / 2, width: 18, height: 18)
+        let textX = inner + 18 + 6
+        let tw = min(fieldText.intrinsicContentSize.width, field.bounds.width - textX - 10)
+        fieldText.frame = CGRect(x: textX, y: 0, width: tw, height: fieldH)
+        caret.frame = CGRect(x: searching && fieldText.textColor == .secondaryLabel ? textX - 1 : textX + tw + 1, y: (fieldH - 20) / 2, width: 2, height: 20)
+        let alignX = M + inner                              // the magnifier's left edge
         if searching {
             titleLabel.isHidden = true; barView.isHidden = true
-            grid.frame = CGRect(x: 0, y: 46, width: W, height: 44)
-            flow.itemSize = CGSize(width: 44, height: 44)
-            flow.sectionInset = UIEdgeInsets(top: 0, left: 6, bottom: 0, right: 6)
+            let cell: CGFloat = 44
+            grid.frame = CGRect(x: 0, y: field.frame.maxY + 2, width: W, height: H - field.frame.maxY - 2)
+            flow.itemSize = CGSize(width: cell, height: cell)
+            glyphPad = (cell - Self.glyphWidth(cell)) / 2
+            flow.sectionInset = UIEdgeInsets(top: 0, left: max(0, alignX - glyphPad), bottom: 0, right: M)
         } else {
             titleLabel.isHidden = false; barView.isHidden = false
-            titleLabel.frame = CGRect(x: 14, y: 46, width: W - 28, height: 16)
-            let gridTop: CGFloat = 64, barH: CGFloat = 44
+            titleLabel.frame = CGRect(x: alignX, y: field.frame.maxY + M, width: W - alignX - M, height: 14)
+            let gridTop = titleLabel.frame.maxY + 4, barH: CGFloat = 44
             let gh = H - gridTop - barH
             let rows = max(3, Int(gh / 42))
             let cell = floor(gh / CGFloat(rows))
+            // whole columns across the width, so the spacing is even
+            // whole columns: the first emoji starts on the margin and the last one ends on it, gaps equal
+            let glyph = Self.glyphWidth(cell)
+            let cols = max(7, Int(((W - 2 * alignX - glyph) / (cell + 4)).rounded()) + 1)
+            let cw = (W - 2 * alignX - glyph) / CGFloat(cols - 1)
             grid.frame = CGRect(x: 0, y: gridTop, width: W, height: CGFloat(rows) * cell)
-            flow.itemSize = CGSize(width: cell + 2, height: cell)
-            flow.sectionInset = UIEdgeInsets(top: 0, left: 8, bottom: 0, right: 8)
+            flow.itemSize = CGSize(width: cw, height: cell)
+            glyphPad = (cw - Self.glyphWidth(cell)) / 2
             barView.frame = CGRect(x: 0, y: H - barH, width: W, height: barH)
-            abc.frame = CGRect(x: 4, y: 0, width: 50, height: barH)
+            abc.frame = CGRect(x: M / 2, y: 0, width: 50, height: barH)
             del.frame = CGRect(x: W - 50, y: 0, width: 46, height: barH)
             let left: CGFloat = 56, right = W - 52
             let step = (right - left) / CGFloat(max(1, catButtons.count))
@@ -180,6 +195,12 @@ final class EmojiKeyboardView: UIView, UICollectionViewDataSource, UICollectionV
             updateTitle()
         }
         flow.invalidateLayout()
+    }
+
+    private static func fontSize(_ cell: CGFloat) -> CGFloat { floor(cell * 0.74) }
+    /// How wide an emoji draws at the grid's font size (cells are wider than the glyph).
+    private static func glyphWidth(_ cell: CGFloat) -> CGFloat {
+        ceil(("😀" as NSString).size(withAttributes: [.font: UIFont.systemFont(ofSize: fontSize(cell))]).width)
     }
 
     private func applyColors() {
@@ -202,7 +223,7 @@ final class EmojiKeyboardView: UIView, UICollectionViewDataSource, UICollectionV
     func collectionView(_ cv: UICollectionView, cellForItemAt ip: IndexPath) -> UICollectionViewCell {
         let c = cv.dequeueReusableCell(withReuseIdentifier: "e", for: ip) as! EmojiCell
         c.label.text = emoji(at: ip).withSkin(tone)
-        c.label.font = .systemFont(ofSize: floor(flow.itemSize.height * 0.74))
+        c.label.font = .systemFont(ofSize: Self.fontSize(flow.itemSize.height))
         return c
     }
     func collectionView(_ cv: UICollectionView, didSelectItemAt ip: IndexPath) {
@@ -211,12 +232,13 @@ final class EmojiKeyboardView: UIView, UICollectionViewDataSource, UICollectionV
     }
     func collectionView(_ cv: UICollectionView, layout l: UICollectionViewLayout, insetForSectionAt s: Int) -> UIEdgeInsets {
         if searching { return flow.sectionInset }
-        if s > 0 && categories[s].items.isEmpty { return .zero }
-        return UIEdgeInsets(top: 0, left: s == 0 ? 8 : 14, bottom: 0, right: 8)
+        // the first emoji's left edge on the magnifier's; sections follow each other with one column of air
+        let lead = max(0, Self.margin * 2 - glyphPad)   // = alignX - glyphPad
+        return UIEdgeInsets(top: 0, left: s == 0 ? lead : 0, bottom: 0, right: s == categories.count - 1 ? lead : 0)
     }
 
     private func choose(_ text: String, _ e: Emoji) {
-        if haptics { feedback.impactOccurred(intensity: 0.75) } else { UIDevice.current.playInputClick() }
+        if haptics { feedback?.tick() } else { UIDevice.current.playInputClick() }
         delegate?.emojiKeyboard(self, insert: text)
         var r = VKSettings.defaults.stringArray(forKey: Self.recentsKey) ?? []
         r.removeAll { $0 == e.char }
@@ -243,7 +265,7 @@ final class EmojiKeyboardView: UIView, UICollectionViewDataSource, UICollectionV
         let s = b.tag
         guard s < categories.count, !categories[s].items.isEmpty,
               let a = grid.layoutAttributesForItem(at: IndexPath(item: 0, section: s)) else { return }
-        let x = min(a.frame.minX - (s == 0 ? 8 : 14), max(0, grid.contentSize.width - grid.bounds.width))
+        let x = min(a.frame.minX - max(0, Self.margin * 2 - glyphPad), max(0, grid.contentSize.width - grid.bounds.width))
         grid.setContentOffset(CGPoint(x: max(0, x), y: 0), animated: false)
         updateTitle()
     }
@@ -251,7 +273,7 @@ final class EmojiKeyboardView: UIView, UICollectionViewDataSource, UICollectionV
     @objc private func tapSearch() { if !searching { delegate?.emojiKeyboardStartSearch(self) } }
     @objc private func deleteDown() {
         delegate?.emojiKeyboardDelete(self)
-        if haptics { feedback.impactOccurred(intensity: 0.75) }
+        if haptics { feedback?.tick() }
         deleteTimer?.invalidate()
         deleteTimer = Timer.scheduledTimer(withTimeInterval: 0.45, repeats: false) { [weak self] _ in
             self?.deleteTimer = Timer.scheduledTimer(withTimeInterval: 0.09, repeats: true) { [weak self] _ in
@@ -273,7 +295,7 @@ final class EmojiKeyboardView: UIView, UICollectionViewDataSource, UICollectionV
                   let cell = grid.cellForItem(at: ip) else { return }
             skinFor = e
             skinPopup.show([e.char] + e.skins, selected: tone, over: cell.convert(cell.bounds, to: self), in: self)
-            if haptics { feedback.impactOccurred(intensity: 0.75) }
+            if haptics { feedback?.tick() }
         case .changed:
             if skinFor != nil { skinPopup.track(p) }
         case .ended:

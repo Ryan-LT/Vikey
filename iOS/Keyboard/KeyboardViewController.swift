@@ -18,6 +18,9 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
     /// Our own copy of the text before the cursor, kept up to date from our edits. Asking the app for it
     /// is a synchronous cross-process call, so it's only read when iOS says the text changed.
     private var lastContext: String?
+    /// The text after the cursor when we last looked. Our own typing never changes it, so when it changes
+    /// the cursor moved (a tap inside a word leaves the text before the cursor looking like one of our edits).
+    private var lastAfter = ""
     private var recentContexts: [String] = []   // states we produced that the app may still be catching up to
     private var lastShiftTap: TimeInterval = 0
     private var lastSpace: TimeInterval = 0
@@ -49,6 +52,7 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        KeyboardView.searchTop = nil   // left over from an emoji search in an earlier keyboard of this process
         keyboard = KeyboardView(frame: view.bounds)
         keyboard.delegate = self
         keyboard.wordContext = { [unowned self] in (self.wordPrefix, self.driver.language == 1) }
@@ -71,9 +75,16 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        if let ev = emojiView, !ev.isHidden { emojiKeyboardClose(ev) }   // a new field opens on the letters
+        if KeyboardView.searchTop != nil, emojiView?.searching != true {     // static: it outlives a closed keyboard
+            KeyboardView.searchTop = nil
+            heightConstraint?.constant = keyboardHeight
+            keyboard.setNeedsLayout()
+        }
         loadSettings()
         startField()
         refresh()
+        if keyboard.haptics { keyboard.feedback.start() }
         if Diag.on { startStallWatch() }
         if Diag.on {
             KBLog.add("open: fullAccess=\(hasFullAccess) haptics=\(keyboard.haptics) field=\(proxy.keyboardType?.rawValue ?? -1) return=\(proxy.returnKeyType?.rawValue ?? -1) width=\(Int(view.bounds.width))")
@@ -82,6 +93,7 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
 
     override func viewWillDisappear(_ animated: Bool) {
         stallWatch?.invalidate(); stallWatch = nil
+        keyboard.feedback.stop()
         KBLog.flush()
         super.viewWillDisappear(animated)
     }
@@ -142,6 +154,7 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
             fieldLanguage = nil
         }
         lastContext = proxy.documentContextBeforeInput
+        lastAfter = proxy.documentContextAfterInput ?? ""
         clearWord()
         updateAutoShift(lastContext ?? "")
     }
@@ -198,12 +211,17 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
         let r0 = CACurrentMediaTime()
         let ctx = proxy.documentContextBeforeInput
         if Diag.on { KBLog.add("text read (iOS said the text changed): \(Self.time((CACurrentMediaTime() - r0) * 1000))") }
-        if let c = ctx, c != lastContext, recentContexts.contains(c) { return }   // the app is catching up with our edits
-        if ctx != lastContext, !Self.sameEnding(ctx ?? "", lastContext ?? "") {
+        let after = proxy.documentContextAfterInput ?? ""
+        let moved = after != lastAfter
+        if !moved, let c = ctx, c != lastContext, recentContexts.contains(c) { return }   // the app is catching up with our edits
+        if moved || (ctx != lastContext && !Self.sameEnding(ctx ?? "", lastContext ?? "")) {
             if Diag.on { KBLog.add("reset: text changed outside the keyboard (cursor moved, or the app changed it)") }
             driver.resetContext()
             clearWord()
+            lastCorrection = nil; keepWord = nil
+            recentContexts = []
             lastContext = ctx
+            lastAfter = after
             updateAutoShift(ctx ?? "")
         }
     }
@@ -301,7 +319,9 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
     func keyboardCursorModeEnded(_ view: KeyboardView) {
         driver.resetContext()
         clearWord()
+        lastCorrection = nil; keepWord = nil
         lastContext = proxy.documentContextBeforeInput
+        lastAfter = proxy.documentContextAfterInput ?? ""
         updateAutoShift(lastContext ?? "")
     }
 
@@ -592,6 +612,7 @@ extension KeyboardViewController: EmojiKeyboardDelegate {
         }()
         ev.dark = keyboard.dark
         ev.haptics = keyboard.haptics
+        ev.feedback = keyboard.feedback
         ev.load()
         browseEmoji()
     }
