@@ -2,6 +2,7 @@
 // icon, wordmark, hotkey hint and the Tiếng Việt / English switch, then a grouped form), the
 // onboarding "ready" page, the About panel and the typing-log window. Drawn with GDI+ so the
 // toggles, segmented control and rounded groups look like the macOS ones.
+#define _HAS_STD_BYTE 0
 #include "Settings.h"
 #include "Core.h"
 #include "Prefs.h"
@@ -10,7 +11,11 @@
 #include <commctrl.h>
 #include <windowsx.h>
 #include <shellapi.h>
+#include <objidl.h>
+#define GDIPVER 0x0110
+namespace Gdiplus { using std::min; using std::max; }
 #include <gdiplus.h>
+#include <algorithm>
 #include <string>
 #include <vector>
 #include <map>
@@ -406,8 +411,8 @@ static void refreshLog() {
     while (std::getline(f, l)) { if (!l.empty()) lines.push_back(l); if (lines.size() > 2000) lines.erase(lines.begin(), lines.begin() + 1000); }
     ListView_DeleteAllItems(_logList);
     int n = 0;
-    for (auto it = lines.rbegin(); it != lines.rend() && n < 300; ++it, ++n) {
-        std::wstring j = fromUtf8(*it); std::wstring e = jget(j, L"e"), to = jget(j, L"to") == L"vi" ? L"Tiếng Việt" : L"Anh", t = jget(j, L"t");
+    for (auto li = lines.rbegin(); li != lines.rend() && n < 300; ++li, ++n) {
+        std::wstring j = fromUtf8(*li); std::wstring e = jget(j, L"e"), to = jget(j, L"to") == L"vi" ? L"Tiếng Việt" : L"Anh", t = jget(j, L"t");
         std::wstring time = t.size() >= 19 ? t.substr(5, 14) : t; for (auto& ch : time) if (ch == L'T') ch = L' ';
         std::wstring app = jget(j, L"app"), site = jget(j, L"site"); std::wstring place = site.empty() ? app : app + L" · " + site;
         std::wstring title, detail;
