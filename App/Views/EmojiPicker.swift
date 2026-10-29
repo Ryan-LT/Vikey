@@ -113,19 +113,28 @@ final class EmojiPanel: NSPanel {
         switch e.keyCode {
         case 53: onClose?()                                                    // Esc
         case 36, 76: if let x = model.current { EmojiPicker.shared.choose(x) }  // Return
-        case 123: model.move(-1)
-        case 124: model.move(1)
+        case 123: model.allSelected = false; model.move(-1)
+        case 124: model.allSelected = false; model.move(1)
         case 125: model.move(EmojiGridView.columns)
         case 126: model.move(-EmojiGridView.columns)
-        case 51: cmd ? model.setRaw("") : opt ? model.deleteWord() : model.deleteBack()   // ⌫
+        case 51: (cmd || model.allSelected) ? model.setRaw("") : opt ? model.deleteWord() : model.deleteBack()   // ⌫
         default:
             if cmd {
-                if e.charactersIgnoringModifiers == "v", let s = NSPasteboard.general.string(forType: .string) { model.setRaw(model.raw + s) }
-                else if e.charactersIgnoringModifiers == "w" { onClose?() }
+                switch e.charactersIgnoringModifiers {
+                case "v": if let s = NSPasteboard.general.string(forType: .string) { model.type(s) }
+                case "a": if !model.raw.isEmpty { model.allSelected = true }
+                case "c", "x":
+                    if model.allSelected && !model.raw.isEmpty {
+                        NSPasteboard.general.clearContents(); NSPasteboard.general.setString(model.display, forType: .string)
+                        if e.charactersIgnoringModifiers == "x" { model.setRaw("") }
+                    }
+                case "w": onClose?()
+                default: break
+                }
                 return
             }
             if let c = e.characters, !c.isEmpty, c.unicodeScalars.allSatisfy({ !CharacterSet.controlCharacters.contains($0) }) {
-                model.setRaw(model.raw + c)
+                model.type(c)
             }
         }
     }
@@ -133,9 +142,11 @@ final class EmojiPanel: NSPanel {
 
 final class EmojiPickerModel: ObservableObject {
     @Published private(set) var raw = ""
+    @Published var allSelected = false   // ⌘A: the next key replaces the query
     @Published private(set) var vietnamese = true
     @Published private(set) var results: [Emoji] = []          // what the grid shows when searching
     @Published var selected = 0
+    var selectedByKeys = false   // only arrow keys scroll the grid: hover scrolling moved it under the mouse (Tony)
     @Published var tone = UserDefaults.standard.integer(forKey: PrefEmoji.tone) {
         didSet { UserDefaults.standard.set(tone, forKey: PrefEmoji.tone) }
     }
@@ -169,13 +180,14 @@ final class EmojiPickerModel: ObservableObject {
 
     func reset(vietnamese: Bool) {
         self.vietnamese = vietnamese
-        raw = ""; results = []; selected = 0; mouseAtOpen = NSEvent.mouseLocation
+        raw = ""; allSelected = false; results = []; selected = 0; mouseAtOpen = NSEvent.mouseLocation
         let byChar = Dictionary(all.map { ($0.char, $0) }, uniquingKeysWith: { a, _ in a })
         recents = (UserDefaults.standard.stringArray(forKey: PrefEmoji.recents) ?? []).compactMap { byChar[$0] }
     }
 
-    func setRaw(_ s: String) { raw = s; search() }
-    func deleteBack() { if !raw.isEmpty { raw.removeLast(); search() } }
+    func setRaw(_ s: String) { raw = s; allSelected = false; search() }
+    func type(_ s: String) { setRaw(allSelected ? s : raw + s) }
+    func deleteBack() { if !raw.isEmpty { raw.removeLast(); allSelected = false; search() } }
     func deleteWord() {
         var r = raw
         while r.last == " " { r.removeLast() }
@@ -191,6 +203,7 @@ final class EmojiPickerModel: ObservableObject {
     func move(_ d: Int) {
         let n = visible.count
         guard n > 0 else { return }
+        selectedByKeys = true
         selected = min(max(0, selected + d), n - 1)
     }
 
@@ -230,7 +243,8 @@ struct EmojiGridView: View {
             Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
             HStack(spacing: 1) {
                 Text(model.display).lineLimit(1)
-                Rectangle().fill(Color.brand).frame(width: 2, height: 18).opacity(caret ? 1 : 0)
+                    .background(model.allSelected ? Color.accentColor.opacity(0.3) : .clear, in: RoundedRectangle(cornerRadius: 3))
+                Rectangle().fill(Color.brand).frame(width: 2, height: 18).opacity(caret && !model.allSelected ? 1 : 0)
                 if model.raw.isEmpty {
                     Text(model.vietnamese ? "Tìm emoji: ngựa, horse…" : "Search emoji: horse, ngựa…").foregroundStyle(.tertiary).padding(.leading, 2)
                 }
@@ -264,8 +278,9 @@ struct EmojiGridView: View {
                     }
                 }
                 .padding(.horizontal, 12).padding(.bottom, 8)
+                .padding(.top, model.searching ? 10 : 0)   // results have no section title above them
             }
-            .onChange(of: model.selected) { i in proxy.scrollTo(i) }
+            .onChange(of: model.selected) { i in if model.selectedByKeys { proxy.scrollTo(i) } }
             .onChange(of: model.raw) { _ in proxy.scrollTo(0, anchor: .top) }
         }
     }
@@ -285,7 +300,7 @@ struct EmojiGridView: View {
                     .frame(maxWidth: .infinity).frame(height: Self.cell)
                     .background(RoundedRectangle(cornerRadius: 8).fill(idx == model.selected ? Color.brand.opacity(0.22) : .clear))
                     .contentShape(Rectangle())
-                    .onHover { if $0 && NSEvent.mouseLocation != model.mouseAtOpen { model.selected = idx } }
+                    .onHover { if $0 && NSEvent.mouseLocation != model.mouseAtOpen { model.selectedByKeys = false; model.selected = idx } }
                     .onTapGesture { EmojiPicker.shared.choose(e) }
                     .id(idx)
             }
