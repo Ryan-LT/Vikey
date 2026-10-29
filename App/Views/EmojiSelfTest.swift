@@ -6,6 +6,7 @@ import AppKit
 enum EmojiSelfTest {
     @MainActor static func run(dir: String) {
         try? FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
+        if UserDefaults.standard.bool(forKey: "emojiSelfTestDark") { NSApp.appearance = NSAppearance(named: .darkAqua) }
         let model = EmojiPicker.shared.model
         model.reset(vietnamese: true)
         let panel = EmojiPanel(model: model)   // built like the real one, never ordered front

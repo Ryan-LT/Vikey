@@ -305,12 +305,10 @@ struct EmojiGridView: View {
                             .foregroundStyle(.secondary).frame(maxWidth: .infinity).padding(.top, 110)
                     } else {
                         let secs = model.sections
+                        // titles are plain rows, not Section headers: macOS gives headers a background band (Tony)
                         ForEach(secs.indices, id: \.self) { si in
-                            if secs[si].title.isEmpty {
-                                ForEach(secs[si].rows) { r in row(r) }
-                            } else {
-                                Section(header: header(secs[si].title)) { ForEach(secs[si].rows) { r in row(r) } }
-                            }
+                            if !secs[si].title.isEmpty { header(secs[si].title) }
+                            ForEach(secs[si].rows) { r in row(r) }
                         }
                     }
                 }
