@@ -23,6 +23,16 @@ If every listed change is intended, accept them with `Tools/autoswitch/check.sh 
 
 ---
 
+## 41. A lone all-caps word converts when Telex marks it
+
+**Status:** Shipped 2026-10-29.
+
+**Problem.** In English mode, THOONG, THUOWNGF, VIEETJ stayed as typed (Tony). D23 converts all-caps words only inside a run of capitals, so a lone HW or CWS stays an acronym. The first word of a Caps Lock run never converted either ("TOOI DDI HOCJ" gave "TOOI ĐI HỌC").
+
+**Fix.** A lone all-caps word of 4+ letters converts when its keys carry a Telex mark: a doubled a/e/o/d, or w after a/o/u. The D23 floor (a common syllable, no English reading) still applies. Acronyms rarely have these marks: HW, IRS, USA, NASA stay.
+
+**Result.** Caps group 1.75% → 1.41% wrong words (tuning set 1.40%); everything else unchanged, locked test 99.88%. Rules D41 (3 cases); D23's run case now expects "TÔI ĐI HỌC".
+
 ## 40. "sê" is not a Vietnamese word
 
 **Status:** Shipped 2026-10-29.

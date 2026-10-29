@@ -1865,7 +1865,14 @@ bool vAutoSwitchCheckEnglishWord(const Uint32* keys, const int& count,
 #define AS_CAPS_VN_FLOOR 15   //all capitals convert only to a common syllable (IRS stays, not "Í"): D23, D27
 #endif
     if (count > 1 && allCaps && (en != AS_MISSING || vn < AS_CAPS_VN_FLOOR)) return false;
-    if (count > 1 && allCaps) {   //only inside a run of capitals (Caps Lock on): a lone HW, CWS stays
+    //a lone all-caps word converts when the Telex marks it as Vietnamese: THOONG, THUOWNGF, VIEETJ (Tony, D41).
+    //Acronyms rarely double a vowel or put w after a vowel, and the floor above already keeps rare syllables out
+    bool telexMarked = false;
+    for (int x = 0; raw[x] && raw[x + 1]; x++) {
+        char a = raw[x] | 0x20, b = raw[x + 1] | 0x20;
+        if ((a == b && (a == 'a' || a == 'e' || a == 'o' || a == 'd')) || (b == 'w' && (a == 'a' || a == 'o' || a == 'u'))) telexMarked = true;
+    }
+    if (count > 1 && allCaps && !(count >= 4 && telexMarked)) {   //only inside a run of capitals (Caps Lock on): a lone HW, CWS stays
         bool prevCaps = previousN >= 1 && previousCounts[0] >= 2;
         for (int x = 0; prevCaps && x < previousCounts[0]; x++) if (!(previous[0][x] & CAPS_MASK)) prevCaps = false;
         if (!prevCaps) return false;
