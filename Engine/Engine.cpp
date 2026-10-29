@@ -1693,9 +1693,12 @@ static void asRestoreToEnglish(const int& handleCode) {
         memcpy(vAutoSwitchRestoredKeys, KeyStates, _stateIndex * sizeof(Uint32));
         vAutoSwitchRestoredCount = _stateIndex;
     }
-    //how many earlier words follow the switch: consecutive, ambiguous, and fitting in the output buffer
+    //how many earlier words follow the switch: consecutive, ambiguous, and fitting in the output buffer.
+    //Not after an acronym (2+ capitals): Vietnamese text is full of them, so they say nothing about the
+    //words before ("bên ASL", "của USA" stay Vietnamese: Tony, D42)
     int back = 0, newCount = _stateIndex, deleteCount = _index;
-    while (back < _asPrevCount && _asPrev[back].lookbackOk &&
+    bool acronym = !asFewCapitals(KeyStates, _stateIndex);
+    while (!acronym && back < _asPrevCount && _asPrev[back].lookbackOk &&
            newCount + _asPrev[back].rawCount + 1 < MAX_BUFF && deleteCount + _asPrev[back].shownCount + 1 < MAX_BUFF) {
         newCount += _asPrev[back].rawCount + 1;
         deleteCount += _asPrev[back].shownCount + 1;

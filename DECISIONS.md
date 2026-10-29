@@ -23,6 +23,16 @@ If every listed change is intended, accept them with `Tools/autoswitch/check.sh 
 
 ---
 
+## 42. Acronyms don't flip the word before them
+
+**Status:** Shipped 2026-10-29.
+
+**Problem.** "e liên hệ bên ASL" came out "e liên hệ been ASL" (Tony). ASL in Telex is "ÁL", invalid, so its keys go back and the mode switches to English; look-back then flips the tie before it (bên 29 vs been 32) to "been". Same with "team bên US".
+
+**Fix.** When the word put back has 2+ capitals, look-back stays off. The acronym itself is still put back as typed. Vietnamese text is full of acronyms, so they say nothing about the words before them.
+
+**Result.** Locked test 99.88% (manual switches 0.151 → 0.150/100, social and tech wrong words -0.01); chat golden: "team bên US". Rules D42 (2 cases).
+
 ## 41. A lone all-caps word converts when Telex marks it
 
 **Status:** Shipped 2026-10-29.
