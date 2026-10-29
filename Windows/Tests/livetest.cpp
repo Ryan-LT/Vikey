@@ -12,6 +12,10 @@
 #include "Prefs.h"
 
 static HWND _edit;
+static LRESULT CALLBACK testWndProc(HWND h, UINT m, WPARAM w, LPARAM l) {
+    if (m == WM_SETFOCUS && _edit) { SetFocus(_edit); return 0; }
+    return DefWindowProcW(h, m, w, l);
+}
 static void key(WORD vk, bool shift = false) {
     INPUT in[4] = {}; int n = 0;
     if (shift) { in[n].type = INPUT_KEYBOARD; in[n].ki.wVk = VK_SHIFT; n++; }
@@ -19,7 +23,7 @@ static void key(WORD vk, bool shift = false) {
     in[n].type = INPUT_KEYBOARD; in[n].ki.wVk = vk; in[n].ki.dwFlags = KEYEVENTF_KEYUP; n++;
     if (shift) { in[n].type = INPUT_KEYBOARD; in[n].ki.wVk = VK_SHIFT; in[n].ki.dwFlags = KEYEVENTF_KEYUP; n++; }
     SendInput(n, in, sizeof(INPUT));
-    Sleep(12);
+    for (int t = 0; t < 3; t++) { MSG m; while (PeekMessageW(&m, nullptr, 0, 0, PM_REMOVE)) { TranslateMessage(&m); DispatchMessageW(&m); } Sleep(5); }
 }
 static void typeKeys(const std::wstring& s) {
     for (size_t i = 0; i < s.size(); i++) {
@@ -43,17 +47,21 @@ int wmain(int argc, wchar_t** argv) {
     std::wstring casesPath = argc > 1 ? argv[1] : L"cases.tsv";
     std::ifstream f(casesPath); if (!f) { printf("cannot open cases file\n"); return 99; }
     HINSTANCE inst = GetModuleHandleW(nullptr);
-    HWND win = CreateWindowExW(WS_EX_TOPMOST, L"STATIC", L"Vikey live test", WS_OVERLAPPEDWINDOW | WS_VISIBLE, 100, 100, 600, 300, nullptr, nullptr, inst, nullptr);
+    WNDCLASSW wc = {}; wc.lpfnWndProc = testWndProc; wc.hInstance = inst; wc.lpszClassName = L"VikeyLiveTest"; wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1); RegisterClassW(&wc);
+    HWND win = CreateWindowExW(WS_EX_TOPMOST, L"VikeyLiveTest", L"Vikey live test", WS_OVERLAPPEDWINDOW | WS_VISIBLE, 100, 100, 600, 300, nullptr, nullptr, inst, nullptr);
     _edit = CreateWindowExW(0, L"EDIT", L"", WS_CHILD | WS_VISIBLE | WS_BORDER | ES_MULTILINE | ES_AUTOVSCROLL, 10, 10, 560, 240, win, nullptr, inst, nullptr);
     SendMessageW(_edit, WM_SETFONT, (WPARAM)GetStockObject(DEFAULT_GUI_FONT), TRUE);
     // Bring our window to the front even when started from a console (foreground lock): the Alt-key trick.
     auto toFront = [&]() {
-        INPUT alt[2] = {}; alt[0].type = alt[1].type = INPUT_KEYBOARD; alt[0].ki.wVk = alt[1].ki.wVk = VK_MENU; alt[1].ki.dwFlags = KEYEVENTF_KEYUP;
-        SendInput(2, alt, sizeof(INPUT));
+        // attach to the foreground thread's input queue so SetForegroundWindow is allowed (no Alt key: it would open menu mode)
+        DWORD fg = GetWindowThreadProcessId(GetForegroundWindow(), nullptr), me = GetCurrentThreadId();
+        if (fg != me) AttachThreadInput(fg, me, TRUE);
         SetForegroundWindow(win); BringWindowToTop(win); SetActiveWindow(win); SetFocus(_edit);
+        if (fg != me) AttachThreadInput(fg, me, FALSE);
+        MSG m; while (PeekMessageW(&m, nullptr, 0, 0, PM_REMOVE)) { TranslateMessage(&m); DispatchMessageW(&m); }
     };
     for (int i = 0; i < 10 && GetForegroundWindow() != win; i++) { toFront(); Sleep(200); }
-    printf("foreground is %s\n", GetForegroundWindow() == win ? "the test window" : "ANOTHER window");
+    printf("foreground is %s, focus is %s\n", GetForegroundWindow() == win ? "the test window" : "ANOTHER window", GetFocus() == _edit ? "the edit" : "elsewhere");
     Sleep(300);
     int fails = 0, total = 0; std::string line;
     while (std::getline(f, line)) {
@@ -72,7 +80,7 @@ int wmain(int argc, wchar_t** argv) {
         SetWindowTextW(_edit, L""); SetFocus(_edit); SendMessageW(_edit, EM_SETSEL, 0, 0); Sleep(150);
         key(VK_ESCAPE);   // Esc: a word break, resets the engine's session like a click would
         typeKeys(fromUtf8(col[2]));
-        Sleep(200);
+        for (int t = 0; t < 20; t++) { MSG m; while (PeekMessageW(&m, nullptr, 0, 0, PM_REMOVE)) { TranslateMessage(&m); DispatchMessageW(&m); } Sleep(10); }
         std::wstring got = editText(); std::wstring exp = fromUtf8(col[3]);
         // the edit control uses \r\n
         std::wstring g2; for (wchar_t ch : got) if (ch != L'\r') g2 += ch;
