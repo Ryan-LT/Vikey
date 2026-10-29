@@ -114,7 +114,12 @@ extern "C" {
         UniChar text[MAX_BUFF + 1]; // what to type back: the original word
         int textCount;
         int language;              // language before the automatic switch
+        Uint32 keys[MAX_BUFF];     // the keys of the original word (English mode can go on typing it after an undo)
+        int keyCount;
     };
+    // after an undo the restored word stays the current word; finishing it unchanged doesn't redo the fix
+    static Uint32 _undoneKeys[MAX_BUFF];
+    static int _undoneCount = 0;
     static AutoFixUndo _autoFixUndo = {};
 
     static bool UndoAutoFixWithBackspace();
@@ -145,6 +150,7 @@ extern "C" {
 
     static void ResetEnglishWord(bool valid) {
         _enAfterDouble = false;
+        _undoneCount = 0;
         StartEnglishWord(valid);
         _enPrevN = 0;
         vAutoSwitchForget();
@@ -823,6 +829,11 @@ extern "C" {
             _autoFixUndo.text[n++] = c;
         }
         _autoFixUndo.textCount = n;
+        _autoFixUndo.keyCount = 0;
+        for (int x = 0; x < vAutoSwitchUndoCount && x < MAX_BUFF; x++) {
+            if (vAutoSwitchUndoData[x] & CHAR_CODE_MASK) { _autoFixUndo.keyCount = 0; break; }   // shown text, not keys
+            _autoFixUndo.keys[_autoFixUndo.keyCount++] = vAutoSwitchUndoData[x];
+        }
         _autoFixUndo.removeCount = correctedCount + 1;
         _autoFixUndo.language = vLanguage;
         _autoFixUndo.active = true;
@@ -851,6 +862,15 @@ extern "C" {
         }
         startNewSession();
         ResetEnglishWord(false); // the cursor is at the end of a word we didn't see typed
+        //back in English with the typed keys on screen: they are the current word again, so typing on
+        //("vaay" + "j") is checked as a whole ("vaayj" -> "vậy"); the same word again stays as typed
+        if (vLanguage == 0 && _autoFixUndo.keyCount > 0) {
+            memcpy(_enKeys, _autoFixUndo.keys, _autoFixUndo.keyCount * sizeof(Uint32));
+            _enCount = _autoFixUndo.keyCount;
+            _enValid = true;
+            memcpy(_undoneKeys, _autoFixUndo.keys, _autoFixUndo.keyCount * sizeof(Uint32));
+            _undoneCount = _autoFixUndo.keyCount;
+        }
         return true;
     }
 
@@ -919,6 +939,10 @@ extern "C" {
         // the next word is whole only after whitespace; after . _ - / ( etc. it's part of an identifier or path
         StartEnglishWord(IsWordStartKey(_keycode, shift));
         bool checked = wordEnd && valid && count >= 2 && !(vOtherLanguage && OtherInputSourceActive());
+        if (_undoneCount > 0) {   // the word just put back by Backspace, finished unchanged: keep it as typed
+            if (count == _undoneCount && !memcmp(_enKeys, _undoneKeys, count * sizeof(Uint32))) checked = false;
+            if (wordEnd) _undoneCount = 0;
+        }
         const Uint32* previous[2] = {_enPrevKeys[0], _enPrevKeys[1]};
         bool converted = checked && vAutoSwitchCheckEnglishWord(_enKeys, count, previous, _enPrevCounts, _enPrevN);
         // remember this word for look-back only if it was followed by a single space

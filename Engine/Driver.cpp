@@ -35,7 +35,12 @@ void VikeyDriver::rememberFix(int corrected, Uint16 key, bool shift) {
         if ((vAutoSwitchUndoData[x] & 0xFFFF) == KEY_SPACE && !(vAutoSwitchUndoData[x] & CHAR_CODE_MASK)) return;
     undoText.clear();
     for (int x = 0; x < vAutoSwitchUndoCount; x++) undoText.push_back(charOf(vAutoSwitchUndoData[x]));
-    undoText.push_back(brk);
+    //like the Mac: Backspace takes the break key too, the cursor ends up at the end of the original word
+    undoKeyCount = 0;
+    for (int x = 0; x < vAutoSwitchUndoCount && x < MAX_BUFF; x++) {
+        if (vAutoSwitchUndoData[x] & CHAR_CODE_MASK) { undoKeyCount = 0; break; }
+        undoKeys[undoKeyCount++] = vAutoSwitchUndoData[x];
+    }
     undoRemove = corrected + 1;
     undoLanguage = vLanguage;
     undoActive = true;
@@ -53,7 +58,7 @@ void VikeyDriver::updatePause(double now) {
 }
 
 void VikeyDriver::manualSwitch(double now) {
-    undoActive = false;
+    undoActive = false; undoneCount = 0;
     enCount = 0; enValid = true; prevN = 0; enAfterDouble = false; vAutoSwitchForget();
     vLanguage = vLanguage ? 0 : 1;
     startNewSession();
@@ -67,7 +72,7 @@ void VikeyDriver::setLanguage(int language) {
 }
 
 void VikeyDriver::resetContext() {
-    undoActive = false;
+    undoActive = false; undoneCount = 0;
     enCount = 0; enValid = true; prevN = 0; enAfterDouble = false;
     startNewSession();
     vAutoSwitchForget();
@@ -84,7 +89,12 @@ VKEdit VikeyDriver::press(Uint16 key, bool shift, double now) {
         if (vLanguage != undoLanguage) { vLanguage = undoLanguage; e.languageChanged = true; }
         startNewSession();
         vAutoSwitchForget();
-        enCount = 0; enValid = false; prevN = 0; enAfterDouble = false;
+        enCount = 0; enValid = false; prevN = 0; enAfterDouble = false; undoneCount = 0;
+        //back in English with the typed keys on screen: they are the current word again ("vaay" + "j" -> "vậy")
+        if (vLanguage == 0 && undoKeyCount > 0) {
+            memcpy(enKeys, undoKeys, undoKeyCount * sizeof(Uint32)); enCount = undoKeyCount; enValid = true;
+            memcpy(undoneKeys, undoKeys, undoKeyCount * sizeof(Uint32)); undoneCount = undoKeyCount;
+        }
         undos++;
         return e;
     }
@@ -142,7 +152,9 @@ VKEdit VikeyDriver::press(Uint16 key, bool shift, double now) {
     }
     enCount = 0; enValid = isWordStart(key, shift);
     const Uint32* prev[2] = {prevKeys[0], prevKeys[1]};
-    bool converted = wordEnd && valid && count >= 2 && vAutoSwitchCheckEnglishWord(enKeys, count, prev, prevCounts, prevN);
+    bool same = undoneCount > 0 && count == undoneCount && !memcmp(enKeys, undoneKeys, count * sizeof(Uint32));
+    if (wordEnd) undoneCount = 0;
+    bool converted = wordEnd && valid && count >= 2 && !same && vAutoSwitchCheckEnglishWord(enKeys, count, prev, prevCounts, prevN);
     if (!converted && key == KEY_SPACE && valid && count >= 1) {
         memcpy(prevKeys[1], prevKeys[0], sizeof(prevKeys[0])); prevCounts[1] = prevCounts[0];
         memcpy(prevKeys[0], enKeys, count * sizeof(Uint32)); prevCounts[0] = count; if (prevN < 2) prevN++;
