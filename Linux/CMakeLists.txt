@@ -12,6 +12,12 @@ set(ROOT ${CMAKE_CURRENT_SOURCE_DIR}/..)
 set(ENGINE ${ROOT}/Engine)
 set(AS ${ROOT}/Tools/autoswitch)
 set(ENGINE_SRC ${ENGINE}/Engine.cpp ${ENGINE}/Vietnamese.cpp ${ENGINE}/SmartSwitchKey.cpp)
+# One version for every platform: project.yml's MARKETING_VERSION (also the package version below).
+if(NOT VIKEY_VERSION)
+  file(STRINGS "${ROOT}/project.yml" _mv REGEX "MARKETING_VERSION: \"")
+  string(REGEX REPLACE ".*MARKETING_VERSION: \"([^\"]+)\".*" "\\1" VIKEY_VERSION "${_mv}")
+endif()
+message(STATUS "Vikey version ${VIKEY_VERSION}")
 
 add_library(vikey_engine STATIC ${ENGINE_SRC} ${ENGINE}/Driver.cpp ${ENGINE}/TouchModel.cpp)
 target_include_directories(vikey_engine PUBLIC ${ENGINE} ${ENGINE}/platforms)

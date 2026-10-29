@@ -33,7 +33,7 @@ jobs:
         run: |
           cmake -S Linux -B Linux/build -G Ninja -DCMAKE_BUILD_TYPE=Release
           cmake --build Linux/build
-          cd Linux/build && cpack -G DEB --verbose --debug; cpack -G RPM --verbose; ls -la ./*.deb ./*.rpm
+          cd Linux/build && cpack -G DEB && cpack -G RPM && ls -la ./*.deb ./*.rpm
       - uses: actions/upload-artifact@v4
         if: hashFiles('Linux/ibus/CMakeLists.txt') != ''
         with:
