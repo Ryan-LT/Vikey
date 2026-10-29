@@ -225,7 +225,8 @@ private struct PracticeStep: View {
             Text("Gõ thử").font(.title2.weight(.semibold))
             Text(vietnamese ? "Gõ đúng các phím bên dưới, kể cả tiếng Anh. Vikey bỏ dấu cho tiếng Việt và để nguyên tiếng Anh."
                             : "Bạn đang ở tiếng Anh: bấm \(hotkey) để sang tiếng Việt, rồi gõ các phím bên dưới.")
-                .foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                .foregroundStyle(.secondary)
+                .lineLimit(2, reservesSpace: true)   // both texts take two lines: switching VI/EN must not move the fields (Tony)
             ForEach(0..<Self.lines.count, id: \.self) { i in
                 let ok = Self.normalize(typed[i]) == Self.normalize(Self.lines[i].result)
                 VStack(alignment: .leading, spacing: 4) {
