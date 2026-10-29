@@ -114,7 +114,9 @@ static gboolean vikey_process_key_event(IBusEngine* engine, guint keyval, guint 
 static void vikey_focus_in(IBusEngine* engine) {
     VikeyEngine* e = (VikeyEngine*)engine; _active = e;
     ibus_engine_register_properties(engine, e->props);
-    core::focusChanged(frontAppX11());
+    std::string app = frontAppX11();
+    if (getenv("VIKEY_DEBUG")) fprintf(stderr, "vikey: focus_in app='%s' DISPLAY=%s XAUTHORITY=%s\n", app.c_str(), getenv("DISPLAY") ? getenv("DISPLAY") : "(null)", getenv("XAUTHORITY") ? getenv("XAUTHORITY") : "(null)");
+    core::focusChanged(app);
     updateLangProp(e);
 }
 static void vikey_focus_out(IBusEngine* engine) { core::click(); if (_active == (VikeyEngine*)engine) _active = nullptr; }
