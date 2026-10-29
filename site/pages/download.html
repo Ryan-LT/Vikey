@@ -1,10 +1,10 @@
-<!-- title: Tải Vikey cho macOS – Vikey - Gõ tiếng Việt -->
-<!-- description: Tải Vikey miễn phí cho macOS 13 trở lên. Đã ký và được Apple xác thực (notarized). -->
+<!-- title: Tải Vikey cho macOS và Windows – Vikey - Gõ tiếng Việt -->
+<!-- description: Tải Vikey miễn phí cho macOS 13 trở lên và Windows 10/11. -->
 <main class="wrap prose center" style="max-width:720px">
 <h1>Tải Vikey</h1>
 <p><span class="nw">Phiên bản VERSION</span> · <span class="nw">macOS 13+</span> · <span class="nw">Apple Silicon và Intel</span> · <span class="nw">đã được Apple xác thực</span></p>
 <p class="desk" style="margin:26px 0"><a class="btn big dl-mac" href="DOWNLOAD_URL" download>Tải cho macOS</a></p>
-<p class="mob muted" style="margin:26px 0">Vikey chỉ chạy trên Mac. Mở trang này trên Mac để tải.</p>
+<p class="mob muted" style="margin:26px 0">Mở trang này trên máy Mac hoặc Windows để tải.</p>
 <ol class="steps" style="text-align:left">
 <li>Mở file vừa tải, kéo Vikey vào thư mục Applications.</li>
 <li>Thoát OpenKey, EVKey hoặc bộ gõ khác nếu đang chạy.</li>
@@ -13,6 +13,17 @@
 <div class="terminal" style="text-align:left;margin:30px 0"><span class="c"># Kiểm tra file tải về</span>
 shasum -a 256 ~/Downloads/Vikey-VERSION.dmg
 <span class="c"># kết quả đúng:</span> <span id="sha">SHA256</span></div>
+<!-- windows -->
+<h2 id="windows" style="margin-top:44px">Vikey cho Windows</h2>
+<p><span class="nw">Phiên bản WIN_VERSION</span> · <span class="nw">Windows 10/11</span> · <span class="nw">x64 và ARM64</span></p>
+<p class="desk" style="margin:26px 0"><a class="btn big dl-win" href="WIN_X64_URL" download>Tải cho Windows</a> <a class="btn big ghost dl-win-arm" href="WIN_ARM64_URL" download>Windows trên ARM</a></p>
+<ol class="steps" style="text-align:left">
+<li>Mở file vừa tải. Vikey cài cho tài khoản của bạn, không cần quyền quản trị.</li>
+<li>Thoát OpenKey, EVKey, UniKey hoặc bộ gõ khác nếu đang chạy.</li>
+<li>Biểu tượng Vikey nằm ở khay hệ thống (góc dưới bên phải). Bấm Alt+Z để chuyển Anh/Việt.</li>
+</ol>
+<p class="muted">Không muốn cài? Bản chạy ngay: <a href="WIN_X64_ZIP">x64 (zip)</a> · <a href="WIN_ARM64_ZIP">ARM64 (zip)</a>. SHA-256 bản cài: <code style="font-size:12px;word-break:break-all">WIN_X64_SHA</code> (x64) · <code style="font-size:12px;word-break:break-all">WIN_ARM64_SHA</code> (ARM64).</p>
+<!-- /windows -->
 <p class="muted">Mã nguồn và mọi phiên bản đều có trên <a href="https://github.com/tonyminibot/Vikey/releases">GitHub</a>. Thay đổi từng bản xem ở <a href="/changelog">lịch sử phiên bản</a>.</p>
 </main>
 <script>const m=matchMedia("(max-width:900px),(pointer:coarse)").matches;document.querySelectorAll(m?".desk":".mob").forEach(e=>e.hidden=true)</script>

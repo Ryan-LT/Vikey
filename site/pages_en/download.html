@@ -1,10 +1,10 @@
-<!-- title: Download Vikey for macOS – Vikey - Gõ tiếng Việt -->
-<!-- description: Download Vikey for free for macOS 13 or later. Signed and notarized by Apple. -->
+<!-- title: Download Vikey for macOS and Windows – Vikey - Gõ tiếng Việt -->
+<!-- description: Download Vikey for free for macOS 13 or later and Windows 10/11. -->
 <main class="wrap prose center" style="max-width:720px">
 <h1>Download Vikey</h1>
 <p><span class="nw">Version VERSION</span> · <span class="nw">macOS 13+</span> · <span class="nw">Apple Silicon and Intel</span> · <span class="nw">notarized by Apple</span></p>
 <p class="desk" style="margin:26px 0"><a class="btn big dl-mac" href="DOWNLOAD_URL" download>Download for macOS</a></p>
-<p class="mob muted" style="margin:26px 0">Vikey runs on the Mac only. Open this page on your Mac to download it.</p>
+<p class="mob muted" style="margin:26px 0">Open this page on your Mac or Windows PC to download.</p>
 <ol class="steps" style="text-align:left">
 <li>Open the downloaded file and drag Vikey into the Applications folder.</li>
 <li>Quit OpenKey, EVKey or any other Vietnamese input method if one is running.</li>
@@ -13,6 +13,17 @@
 <div class="terminal" style="text-align:left;margin:30px 0"><span class="c"># Check the download</span>
 shasum -a 256 ~/Downloads/Vikey-VERSION.dmg
 <span class="c"># expected result:</span> <span id="sha">SHA256</span></div>
+<!-- windows -->
+<h2 id="windows" style="margin-top:44px">Vikey for Windows</h2>
+<p><span class="nw">Version WIN_VERSION</span> · <span class="nw">Windows 10/11</span> · <span class="nw">x64 and ARM64</span></p>
+<p class="desk" style="margin:26px 0"><a class="btn big dl-win" href="WIN_X64_URL" download>Download for Windows</a> <a class="btn big ghost dl-win-arm" href="WIN_ARM64_URL" download>Windows on ARM</a></p>
+<ol class="steps" style="text-align:left">
+<li>Open the downloaded file. Vikey installs for your user account, no admin rights needed.</li>
+<li>Quit OpenKey, EVKey, UniKey or any other Vietnamese input method if one is running.</li>
+<li>The Vikey icon sits in the system tray (bottom right). Press Alt+Z to switch between English and Vietnamese.</li>
+</ol>
+<p class="muted">No installer? Portable build: <a href="WIN_X64_ZIP">x64 (zip)</a> · <a href="WIN_ARM64_ZIP">ARM64 (zip)</a>. Installer SHA-256: <code style="font-size:12px;word-break:break-all">WIN_X64_SHA</code> (x64) · <code style="font-size:12px;word-break:break-all">WIN_ARM64_SHA</code> (ARM64).</p>
+<!-- /windows -->
 <p class="muted">The source code and every version are on <a href="https://github.com/tonyminibot/Vikey/releases">GitHub</a>. See what changed in each version in the <a href="/en/changelog">changelog</a>.</p>
 </main>
 <script>const m=matchMedia("(max-width:900px),(pointer:coarse)").matches;document.querySelectorAll(m?".desk":".mob").forEach(e=>e.hidden=true)</script>
