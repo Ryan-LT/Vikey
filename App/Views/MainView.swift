@@ -11,6 +11,8 @@ struct MainView: View {
     @AppStorage(PrefKey.smartSwitch) private var smartSwitch = 1
     @AppStorage(PrefKey.pauseAfterManual) private var pauseAfterManual = 1
     @AppStorage(PrefKey.smartSwitchPerSite) private var perSite = true
+    @AppStorage(PrefEmoji.enabled) private var emojiOn = 0
+    @AppStorage(PrefEmoji.hotkey) private var emojiKey = 0
     @State private var launchAtLogin = LaunchAtLogin.isEnabled
     @State private var browserDenied = false
     @ObservedObject private var updater = Updater.shared
@@ -61,6 +63,21 @@ struct MainView: View {
                         Tip("Trả lại phím khi sai", "Khi gõ xong một từ sai chính tả tiếng Việt, Vikey trả lại đúng các phím bạn đã gõ.")
                     }
                     .disabled(spelling == 0)
+                }
+                Section {
+                    Toggle(isOn: Binding(get: { emojiOn != 0 }, set: { emojiOn = $0 ? 1 : 0; Preferences.apply() })) {
+                        Tip("Bảng emoji", "Bấm phím tắt để mở bảng emoji ở giữa màn hình. Tìm bằng tiếng Việt hoặc tiếng Anh, gõ Telex vẫn tìm được: \"ngựa\", \"horse\" đều ra 🐴. Enter để chèn, Esc để đóng.")
+                    }
+                    if emojiOn != 0 {
+                        LabeledContent {
+                            HotkeyRecorder(raw: Binding(get: { emojiKey }, set: { k in
+                                guard k != hotkeyRaw & ~0x8000 else { return }   // already the Vietnamese/English switch
+                                emojiKey = k & ~0x8000; Preferences.apply()
+                            }), allowModifiersOnly: false, autoStart: emojiKey == 0)
+                        } label: {
+                            Tip("Phím mở bảng emoji", "Một phím kèm ⌃, ⌥ hoặc ⌘, ví dụ ⌃⌘E. Bấm vào ô để đặt phím khác.")
+                        }
+                    }
                 }
                 Section {
                     Toggle(isOn: Binding(get: { launchAtLogin }, set: { LaunchAtLogin.set($0); launchAtLogin = LaunchAtLogin.isEnabled })) {

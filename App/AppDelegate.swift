@@ -6,9 +6,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         Migration.fromOpenKeyIfNeeded()
         AppState.shared.startIfPossible()
         _ = Updater.shared                     // starts Sparkle: daily update checks
+        EmojiPicker.shared.install()
         if UserDefaults.standard.bool(forKey: "showOnboarding") { OnboardingWindow.show() }   // -showOnboarding YES (screenshots)
         if UserDefaults.standard.bool(forKey: "showAbout") { AboutPanel.show() }             // -showAbout YES (screenshots)
         if UserDefaults.standard.bool(forKey: "showMain") { Windows.main.show() }           // -showMain YES (screenshots)
+        if UserDefaults.standard.bool(forKey: "showEmoji") {                                 // -showEmoji YES [-emojiQuery horse] (screenshots)
+            EmojiPicker.shared.open()
+            if let q = UserDefaults.standard.string(forKey: "emojiQuery") { EmojiPicker.shared.model.setRaw(q) }
+        }
         // Opened by the user (not at login, minutes after boot): show the main window.
         if AppState.shared.isRunning && ProcessInfo.processInfo.systemUptime > 180 && !UserDefaults.standard.bool(forKey: "noWindowAtLaunch") {
             Windows.main.show()

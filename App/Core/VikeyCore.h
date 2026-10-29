@@ -38,6 +38,13 @@ extern NSNotificationName const VikeyLanguageDidChangeNotification;
 + (void)frontmostAppChanged;
 + (void)activeSpaceChanged;
 
+/// Emoji picker: called on the main thread when its hotkey is pressed (EmojiPicker / EmojiHotkey defaults).
++ (void)setEmojiHotkeyHandler:(void (^)(void))handler;
+/// While open, keys reach the picker untouched (no Vietnamese typing).
++ (void)setEmojiPickerOpen:(BOOL)open;
+/// Types text into the focused app.
++ (void)insertText:(NSString *)text;
+
 /// Typing log.
 + (NSString *)typingLogPath;
 + (NSDictionary<NSString *, NSDictionary<NSString *, NSNumber *> *> *)typingLogStats;

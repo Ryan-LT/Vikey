@@ -58,6 +58,10 @@ NSDictionary *keyStringToKeyCodeMap = @{
 
 // Settings the engine reads (see Engine.h). Vikey keeps only what its settings expose;
 // everything else stays at the value that matches a modern Unicode Telex setup.
+// Emoji picker (App/Views/EmojiPicker.swift): its hotkey (0 = off), and while it is open keys pass through untouched
+static int vEmojiHotkey = 0;
+static volatile bool vEmojiOpen = false;
+static void (^vEmojiHandler)(void) = nil;
 int vLanguage = 1, vSwitchKeyStatus = 0x7A000206, vCheckSpelling = 1, vUseModernOrthography = 1;
 int vRestoreIfWrongSpelling = 1, vFixRecommendBrowser = 1, vUseSmartSwitchKey = 1, vOtherLanguage = 1;
 int vAutoSwitchByTyping = 1, vPerformLayoutCompat = 0;
@@ -317,6 +321,7 @@ extern "C" {
         vTypingLogEnabled = get(@"TypingLogEnabled", 0);
         int hotkey = get(@"SwitchKeyStatus", 0);
         vSwitchKeyStatus = hotkey ? hotkey : 0x7A000206;  // default ⌥Z
+        vEmojiHotkey = get(@"EmojiPicker", 0) ? get(@"EmojiHotkey", 0) : 0;
         VKUpdateLayoutCompat();
     }
 
@@ -1030,6 +1035,14 @@ extern "C" {
            _keycode = ConvertEventToKeyboadLayoutCompatKeyCode(event, _keycode);
         }
         
+        // emoji picker hotkey: a key with exactly these modifiers
+        if (type == kCGEventKeyDown && vEmojiHotkey && GET_SWITCH_KEY(vEmojiHotkey) == _keycode &&
+            HAS_CONTROL(vEmojiHotkey) == GET_BOOL(_flag & kCGEventFlagMaskControl) && HAS_OPTION(vEmojiHotkey) == GET_BOOL(_flag & kCGEventFlagMaskAlternate) &&
+            HAS_COMMAND(vEmojiHotkey) == GET_BOOL(_flag & kCGEventFlagMaskCommand) && HAS_SHIFT(vEmojiHotkey) == GET_BOOL(_flag & kCGEventFlagMaskShift)) {
+            if (vEmojiHandler) dispatch_async(dispatch_get_main_queue(), vEmojiHandler);
+            return NULL;
+        }
+
         //switch language shortcut; convert hotkey
         if (type == kCGEventKeyDown) {
             if (GET_SWITCH_KEY(vSwitchKeyStatus) != _keycode) {
@@ -1058,6 +1071,9 @@ extern "C" {
                 _hasJustUsedHotKey = false;
             }
         }
+
+        // the emoji picker reads raw keys for its search (it does its own Telex reading)
+        if (vEmojiOpen) return event;
 
         // Backspace right after an automatic correction undoes it; any other key or click ends that chance
         if (type == kCGEventKeyDown && _keycode == KEY_DELETE && _autoFixUndo.active && !(OTHER_CONTROL_KEY)) {
@@ -1259,6 +1275,30 @@ static NSTimer* _watchdog = nil;
 
 + (void)activeSpaceChanged {
     if (_inited) RequestNewSession();
+}
+
++ (void)setEmojiHotkeyHandler:(void (^)(void))handler { vEmojiHandler = [handler copy]; }
++ (void)setEmojiPickerOpen:(BOOL)open { vEmojiOpen = open; }
+
++ (void)insertText:(NSString*)text {
+    ResetEnglishWord(true);
+    _autoFixUndo.active = false;
+    startNewSession();
+    NSUInteger len = text.length;
+    UniChar buf[64];
+    for (NSUInteger start = 0; start < len; start += 16) {
+        NSUInteger n = MIN(16, len - start);
+        [text getCharacters:buf range:NSMakeRange(start, n)];
+        CGEventRef down = CGEventCreateKeyboardEvent(myEventSource, 0, true), up = CGEventCreateKeyboardEvent(myEventSource, 0, false);
+        CGEventSetIntegerValueField(down, kCGEventSourceUserData, VIKEY_EVENT_TAG);
+        CGEventSetIntegerValueField(up, kCGEventSourceUserData, VIKEY_EVENT_TAG);
+        CGEventSetFlags(down, 0); CGEventSetFlags(up, 0);
+        CGEventKeyboardSetUnicodeString(down, n, buf);
+        CGEventKeyboardSetUnicodeString(up, n, buf);
+        CGEventPost(kCGSessionEventTap, down);
+        CGEventPost(kCGSessionEventTap, up);
+        CFRelease(down); CFRelease(up);
+    }
 }
 
 + (NSString*)typingLogPath { return TLLogPath(); }
