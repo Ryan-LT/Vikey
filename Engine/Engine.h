@@ -112,6 +112,11 @@ extern int vAutoSwitchRequest;
  */
 extern Uint32 vAutoSwitchUndoData[MAX_BUFF];
 extern int vAutoSwitchUndoCount;
+/** The keys of the last word auto switch put back to English (so the next word can look back on it). */
+extern Uint32 vAutoSwitchRestoredKeys[];
+extern int vAutoSwitchRestoredCount;
+/** Set by the platform: the previous word passed to vAutoSwitchCheckEnglishWord was put back to English by auto switch. */
+extern bool vAutoSwitchPrevRestored;
 
 /**
  * English mode, at a word break: if the raw keys of the finished word are clearly a
