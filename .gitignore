@@ -14,3 +14,6 @@ Tools/autoswitch/touch/normeval
 Tools/autoswitch/touch/typoeval
 Windows/build
 Tools/autoswitch/driver/undo_test
+Windows/installer/out/
+Windows/installer/mkinst.cmd
+

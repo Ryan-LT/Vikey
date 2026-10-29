@@ -1,5 +1,10 @@
 # Vikey.exe: tray app + hooks. Built only on Windows (MSVC).
-set(VIKEY_VERSION "1.0.14" CACHE STRING "Vikey for Windows version")
+# One version for every platform: project.yml's MARKETING_VERSION, unless -DVIKEY_VERSION overrides it.
+if(NOT VIKEY_VERSION)
+  file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/../../project.yml" _mv REGEX "MARKETING_VERSION: \"")
+  string(REGEX REPLACE ".*MARKETING_VERSION: \"([^\"]+)\".*" "\\1" VIKEY_VERSION "${_mv}")
+endif()
+message(STATUS "Vikey version ${VIKEY_VERSION}")
 add_executable(vikey WIN32 main.cpp Core.cpp Prefs.cpp Site.cpp Settings.cpp Updater.cpp third_party/tweetnacl.c Vikey.rc)
 set_source_files_properties(third_party/tweetnacl.c PROPERTIES COMPILE_FLAGS "/w")
 set_target_properties(vikey PROPERTIES OUTPUT_NAME Vikey)

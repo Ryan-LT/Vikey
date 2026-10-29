@@ -3,6 +3,7 @@
 #include "resource.h"
 #include <winhttp.h>
 #include <shellapi.h>
+#include <commctrl.h>
 #include <string>
 #include <vector>
 #include <thread>
@@ -178,10 +179,15 @@ void onEvent(WPARAM ev) {
     case EvUpToDate: MessageBoxW(nullptr, (L"Bạn đang dùng bản mới nhất của Vikey (" + cur + L").").c_str(), L"Vikey", MB_OK | MB_ICONINFORMATION | MB_SETFOREGROUND); break;
     case EvFailed: MessageBoxW(nullptr, _lastError.c_str(), L"Vikey", MB_OK | MB_ICONWARNING | MB_SETFOREGROUND); break;
     case EvAvailable: {
-        std::wstring text = L"Vikey " + _found.version + L" đã có (bạn đang dùng " + cur + L").";
-        if (!_found.notes.empty()) text += L"\n\n" + _found.notes;
-        text += L"\n\nTải về và cài đặt ngay? Vikey sẽ tự mở lại sau khi cài.";
-        if (MessageBoxW(nullptr, text.c_str(), L"Có bản Vikey mới", MB_YESNO | MB_ICONINFORMATION | MB_SETFOREGROUND) != IDYES) break;
+        std::wstring head = L"Vikey " + _found.version + L" đã có", body = L"Bạn đang dùng " + cur + L".";
+        if (!_found.notes.empty()) body += L"\n\n" + _found.notes;
+        body += L"\n\nVikey sẽ tải về, cài đặt và tự mở lại.";
+        TASKDIALOG_BUTTON btns[] = {{IDYES, L"Cài đặt"}, {IDNO, L"Để sau"}};
+        TASKDIALOGCONFIG cfg = {sizeof(cfg)}; cfg.hInstance = GetModuleHandleW(nullptr); cfg.dwFlags = TDF_ALLOW_DIALOG_CANCELLATION | TDF_POSITION_RELATIVE_TO_WINDOW;
+        cfg.pszWindowTitle = L"Vikey"; cfg.pszMainIcon = MAKEINTRESOURCEW(IDI_APP); cfg.pszMainInstruction = head.c_str(); cfg.pszContent = body.c_str();
+        cfg.pButtons = btns; cfg.cButtons = 2; cfg.nDefaultButton = IDYES;
+        int pressed = 0; TaskDialogIndirect(&cfg, &pressed, nullptr, nullptr);
+        if (pressed != IDYES) break;
         _busy = true;
         std::thread([] { bool ok = download(_found); _busy = false; _manual = true; PostMessageW(_owner, WM_UPDATER, ok ? EvDownloaded : EvFailed, 0); }).detach();
         break; }
