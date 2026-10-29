@@ -137,6 +137,7 @@ void command(const std::string& line) {
     if (line.rfind("lang ", 0) == 0) {
         int lang = line.find(" vi") != std::string::npos ? 1 : 0; bool user = line.find("user") != std::string::npos;
         if (user) setLanguageByUser(lang); else setLanguageQuiet(lang);
+        if (vTypingLogEnabled) TLWrite(std::string("\"e\":\"cmd\",\"line\":\"") + jsonEscape(line) + "\",\"as\":" + std::to_string(vAutoSwitchByTyping) + ",\"pref\":" + std::to_string(prefs::getInt("AutoSwitchByTyping", 1)) + ",\"paused\":" + (AutoSwitchPaused() ? "true" : "false") + ",\"lang\":" + std::to_string(vLanguage));
     }
 }
 void reloadSettings() {
