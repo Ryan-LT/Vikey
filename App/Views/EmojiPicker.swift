@@ -300,6 +300,8 @@ struct EmojiGridView: View {
         ScrollViewReader { proxy in
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 0) {   // titles scroll with the grid: a pinned one needs a background (Tony: odd band)
+                    // the top of the list: scrolling here shows the first title too (scrolling to the first row hid it: Tony)
+                    Color.clear.frame(height: model.searching ? 10 : 0).id("top")
                     if model.searching && model.results.isEmpty {
                         Text(model.vietnamese ? "Không tìm thấy emoji nào" : "No emoji found")
                             .foregroundStyle(.secondary).frame(maxWidth: .infinity).padding(.top, 110)
@@ -313,13 +315,14 @@ struct EmojiGridView: View {
                     }
                 }
                 .padding(.horizontal, 12).padding(.bottom, 8)
-                .padding(.top, model.searching ? 10 : 0)   // results have no section title above them
             }
             .onChange(of: model.selected) { i in
-                if model.selectedByKeys, let r = model.row(of: i) { proxy.scrollTo(r.id) }   // the least scrolling that shows it
+                guard model.selectedByKeys, let r = model.row(of: i) else { return }
+                if r.id == model.allRows.first?.id { proxy.scrollTo("top", anchor: .top) }   // back on top: the title shows too
+                else { proxy.scrollTo(r.id) }   // the least scrolling that shows it
             }
-            .onChange(of: model.raw) { _ in if let r = model.allRows.first { proxy.scrollTo(r.id, anchor: .top) } }
-            .onChange(of: model.opened) { _ in if let r = model.allRows.first { proxy.scrollTo(r.id, anchor: .top) } }
+            .onChange(of: model.raw) { _ in proxy.scrollTo("top", anchor: .top) }
+            .onChange(of: model.opened) { _ in proxy.scrollTo("top", anchor: .top) }
         }
     }
 
