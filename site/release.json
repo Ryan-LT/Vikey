@@ -1,7 +1,7 @@
 {
-"version": "1.0.18",
-"download_url": "/downloads/Vikey-1.0.18.dmg",
-"sha256": "4a65d20d4c73255da388ee6324be540f4ab8ec7eefb5e4a3644461778b68aeb2",
+"version": "1.0.19",
+"download_url": "/downloads/Vikey-1.0.19.dmg",
+"sha256": "09f39e11a183e200592f52044b77cd56de755b3610e4c7a7ba9bad216e1ed7db",
 "linux": {
 "version": "1.0.15",
 "rpm_arm64": {
