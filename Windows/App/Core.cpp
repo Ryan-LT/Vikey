@@ -86,7 +86,8 @@ static std::string TLTime() {
 static std::string TLToday() { SYSTEMTIME st; GetLocalTime(&st); char b[16]; snprintf(b, sizeof b, "%04d-%02d-%02d", st.wYear, st.wMonth, st.wDay); return b; }
 static void TLCount(const char* name) {
     if (!vTypingLogEnabled) return;
-    std::wstring key = L"TLStat_" + std::wstring(TLToday().begin(), TLToday().end()) + L"_" + std::wstring(name, name + strlen(name));
+    std::string day = TLToday();
+    std::wstring key = L"TLStat_" + std::wstring(day.begin(), day.end()) + L"_" + std::wstring(name, name + strlen(name));
     prefs::setInt(key.c_str(), prefs::getInt(key.c_str(), 0) + 1);
 }
 void flushTypingLog() {

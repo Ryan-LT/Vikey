@@ -1,5 +1,5 @@
 # Vikey.exe: tray app + hooks. Built only on Windows (MSVC).
-set(VIKEY_VERSION "0.1.0" CACHE STRING "Vikey for Windows version")
+set(VIKEY_VERSION "1.0.14" CACHE STRING "Vikey for Windows version")
 add_executable(vikey WIN32 main.cpp Core.cpp Prefs.cpp Site.cpp Settings.cpp Vikey.rc)
 set_target_properties(vikey PROPERTIES OUTPUT_NAME Vikey)
 target_include_directories(vikey PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
