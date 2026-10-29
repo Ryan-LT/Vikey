@@ -18,6 +18,10 @@ done
 [ "$n" = "2" ] || { echo "installers not on the release after 30 min: gh run list -R $REPO -w windows"; exit 1; }
 rm -rf dist/windows && mkdir -p dist/windows site/downloads
 gh release download "v$VER" -R $REPO -p "Vikey-$VER-*" -D dist/windows --clobber
+# site/downloads is not in git: the deploy must carry the current Mac DMG too, or the Mac download disappears
+MACDMG=$(python3 -c "import json;print(json.load(open('site/release.json'))['download_url'].split('/')[-1])")
+[ -f "site/downloads/$MACDMG" ] || gh release download "v$(echo "$MACDMG" | sed -E "s/^Vikey-(.*)\.dmg$/\1/")" -R $REPO -p "$MACDMG" -D site/downloads --clobber 2>/dev/null || gh release download "v$VER" -R $REPO -p "$MACDMG" -D site/downloads --clobber
+[ -f "site/downloads/$MACDMG" ] || { echo "Mac DMG $MACDMG not found for the site deploy"; exit 1; }
 NOTES=$(sed -n "/<!-- release $VER -->/,/<!-- \/release -->/p" site/pages/changelog.html | grep -v '<h2>\|<!--')
 for ARCH in x64 arm64; do
   F=dist/windows/Vikey-$VER-$ARCH-Setup.exe
