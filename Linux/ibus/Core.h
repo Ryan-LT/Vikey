@@ -11,7 +11,8 @@ struct Output {
     std::function<void(int)> backspaces;                        // delete n characters before the cursor
     std::function<void(const std::u32string&)> text;            // type these characters
     std::function<void(Uint16 key, bool shift)> controlKey;     // re-send Enter/Tab/... (after a restore)
-    std::function<void()> beep;
+    std::function<void(int language)> switchSound;              // the switch sound: rising into Vietnamese, falling into English
+    std::function<void()> openEmoji;                            // the emoji picker hotkey was pressed
 };
 void init(Output out);
 /// A key press (not a release). Returns true when the key was consumed (output was produced).
@@ -22,7 +23,11 @@ void click();                       // a click, cursor move or reset: ends the w
 void focusChanged(const std::string& app);   // app in front changed (per-app memory)
 void reloadSettings();
 void pollSettingsFile();
-void command(const std::string& line);   // "lang vi quiet" | "lang en user"   // reloads when the file's mtime changed (cheap, once a second)
+void command(const std::string& line);   // "lang vi quiet" | "lang en user"
+/// Forget the word being typed (the cursor moved to another field without a click).
+void resetTyping();
+/// Types text into the focused app (the emoji picker's choice).
+void insertText(const std::u32string& text);
 void flushTypingLog(); void clearTypingLog(); std::string typingLogPath();
 void setLanguageByUser(int lang); void setLanguageQuiet(int lang); void toggleLanguage(const char* via);
 int language();

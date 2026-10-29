@@ -27,10 +27,15 @@ static std::vector<Byte> savedSmartSwitchKeyData;
 
 static Uint32 _enKeys[MAX_BUFF]; static int _enCount = 0; static bool _enValid = true, _enAfterShortcut = false, _enAfterDouble = false;
 static Uint32 _enPrevKeys[2][MAX_BUFF]; static int _enPrevCounts[2]; static int _enPrevN = 0;
-struct AutoFixUndo { bool active; int removeCount; char32_t text[MAX_BUFF + 1]; int textCount; int language; };
+static bool _enPrevRestored = false;   // _enPrevKeys[0] was put back to English by auto switch (D35)
+// keys: the original word (English mode can go on typing it after an undo, D32)
+struct AutoFixUndo { bool active; int removeCount; char32_t text[MAX_BUFF + 1]; int textCount; int language; Uint32 keys[MAX_BUFF]; int keyCount; };
 static AutoFixUndo _autoFixUndo = {};
+// after an undo the restored word stays the current word; finishing it unchanged doesn't redo the fix (D32)
+static Uint32 _undoneKeys[MAX_BUFF]; static int _undoneCount = 0;
+static int vEmojiHotkey = 0;   // the emoji picker's hotkey (0 = off)
 static void StartEnglishWord(bool valid) { _enCount = 0; _enValid = valid; _enAfterShortcut = false; }
-static void ResetEnglishWord(bool valid) { _enAfterDouble = false; StartEnglishWord(valid); _enPrevN = 0; vAutoSwitchForget(); }
+static void ResetEnglishWord(bool valid) { _enAfterDouble = false; _undoneCount = 0; StartEnglishWord(valid); _enPrevN = 0; vAutoSwitchForget(); }
 
 // ---- Typing log --------------------------------------------------------------------------------
 int vTypingLogKeys = 1, vTypingLogEnabled = 0;
@@ -154,6 +159,7 @@ void reloadSettings() {
     vTypingLogEnabled = prefs::getInt("TypingLogEnabled", 0);
     int hotkey = prefs::getInt("SwitchKeyStatus", 0);
     vSwitchKeyStatus = hotkey ? hotkey : 0x7A000206;   // default Alt+Z
+    vEmojiHotkey = prefs::getInt("EmojiPicker", 0) ? prefs::getInt("EmojiHotkey", 0) : 0;
     if (_observer) _observer(vLanguage);
 }
 
@@ -189,7 +195,7 @@ void toggleLanguage(const char* via) {
     PauseAutoSwitchAfterManual(); _autoFixUndo.active = false; ResetEnglishWord(true);
     vLanguage = vLanguage == 0 ? 1 : 0;
     TLManual(via, vLanguage);
-    if (HAS_BEEP(vSwitchKeyStatus) && _out.beep) _out.beep();
+    if (HAS_BEEP(vSwitchKeyStatus) && _out.switchSound) _out.switchSound(vLanguage);
     VKLanguageChanged(true); startNewSession();
 }
 void setLanguageByUser(int lang) { if (vLanguage == lang) return; PauseAutoSwitchAfterManual(); _autoFixUndo.active = false; ResetEnglishWord(true); vLanguage = lang; TLManual("menu", vLanguage); VKLanguageChanged(true); startNewSession(); }
@@ -208,7 +214,13 @@ static void RememberAutoFix(int correctedCount) {
     Uint16 breakChar = keyCodeToCharacter(_keycode | ((_flag & F_CAPS) || (_flag & F_SHIFT) ? CAPS_MASK : 0));
     if (breakChar == 0) return;
     int n = 0; for (int x = 0; x < vAutoSwitchUndoCount && n < MAX_BUFF; x++) { char32_t c = CharacterOf(vAutoSwitchUndoData[x]); if (c == 0) return; _autoFixUndo.text[n++] = c; }
-    _autoFixUndo.textCount = n; _autoFixUndo.removeCount = correctedCount + 1; _autoFixUndo.language = vLanguage; _autoFixUndo.active = true;
+    _autoFixUndo.textCount = n;
+    _autoFixUndo.keyCount = 0;
+    for (int x = 0; x < vAutoSwitchUndoCount && x < MAX_BUFF; x++) {
+        if (vAutoSwitchUndoData[x] & CHAR_CODE_MASK) { _autoFixUndo.keyCount = 0; break; }   // shown text, not keys
+        _autoFixUndo.keys[_autoFixUndo.keyCount++] = vAutoSwitchUndoData[x];
+    }
+    _autoFixUndo.removeCount = correctedCount + 1; _autoFixUndo.language = vLanguage; _autoFixUndo.active = true;
 }
 static bool UndoAutoFixWithBackspace() {
     if (!_autoFixUndo.active) return false;
@@ -216,7 +228,13 @@ static bool UndoAutoFixWithBackspace() {
     _out.backspaces(_autoFixUndo.removeCount); _out.text(std::u32string(_autoFixUndo.text, _autoFixUndo.textCount));
     TLUndo();
     if (vLanguage != _autoFixUndo.language) { vLanguage = _autoFixUndo.language; VKLanguageChanged(true); }
-    startNewSession(); ResetEnglishWord(false);
+    startNewSession(); ResetEnglishWord(false);   // the cursor is at the end of a word we didn't see typed
+    // D32: back in English with the typed keys on screen, they are the current word again, so typing on
+    // ("vaay" + "j") is checked as a whole ("vaayj" -> "vậy"); the same word again stays as typed
+    if (vLanguage == 0 && _autoFixUndo.keyCount > 0) {
+        memcpy(_enKeys, _autoFixUndo.keys, _autoFixUndo.keyCount * sizeof(Uint32)); _enCount = _autoFixUndo.keyCount; _enValid = true;
+        memcpy(_undoneKeys, _autoFixUndo.keys, _autoFixUndo.keyCount * sizeof(Uint32)); _undoneCount = _autoFixUndo.keyCount;
+    }
     return true;
 }
 static void AutoSwitchTo(int language, const char* rule) { if (vLanguage == language) return; TLAuto(rule, language); vLanguage = language; VKLanguageChanged(true); startNewSession(); vAutoSwitchForget(); }
@@ -224,22 +242,32 @@ static void ApplyAutoSwitchToEnglish(int correctedCount, bool atWordBreak) {
     vAutoSwitchRequest = -1;
     if (atWordBreak) RememberAutoFix(correctedCount); else _autoFixUndo.active = false;
     AutoSwitchTo(0, atWordBreak ? "vi_word_to_en" : "double_key");
-    ResetEnglishWord(atWordBreak && IsWhitespaceKey(_keycode)); _enAfterDouble = !atWordBreak;
+    ResetEnglishWord(atWordBreak && IsWhitespaceKey(_keycode));
+    // D35: the word just put back to English is the previous word for look-back ("em is" + "ạ" -> "em í ạ")
+    if (atWordBreak && _keycode == KEY_SPACE && vAutoSwitchRestoredCount > 0) {
+        memcpy(_enPrevKeys[0], vAutoSwitchRestoredKeys, vAutoSwitchRestoredCount * sizeof(Uint32)); _enPrevCounts[0] = vAutoSwitchRestoredCount; _enPrevN = 1; _enPrevRestored = true;
+    }
+    _enAfterDouble = !atWordBreak;   // at its end, "mixx" may become "mix"
 }
 static bool HandleEnglishKeyForAutoSwitch() {
     if (OTHER_CONTROL_KEY) { ResetEnglishWord(true); _enAfterShortcut = (_flag & (F_CONTROL | F_WIN)) != 0; return false; }
     bool shift = _flag & F_SHIFT; bool caps = shift || (_flag & F_CAPS);
     if (IsLetterKey(_keycode)) { if (_enCount < MAX_BUFF - 2) _enKeys[_enCount++] = _keycode | (caps ? CAPS_MASK : 0); else _enValid = false; _enAfterShortcut = false; return false; }
     if (_keycode == KEY_DELETE) { if (_enCount == 0) { _enPrevN = 0; _enAfterDouble = false; } if (_enCount > 0) _enCount--; else if (!_enAfterShortcut) _enValid = false; return false; }
-    if (IS_NUMBER_KEY(_keycode) && !shift) { _enValid = false; _enAfterDouble = false; return false; }
+    if (IS_NUMBER_KEY(_keycode) && !shift) { _enValid = _enCount == 0 && _enValid; _enCount = 0; _enPrevN = 0; _enAfterDouble = false; return false; }   // D33: digits after a space start a word of their own ("5trawm" -> "5trăm"); glued to letters, a code
     bool wordEnd = _keycode == KEY_SPACE || _keycode == KEY_COMMA || _keycode == KEY_DOT || _keycode == KEY_SEMICOLON || _keycode == KEY_RETURN || _keycode == KEY_ENTER || (shift && (_keycode == KEY_SLASH || _keycode == KEY_1 || _keycode == KEY_QUOTE || _keycode == KEY_0));
     int count = _enCount; bool valid = _enValid; bool afterDouble = _enAfterDouble; _enAfterDouble = false;
     if (afterDouble && wordEnd && vAutoSwitchFixDoubledKey(_enKeys, count)) { StartEnglishWord(IsWordStartKey(_keycode, shift)); _enPrevN = 0; int correctedCount = pData->newCharCount; SendEngineOutput(); RememberAutoFix(correctedCount); return true; }
     StartEnglishWord(IsWordStartKey(_keycode, shift));
     bool checked = wordEnd && valid && count >= 2;
+    if (_undoneCount > 0) {   // D32: the word just put back by Backspace, finished unchanged: keep it as typed
+        if (count == _undoneCount && !memcmp(_enKeys, _undoneKeys, count * sizeof(Uint32))) checked = false;
+        if (wordEnd) _undoneCount = 0;
+    }
     const Uint32* previous[2] = {_enPrevKeys[0], _enPrevKeys[1]};
+    vAutoSwitchPrevRestored = _enPrevRestored && _enPrevN >= 1;
     bool converted = checked && vAutoSwitchCheckEnglishWord(_enKeys, count, previous, _enPrevCounts, _enPrevN);
-    if (!converted && _keycode == KEY_SPACE && valid && count >= 1) { memcpy(_enPrevKeys[1], _enPrevKeys[0], sizeof(_enPrevKeys[0])); _enPrevCounts[1] = _enPrevCounts[0]; memcpy(_enPrevKeys[0], _enKeys, count * sizeof(Uint32)); _enPrevCounts[0] = count; if (_enPrevN < 2) _enPrevN++; }
+    if (!converted && _keycode == KEY_SPACE && valid && count >= 1) { _enPrevRestored = false; memcpy(_enPrevKeys[1], _enPrevKeys[0], sizeof(_enPrevKeys[0])); _enPrevCounts[1] = _enPrevCounts[0]; memcpy(_enPrevKeys[0], _enKeys, count * sizeof(Uint32)); _enPrevCounts[0] = count; if (_enPrevN < 2) _enPrevN++; }
     else _enPrevN = 0;
     if (!converted) return false;
     int correctedCount = pData->newCharCount; SendEngineOutput(); RememberAutoFix(correctedCount); AutoSwitchTo(1, "en_word_to_vi");
@@ -263,6 +291,9 @@ bool keyDown(Uint16 key, bool shift, unsigned flags) {
     checkPauseExpired();
     _flag = (flags & ~(unsigned)F_SHIFT) | (shift ? F_SHIFT : 0);
     _keycode = key;
+    // emoji picker hotkey: a key with exactly these modifiers
+    if (vEmojiHotkey && GET_SWITCH_KEY(vEmojiHotkey) == _keycode && HAS_CONTROL(vEmojiHotkey) == GET_BOOL(_flag & F_CONTROL) && HAS_OPTION(vEmojiHotkey) == GET_BOOL(_flag & F_ALT) &&
+        HAS_COMMAND(vEmojiHotkey) == GET_BOOL(_flag & F_WIN) && HAS_SHIFT(vEmojiHotkey) == GET_BOOL(_flag & F_SHIFT)) { _lastFlag = 0; if (_out.openEmoji) _out.openEmoji(); return true; }
     if (GET_SWITCH_KEY(vSwitchKeyStatus) != _keycode) _lastFlag = 0;
     else if (checkHotKey(vSwitchKeyStatus, true)) { toggleLanguage("hotkey"); _lastFlag = 0; return true; }
     if (_keycode == KEY_DELETE && _autoFixUndo.active && !(OTHER_CONTROL_KEY)) { if (UndoAutoFixWithBackspace()) return true; }
@@ -282,6 +313,8 @@ bool keyDown(Uint16 key, bool shift, unsigned flags) {
     }
     return false;
 }
+void resetTyping() { ResetEnglishWord(true); _autoFixUndo.active = false; startNewSession(); }
+void insertText(const std::u32string& text) { resetTyping(); if (!text.empty()) _out.text(text); }
 void click() { _autoFixUndo.active = false; _tlSinceAuto = false; TLEndWord("click"); if (vTypingLogEnabled) TLWrite("\"e\":\"reset\""); if (vLanguage == 0) ResetEnglishWord(true); else vKeyHandleEvent(vKeyEvent::Mouse, vKeyEventState::MouseDown, 0); }
 void init(Output out) {
     _out = out;
