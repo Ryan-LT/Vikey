@@ -121,7 +121,10 @@ static void press(Uint16 key, bool shift) {
     }
     if (key == KEY_DELETE) { if (P.enCount == 0) { P.prevN = 0; P.enAfterDouble = false; } if (P.enCount > 0) P.enCount--; else P.enValid = false; if (!P.screen.empty()) P.screen.pop_back(); return; }
     bool digit = false; for (Uint16 d : {KEY_0,KEY_1,KEY_2,KEY_3,KEY_4,KEY_5,KEY_6,KEY_7,KEY_8,KEY_9}) if (key == d) digit = true;
-    if (digit && !shift) { P.enValid = false; P.enAfterDouble = false; P.screen.push_back(typedChar(key, shift)); return; }
+    // digits then letters: the letters are a word of their own ("5trawm" -> "5trăm", D33); nothing to look back on
+    // digits after a space, then letters: the letters are a word of their own ("5trawm" -> "5trăm", D33);
+    // digits glued to letters (abc1def) make it a code, not a word
+    if (digit && !shift) { P.enValid = P.enCount == 0 && P.enValid; P.enCount = 0; P.prevN = 0; P.enAfterDouble = false; P.screen.push_back(typedChar(key, shift)); return; }
     bool wordEnd = key == KEY_SPACE || key == KEY_COMMA || key == KEY_DOT || key == KEY_SEMICOLON || key == KEY_RETURN ||
                    (shift && (key == KEY_SLASH || key == KEY_1 || key == KEY_QUOTE || key == KEY_0));
     int count = P.enCount; bool valid = P.enValid;
@@ -204,6 +207,8 @@ static int wrongWords(const U& a, const U& b) {
 int main(int argc, char** argv) {
     if (getenv("SIM_BIGRAM")) vAutoSwitchSetBigrams(getenv("SIM_BIGRAM"), getenv("SIM_BIGRAM_W") ? atof(getenv("SIM_BIGRAM_W")) : 1.0f,
                                                      getenv("SIM_BIGRAM_MIN") ? atoi(getenv("SIM_BIGRAM_MIN")) : 3);   // D30 experiment
+    if (getenv("SIM_TRIGRAM")) vAutoSwitchSetTrigrams(getenv("SIM_TRIGRAM"), getenv("SIM_TRIGRAM_W") ? atof(getenv("SIM_TRIGRAM_W")) : 2.0f,
+                                                       getenv("SIM_TRIGRAM_MIN") ? atoi(getenv("SIM_TRIGRAM_MIN")) : 3);   // D34 experiment
     H = (vKeyHookState*)vKeyInit();
     int show = 0; vLanguage = 1;
     for (int i = 2; i < argc; i++) {

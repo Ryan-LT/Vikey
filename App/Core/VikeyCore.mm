@@ -917,8 +917,10 @@ extern "C" {
             else if (!_enAfterShortcut) _enValid = false; // deleting into the previous word: we don't know its letters
             return false;
         }
-        if (IS_NUMBER_KEY(_keycode) && !shift) {
-            _enValid = false;
+        if (IS_NUMBER_KEY(_keycode) && !shift) {   // digits after a space start a word of their own ("5trawm" -> "5trăm", D33); glued to letters, a code
+            _enValid = _enCount == 0 && _enValid;
+            _enCount = 0;
+            _enPrevN = 0;
             _enAfterDouble = false;
             return false;
         }

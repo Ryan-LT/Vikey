@@ -23,7 +23,7 @@ If every listed change is intended, accept them with `Tools/autoswitch/check.sh 
 
 ---
 
-## 31. Vikey for Windows
+## 35. Vikey for Windows
 
 **Status:** Agreed 2026-10-29, built on branch `windows` (Phases 0–5 of `Windows/PLAN.md` done); ships after the code-signing certificate arrives.
 
@@ -41,6 +41,49 @@ If every listed change is intended, accept them with `Tools/autoswitch/check.sh 
 **Verified.** 14 live typing cases pass in a Windows 11 VM on ARM64 and on the x64 build under emulation; update from a local appcast installs and relaunches.
 
 ---
+## 34. Longer context for ties: word pairs beat D22; triples not worth it
+
+**Asked by Tony.** "longer context for ties (3-word phrases)".
+
+**Decided.**
+- Word triples (322k Vietnamese + 262k English, from the same 180M words) tried two words back before word pairs. No gain on the tuning set at any weight (0.124% either way): the remaining tie errors are not about missing context. Not shipped (would add ~5 MB); engine support stays, off unless loaded (`vAutoSwitchSetTrigrams`).
+- What the error list showed instead: D22 ("right after a clearly English word, a tie stays English") overruled word-pair evidence. Now a pair vote that is 10x sure of the Vietnamese reading wins: "test có work", "em sẽ optimize", "team bên US", "à la carte".
+- Tuning set: 0.124 -> 0.123% wrong, manual switches 0.159 -> 0.154. Locked test (once): 0.121 -> 0.118% wrong, manual 0.154 -> 0.147. Chat golden: manual switches 80 -> 66.
+
+**Status:** Built 2026-10-29, not in a release yet.
+
+## 33. Words after digits
+
+**Asked by Tony.** "Cool, do that" (numbers glued to Vietnamese words in chat: 5trăm, 100tỷ, 4tuổi, 1cái).
+
+**Decided.**
+- Digits after a space (or at the start) begin a new word: Telex and auto-switch work on the letters after them ("mua 1casi" -> "1cái", "5trawm" -> "5trăm") in both modes. Digits glued to letters ("abc1def", "md5sum") keep the whole thing a code, as before.
+- A lone w right after a digit stays w: units like 100W, 65w (was "100Ư").
+- Tuning set: 0.126 -> 0.124% wrong words (social 0.23 -> 0.22%). Smaller than the ~0.02-point estimate: most digit-glued errors were units (W) and codes, not Vietnamese words.
+
+**Status:** Built 2026-10-29, not in a release yet.
+
+## 32. Backspace undo, then typing on
+
+**Asked by Tony.** "bộ source vaay " -> "vây" -> Backspace -> "vaay" -> "j" + space should give "vậy".
+
+**Decided.**
+- After Backspace undoes a fix and returns to English, the restored keys are the current word again, so typing on checks the whole word ("vaayj" -> "vậy"). Finishing the same word unchanged keeps it as typed (no redo of the fix just undone). Mac, iOS driver; `driver/undo_test` in check.sh.
+- iOS driver undo now matches the Mac: Backspace takes the break key too, the cursor stays at the end of the restored word.
+- Not done (Tony: not useful): the reverse case, a Vietnamese word fixed to English, undone, then continued.
+
+**Status:** Built 2026-10-29, not in a release yet.
+
+## 31. Website in English; brand guideline
+
+**Asked by Tony.** English version of the website (Vietnamese stays the default, easy switch, flag); a brand guideline used everywhere.
+
+**Decided.**
+- English pages at /en/ (same file names in `site/pages_en/`), a VI/EN pill with the target language's flag that keeps the page, hreflang + sitemap. The release script needs both changelogs.
+- `design/BRAND.md`: name, wordmark ("Vi" ink + "key" indigo, bold), one accent color #4F46E5 (#8C87FF dark), system font, icon rules. `App/Model/Brand.swift` shared by Mac and iOS.
+- Footer without the OpenKey line (credited in the FAQ and Acknowledgements). Settings labels shortened to one line on iOS and Mac. Mac switch sound "sparkle" (rising into Vietnamese, falling into English).
+
+**Status:** Website live 2026-10-29; app parts not in a release yet.
 
 ## 30. Word pairs decide ties
 
