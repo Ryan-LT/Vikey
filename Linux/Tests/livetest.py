@@ -19,7 +19,8 @@ class App(Gtk.Application):
         self.entry = Gtk.Entry(); self.win.set_child(self.entry); self.win.present()
         GLib.timeout_add(800, self.run_cases)
     def run_cases(self):
-        xdo('search', '--sync', '--name', 'VikeyLiveTest', 'windowraise'); xdo('search', '--sync', '--name', 'VikeyLiveTest', 'windowfocus'); time.sleep(0.5)
+        xdo('search', '--sync', '--name', 'VikeyLiveTest', 'windowraise'); time.sleep(0.3)
+        xdo('search', '--sync', '--name', 'VikeyLiveTest', 'mousemove', '--window', '%1', '300', '60', 'click', '1'); time.sleep(0.5)   # a real click gives the window the focus under mutter
         xdo('type', '--delay', '30', 'ok'); time.sleep(0.4)
         while GLib.MainContext.default().iteration(False): pass
         print('smoke: entry has', repr(self.entry.get_text()), 'focus', self.entry.has_focus(), flush=True)
