@@ -27,7 +27,8 @@ typedef struct { IBusEngineClass parent; } VikeyEngineClass;
 static GType vikey_engine_get_type();
 #define VIKEY_TYPE_ENGINE (vikey_engine_get_type())
 static VikeyEngine* _active = nullptr;   // the engine with the focus
-static gint64 _lastOutputUs = 0;          // when we last let a key through or committed text (GTK resets the IM context right after inserting)
+static gint64 _lastOutputUs = 0;
+static bool _appPending = false;          // focus_in can come before X has moved the focus: re-check on the first key          // when we last let a key through or committed text (GTK resets the IM context right after inserting)
 static IBusBus* _bus = nullptr;
 
 static std::string utf8(const std::u32string& w) { std::string o; for (char32_t c : w) { if (c < 0x80) o += (char)c; else if (c < 0x800) { o += (char)(0xC0 | (c >> 6)); o += (char)(0x80 | (c & 0x3F)); } else if (c < 0x10000) { o += (char)(0xE0 | (c >> 12)); o += (char)(0x80 | ((c >> 6) & 0x3F)); o += (char)(0x80 | (c & 0x3F)); } else { o += (char)(0xF0 | (c >> 18)); o += (char)(0x80 | ((c >> 12) & 0x3F)); o += (char)(0x80 | ((c >> 6) & 0x3F)); o += (char)(0x80 | (c & 0x3F)); } } return o; }
@@ -103,6 +104,7 @@ static gboolean vikey_process_key_event(IBusEngine* engine, guint keyval, guint 
         return FALSE;
     }
     if (release) return FALSE;
+    if (_appPending) { _appPending = false; std::string app = frontAppX11(); if (!app.empty() && app != core::frontApp()) core::focusChanged(app); }
     MappedKey m = engineKey(keyval);
     if (m.key == KEY_EMPTY) { if (keyval < 0x100 || (keyval >= 0x1000000)) core::click(); return FALSE; }   // a key we don't model ends the word
     unsigned flags = flagsOf(state);
@@ -115,8 +117,8 @@ static void vikey_focus_in(IBusEngine* engine) {
     VikeyEngine* e = (VikeyEngine*)engine; _active = e;
     ibus_engine_register_properties(engine, e->props);
     std::string app = frontAppX11();
-    if (getenv("VIKEY_DEBUG")) fprintf(stderr, "vikey: focus_in app='%s' DISPLAY=%s XAUTHORITY=%s\n", app.c_str(), getenv("DISPLAY") ? getenv("DISPLAY") : "(null)", getenv("XAUTHORITY") ? getenv("XAUTHORITY") : "(null)");
     core::focusChanged(app);
+    _appPending = true;
     updateLangProp(e);
 }
 static void vikey_focus_out(IBusEngine* engine) { core::click(); if (_active == (VikeyEngine*)engine) _active = nullptr; }
