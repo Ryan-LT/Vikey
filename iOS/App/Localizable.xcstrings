@@ -721,22 +721,6 @@
         }
       }
     },
-    "Chạm vào ô bên dưới, giữ 🌐 để chọn Vikey, rồi gõ thử \"sorry em tooiws treex\".": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tap the box below, hold 🌐 to pick Vikey, then try typing \"sorry em tooiws treex\"."
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Chạm vào ô bên dưới, giữ 🌐 để chọn Vikey, rồi gõ thử \"sorry em tooiws treex\"."
-          }
-        }
-      }
-    },
     "Gõ ở đây": {
       "localizations": {
         "en": {
@@ -1101,6 +1085,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Hiện thông số"
+          }
+        }
+      }
+    },
+    "Chạm vào ô bên dưới, giữ 🌐 để chọn Vikey, rồi gõ thử \"tooi ddi meeting nhes\".": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap the box below, hold 🌐 to pick Vikey, then try typing \"tooi ddi meeting nhes\"."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chạm vào ô bên dưới, giữ 🌐 để chọn Vikey, rồi gõ thử \"tooi ddi meeting nhes\"."
           }
         }
       }
