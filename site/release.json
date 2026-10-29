@@ -1,1 +1,18 @@
-{"version": "1.0.14", "download_url": "/downloads/Vikey-1.0.14.dmg", "sha256": "c4b21a8eecd661ce339e9dece1fc07edd3c613a50bd40031cf7f37ad7b772fe7"}
+{
+"version": "1.0.14",
+"download_url": "/downloads/Vikey-1.0.14.dmg",
+"sha256": "c4b21a8eecd661ce339e9dece1fc07edd3c613a50bd40031cf7f37ad7b772fe7",
+"windows": {
+"x64": {
+"download_url": "/downloads/Vikey-1.0.14-x64-Setup.exe",
+"portable_url": "/downloads/Vikey-1.0.14-x64-portable.zip",
+"sha256": "760dbfdbe611335dad67069ba778872bbb39a70380f2ead1913f1709be501e99"
+},
+"arm64": {
+"download_url": "/downloads/Vikey-1.0.14-arm64-Setup.exe",
+"portable_url": "/downloads/Vikey-1.0.14-arm64-portable.zip",
+"sha256": "343b4273ff0ad97ad7c28c8892cb2c06c00fdd10063b500e116c9404a99148cc"
+},
+"version": "1.0.14"
+}
+}
