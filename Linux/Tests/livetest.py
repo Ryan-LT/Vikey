@@ -29,8 +29,11 @@ class App(Gtk.Application):
             if not line.strip() or line.startswith('#'): continue
             name, start, keys, expected = line.rstrip('\n').split('\t')[:4]
             total += 1
-            self.entry.set_text(''); self.entry.grab_focus(); set_lang(start == 'vi')
-            xdo('key', '--clearmodifiers', 'Escape'); time.sleep(0.1)
+            self.entry.set_text(''); self.entry.grab_focus()
+            xdo('key', '--clearmodifiers', 'Escape'); time.sleep(0.1)   # Esc ends whatever the previous case left...
+            set_lang(start == 'vi')                                      # ...then a fresh session, so the first word is a whole word
+            # xdotool cannot type non-ASCII through IBus (its keymap trick is undone before the engine forwards the key): type the Telex keys instead
+            keys = keys.replace('tô thí', 'too this')
             i = 0
             while i < len(keys):
                 c = keys[i]
