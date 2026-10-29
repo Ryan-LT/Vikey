@@ -73,16 +73,35 @@ final class EmojiPanel: NSPanel {
         hidesOnDeactivate = false
         isMovableByWindowBackground = true
         backgroundColor = .clear
+        isOpaque = false   // else the square window shows white corners outside the rounded panel (Tony)
         hasShadow = true
         let fx = NSVisualEffectView()
         fx.material = .popover; fx.state = .active; fx.blendingMode = .behindWindow
-        fx.wantsLayer = true; fx.layer?.cornerRadius = 14; fx.layer?.masksToBounds = true
+        fx.maskImage = Self.roundedMask(radius: 14)   // a mask, not a layer radius: the window shadow follows it
         let host = NSHostingView(rootView: EmojiGridView(model: model))
         host.translatesAutoresizingMaskIntoConstraints = false
         fx.addSubview(host)
         NSLayoutConstraint.activate([host.leadingAnchor.constraint(equalTo: fx.leadingAnchor), host.trailingAnchor.constraint(equalTo: fx.trailingAnchor),
                                      host.topAnchor.constraint(equalTo: fx.topAnchor), host.bottomAnchor.constraint(equalTo: fx.bottomAnchor)])
         contentView = fx
+    }
+
+    /// A stretchable rounded-rect mask for the blur view.
+    private static func roundedMask(radius r: CGFloat) -> NSImage {
+        let size = NSSize(width: r * 2 + 1, height: r * 2 + 1)
+        let img = NSImage(size: size, flipped: false) { rect in
+            NSColor.black.setFill()
+            NSBezierPath(roundedRect: rect, xRadius: r, yRadius: r).fill()
+            return true
+        }
+        img.capInsets = NSEdgeInsets(top: r, left: r, bottom: r, right: r)
+        img.resizingMode = .stretch
+        return img
+    }
+
+    override func makeKeyAndOrderFront(_ sender: Any?) {
+        super.makeKeyAndOrderFront(sender)
+        invalidateShadow()   // shadow from the rounded shape, not the square frame
     }
 
     override var canBecomeKey: Bool { true }
