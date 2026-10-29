@@ -106,7 +106,7 @@ def platform_cards(lang, dl):
                 arms = [f'<a href="{d[k]}" download>{n}</a>' for k, n in (("deb_arm", ".deb"), ("rpm_arm", ".rpm")) if d.get(k)]
                 if arms: btn += '<span class="alt">ARM64: ' + " · ".join(arms) + "</span>"
             if p == "windows" and d.get("arm"): btn += f'<a class="alt" href="{d["arm"]}" download>{t["arm"]}</a>'
-            if p == "android": btn = f'<div class="two"><a class="btn dl" href="{d["url"]}" download>APK</a><span class="btn ghost soon" title="{t["soon"]}">{t["play"]}<small>{t["soon"]}</small></span></div>'
+            if p == "android": btn = f'<div class="two"><a class="btn dl" href="{d["url"]}" download>APK</a><a class="btn ghost soon" href="#android" data-notify="play" title="{t["notify"]}">{t["play"]}<small>{t["soon"]}</small></a></div>'
             badge = ""
             if p not in ("windows", "linux") or not (d.get("arm") or d.get("deb_arm")): btn += '<span class="alt none" aria-hidden="true">.</span>'
         else:

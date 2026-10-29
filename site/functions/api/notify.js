@@ -1,5 +1,5 @@
 // POST /api/notify {email, platform, lang} -> one row in D1 (vikey-notify.notify), for "tell me when <platform> is out".
-const PLATFORMS = ["macos", "windows", "linux", "ios", "android"];
+const PLATFORMS = ["macos", "windows", "linux", "ios", "android", "play"];   // play = the Google Play listing
 const json = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
 
 export async function onRequestPost({ request, env }) {

@@ -2,7 +2,7 @@
 // window.VK_DL (written by build.py from release.json): {macos:{url}, windows:{url, arm}, linux, ios, android}; null = pending.
 (() => {
   const DL = window.VK_DL || {}, en = document.documentElement.lang === "en", pre = en ? "/en" : "";
-  const NAME = { macos: "macOS", windows: "Windows", linux: "Linux", ios: "iOS", android: "Android" };
+  const NAME = { macos: "macOS", windows: "Windows", linux: "Linux", ios: "iOS", android: "Android", play: "Google Play" };
   const S = en
     ? { dl: os => `Download for ${os}`, store: "Download on the App Store", short: "Download", soon: "Soon",
         h: os => `Vikey for ${os} is coming`, p: os => `Leave your email and we'll let you know when Vikey for ${os} is ready.`,
@@ -53,7 +53,7 @@
     }
     dlg.innerHTML = `<form class="sendbox-in" method="dialog" novalidate>
 <button class="x" type="button" aria-label="${S.close}">×</button>
-<div class="nicon">${icon(p)}</div><h3>${S.h(NAME[p])}</h3><p class="muted">${S.p(NAME[p])}</p>
+<div class="nicon">${icon(p === "play" ? "android" : p)}</div><h3>${S.h(NAME[p])}</h3><p class="muted">${S.p(NAME[p])}</p>
 <input type="email" name="email" required autocomplete="email" placeholder="${S.ph}" aria-label="Email">
 <input class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
 <div class="ts"></div><p class="err" role="alert"></p><button class="btn big" type="submit">${S.go}</button></form>`;
