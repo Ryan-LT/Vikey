@@ -4,6 +4,7 @@
 #include <string>
 #include "Core.h"
 #include "Prefs.h"
+#include "Site.h"
 #include "resource.h"
 
 #pragma comment(lib, "user32.lib")
@@ -12,8 +13,8 @@
 #pragma comment(lib, "advapi32.lib")
 
 static const UINT WM_TRAY = WM_APP + 1;
-static const UINT TIMER_FLUSH = 1;
-enum { ID_VIET = 100, ID_ENG, ID_AUTOSWITCH, ID_SMART, ID_SPELL, ID_RESTORE, ID_MODERN, ID_LOGIN, ID_LOG, ID_ABOUT, ID_QUIT };
+static const UINT TIMER_FLUSH = 1, TIMER_SITE = 2;
+enum { ID_VIET = 100, ID_ENG, ID_AUTOSWITCH, ID_SMART, ID_SITE, ID_SPELL, ID_RESTORE, ID_MODERN, ID_LOGIN, ID_LOG, ID_ABOUT, ID_QUIT };
 
 static HWND _hwnd; static NOTIFYICONDATAW _nid = {};
 static HICON _iconV, _iconE;
@@ -60,6 +61,7 @@ static void showMenu() {
     AppendMenuW(m, MF_SEPARATOR, 0, nullptr);
     AppendMenuW(m, MF_STRING | (prefs::getInt(L"AutoSwitchByTyping", 1) ? MF_CHECKED : 0), ID_AUTOSWITCH, L"Tự chuyển Anh/Việt khi gõ");
     AppendMenuW(m, MF_STRING | (prefs::getInt(L"UseSmartSwitchKey", 1) ? MF_CHECKED : 0), ID_SMART, L"Nhớ ngôn ngữ theo ứng dụng");
+    AppendMenuW(m, MF_STRING | (prefs::getInt(L"SmartSwitchPerSite", 1) ? MF_CHECKED : 0), ID_SITE, L"Nhớ ngôn ngữ theo trang web");
     AppendMenuW(m, MF_STRING | (prefs::getInt(L"Spelling", 1) ? MF_CHECKED : 0), ID_SPELL, L"Kiểm tra chính tả");
     AppendMenuW(m, MF_STRING | (prefs::getInt(L"RestoreIfInvalidWord", 1) ? MF_CHECKED : 0), ID_RESTORE, L"Giữ nguyên phím khi từ sai");
     AppendMenuW(m, MF_STRING | (prefs::getInt(L"ModernOrthography", 1) ? MF_CHECKED : 0), ID_MODERN, L"Bỏ dấu kiểu mới (oà, uý)");
@@ -86,6 +88,7 @@ static LRESULT CALLBACK wndProc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
         case ID_ENG: core::setLanguageByUser(0); break;
         case ID_AUTOSWITCH: toggle(L"AutoSwitchByTyping", 1); break;
         case ID_SMART: toggle(L"UseSmartSwitchKey", 1); break;
+        case ID_SITE: toggle(L"SmartSwitchPerSite", 1); break;
         case ID_SPELL: toggle(L"Spelling", 1); break;
         case ID_RESTORE: toggle(L"RestoreIfInvalidWord", 1); break;
         case ID_MODERN: toggle(L"ModernOrthography", 1); break;
@@ -95,7 +98,7 @@ static LRESULT CALLBACK wndProc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
         case ID_QUIT: DestroyWindow(h); break;
         }
         return 0;
-    case WM_TIMER: if (wp == TIMER_FLUSH) core::flushTypingLog(); return 0;
+    case WM_TIMER: if (wp == TIMER_FLUSH) core::flushTypingLog(); else if (wp == TIMER_SITE) vikey::site::poll(); return 0;
     case WM_SETTINGCHANGE: { bool dark = darkTaskbar(); DestroyIcon(_iconV); DestroyIcon(_iconE); _iconV = makeIcon(L'V', dark); _iconE = makeIcon(L'E', dark); updateTray(core::language()); return 0; }
     case WM_DESTROY: core::stop(); Shell_NotifyIconW(NIM_DELETE, &_nid); PostQuitMessage(0); return 0;
     }
@@ -118,6 +121,7 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE, PWSTR, int) {
     if (!vikey::core::start()) { MessageBoxW(nullptr, L"Không cài được bộ bắt phím (SetWindowsHookEx).", L"Vikey", MB_ICONERROR); return 1; }
     updateTray(vikey::core::language());
     SetTimer(_hwnd, TIMER_FLUSH, 10000, nullptr);
+    SetTimer(_hwnd, TIMER_SITE, 1000, nullptr);   // per-website memory: the active tab can change without any event we see
     MSG msg; while (GetMessageW(&msg, nullptr, 0, 0)) { TranslateMessage(&msg); DispatchMessageW(&msg); }
     ReleaseMutex(single); CloseHandle(single);
     return 0;
