@@ -12,6 +12,19 @@
 #import "Engine.h"
 #import "VikeyCore.h"
 
+/// The switch sound (Tony picked "sparkle", 2026-10-29): two tiny notes, rising into Vietnamese, falling into English.
+static void PlaySwitchSound(int language) {
+    static NSSound *vi = nil, *en = nil;
+    if (!vi) {
+        vi = [[NSSound alloc] initWithContentsOfURL:[[NSBundle mainBundle] URLForResource:@"SwitchToVietnamese" withExtension:@"caf"] byReference:YES];
+        en = [[NSSound alloc] initWithContentsOfURL:[[NSBundle mainBundle] URLForResource:@"SwitchToEnglish" withExtension:@"caf"] byReference:YES];
+    }
+    NSSound *s = language == 1 ? vi : en;
+    if (!s) { NSBeep(); return; }
+    [s stop];
+    [s play];
+}
+
 // Marks keystrokes Vikey posts itself, so the callback can skip them cheaply.
 #define VIKEY_EVENT_TAG 0x0F341991
 #define VIKEY_BUNDLE [[NSBundle mainBundle] bundleIdentifier]
@@ -520,7 +533,7 @@ extern "C" {
             vLanguage = 0;
         TLManual(@"hotkey", vLanguage);
         if (HAS_BEEP(vSwitchKeyStatus))
-            NSBeep();
+            PlaySwitchSound(vLanguage);
         VKLanguageChanged(YES);
         startNewSession();
     }

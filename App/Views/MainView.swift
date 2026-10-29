@@ -28,7 +28,7 @@ struct MainView: View {
                     Toggle(isOn: Binding(
                         get: { Hotkey(raw: hotkeyRaw).beep },
                         set: { var h = Hotkey(raw: hotkeyRaw); h.beep = $0; hotkeyRaw = h.raw; Preferences.apply() })) {
-                        Tip("Kêu bíp khi chuyển", "Phát tiếng bíp mỗi lần bạn bấm phím chuyển Anh/Việt.")
+                        Tip("Âm báo khi chuyển", "Phát một âm ngắn mỗi lần bạn bấm phím chuyển Anh/Việt: lên giọng khi sang tiếng Việt, xuống giọng khi sang tiếng Anh.")
                     }
                 }
                 Section("Tự chuyển") {
