@@ -207,6 +207,8 @@ static int wrongWords(const U& a, const U& b) {
 int main(int argc, char** argv) {
     if (getenv("SIM_BIGRAM")) vAutoSwitchSetBigrams(getenv("SIM_BIGRAM"), getenv("SIM_BIGRAM_W") ? atof(getenv("SIM_BIGRAM_W")) : 1.0f,
                                                      getenv("SIM_BIGRAM_MIN") ? atoi(getenv("SIM_BIGRAM_MIN")) : 3);   // D30 experiment
+    if (getenv("SIM_TRIGRAM")) vAutoSwitchSetTrigrams(getenv("SIM_TRIGRAM"), getenv("SIM_TRIGRAM_W") ? atof(getenv("SIM_TRIGRAM_W")) : 2.0f,
+                                                       getenv("SIM_TRIGRAM_MIN") ? atoi(getenv("SIM_TRIGRAM_MIN")) : 3);   // D34 experiment
     H = (vKeyHookState*)vKeyInit();
     int show = 0; vLanguage = 1;
     for (int i = 2; i < argc; i++) {

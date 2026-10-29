@@ -1355,6 +1355,37 @@ static bool asSurface(const char* letters, const bool& vietnamese, std::string& 
     if (vAutoSwitchWordScore(1, letters, t, &n) <= AS_MISSING || n <= 0) return false;
     out = asUtf8(t, n); return true;
 }
+// Triples (D34, experiment): the two words before. Loaded at run time for now; off when not loaded.
+static std::unordered_map<std::string, int>* _asTrigrams = nullptr;
+static float _asTrigramWeight = 0;
+static int _asTrigramMin = 3;
+void vAutoSwitchSetTrigrams(const char* path, const float& weight, const int& minCount) {
+    _asTrigramWeight = weight; _asTrigramMin = minCount;
+    if (!path) return;
+    FILE* f = fopen(path, "r"); if (!f) return;
+    if (!_asTrigrams) _asTrigrams = new std::unordered_map<std::string, int>();
+    char line[384];
+    while (fgets(line, sizeof line, f)) {
+        char* t1 = strchr(line, '\t'); if (!t1) continue; char* t2 = strchr(t1 + 1, '\t'); if (!t2) continue;
+        char* t3 = strchr(t2 + 1, '\t'); if (!t3) continue;
+        *t3 = 0; (*_asTrigrams)[std::string(line)] += atoi(t3 + 1);
+    }
+    fclose(f);
+}
+static bool asSurface(const char* letters, const bool& vietnamese, std::string& out);
+/** Like asBigramVote, with the two words before ("cho con" + bú/bus). 0 when the triple is too rare. */
+static int asTrigramVote(const char* p2Letters, const bool& p2Vietnamese, const char* p1Letters, const bool& p1Vietnamese, const char* letters) {
+    if (!_asTrigrams || _asTrigramWeight <= 0) return 0;
+    std::string a, b, vn;
+    if (!asSurface(p2Letters, p2Vietnamese, a) || !asSurface(p1Letters, p1Vietnamese, b) || !asSurface(letters, true, vn)) return 0;
+    auto get = [&](const std::string& w) { auto it = _asTrigrams->find(a + "\t" + b + "\t" + w); return it == _asTrigrams->end() ? 0 : it->second; };
+    int cv = get(vn), ce = get(letters);
+    if (cv + ce < _asTrigramMin) return 0;
+    double v = 10 * log10((cv + 0.5) / (ce + 0.5));
+    if (v > 30) v = 30; if (v < -30) v = -30;
+    return (int)lround(v * _asTrigramWeight);
+}
+
 /** > 0: the Vietnamese reading follows prev more often, < 0: the English one (10 = 10x); 0: no data. */
 static int asBigramVote(const char* prevLetters, const bool& prevVietnamese, const char* letters) {
     if (_asBigramWeight <= 0) return 0;
@@ -1536,10 +1567,13 @@ static bool asShouldRestoreToEnglishCore() {
 #define AS_TIE_PREV 5       //a tie leaning English (3x) goes English right after a clearly English word (D22)
 #endif
     //word pairs (D30): the reading that follows the previous word more often in real text
-    if (_asBigramWeight > 0 && en != AS_MISSING && vn != AS_MISSING && _asPrevCount >= 1) {
-        char praw[AS_KEY_LEN];
+    if ((_asBigramWeight > 0 || _asTrigrams) && en != AS_MISSING && vn != AS_MISSING && _asPrevCount >= 1) {
+        char praw[AS_KEY_LEN], p2raw[AS_KEY_LEN];
         if (asRawWord(_asPrev[0].raw, _asPrev[0].rawCount, praw)) {
-            int vote = asBigramVote(praw, !_asPrev[0].same, raw);
+            int vote = 0;
+            if (_asPrevCount >= 2 && asRawWord(_asPrev[1].raw, _asPrev[1].rawCount, p2raw))
+                vote = asTrigramVote(p2raw, !_asPrev[1].same, praw, !_asPrev[0].same, raw);
+            if (vote == 0) vote = asBigramVote(praw, !_asPrev[0].same, raw);
             if (vote != 0) return en - vn - vote >= AS_PREFER && (vn < AS_VN_FLOOR || vote <= -AS_PREFER);
         }
     }
@@ -1734,9 +1768,14 @@ bool vAutoSwitchCheckEnglishWord(const Uint32* keys, const int& count,
     int vn = asReplay(keys, count, result, resultCount);
     //word pairs (D30): "cho con bus" -> bú, "the bus" stays
     int pairVote = 0;
-    if (_asBigramWeight > 0 && en != AS_MISSING && vn != AS_MISSING && previousN >= 1 && previousCounts[0] >= 1) {
+    if ((_asBigramWeight > 0 || _asTrigrams) && en != AS_MISSING && vn != AS_MISSING && previousN >= 1 && previousCounts[0] >= 1) {
         char praw[AS_KEY_LEN];
-        if (asRawWord(previous[0], previousCounts[0], praw)) pairVote = asBigramVote(praw, false, raw);
+        char p2raw[AS_KEY_LEN];
+        if (asRawWord(previous[0], previousCounts[0], praw)) {
+            if (previousN >= 2 && previousCounts[1] >= 1 && asRawWord(previous[1], previousCounts[1], p2raw))
+                pairVote = asTrigramVote(p2raw, false, praw, false, raw);
+            if (pairVote == 0) pairVote = asBigramVote(praw, false, raw);
+        }
     }
     if (vn == AS_MISSING || !(en == AS_MISSING || (en < AS_EN_FLOOR && vn - en + pairVote >= AS_PREFER))) return false;
 #ifndef AS_CAPS_VN_FLOOR
