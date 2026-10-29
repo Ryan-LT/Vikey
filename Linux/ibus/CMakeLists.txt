@@ -20,3 +20,5 @@ endif()
 configure_file(vikey.xml.in ${CMAKE_CURRENT_BINARY_DIR}/vikey.xml @ONLY)
 install(TARGETS ibus-engine-vikey DESTINATION ${CMAKE_INSTALL_LIBEXECDIR})
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/vikey.xml DESTINATION ${CMAKE_INSTALL_DATADIR}/ibus/component)
+
+add_subdirectory(../settings ${CMAKE_CURRENT_BINARY_DIR}/settings)
