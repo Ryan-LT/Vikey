@@ -25,7 +25,7 @@ final class KeyHaptics {
             if !running { try engine?.start(); running = true }
             if player == nil {
                 let tick = CHHapticEvent(eventType: .hapticTransient, parameters: [
-                    CHHapticEventParameter(parameterID: .hapticIntensity, value: 0.6),
+                    CHHapticEventParameter(parameterID: .hapticIntensity, value: 0.4),
                     CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.55)], relativeTime: 0)
                 player = try engine?.makePlayer(with: CHHapticPattern(events: [tick], parameters: []))
             }
