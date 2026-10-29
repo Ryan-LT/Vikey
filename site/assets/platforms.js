@@ -23,6 +23,7 @@
   if (os) document.querySelectorAll("[data-cta]").forEach(a => {
     const d = DL[os], long = a.dataset.cta === "long";
     a.innerHTML = icon(os) + (long ? (os === "ios" && d ? S.store : S.dl(NAME[os])) : S.short) + (d ? "" : `<span class="soon">${S.soon}</span>`);
+    if (!long) { a.href = `${pre}/download#${os}`; if (!d) a.dataset.notify = os; return; }   // the header button opens the download page (Tony 2026-10-29)
     if (d && os === "linux") a.href = `${pre}/download#linux`;   // .deb or .rpm: let them pick on the card
     else if (d) { a.href = d.url; if (d.url.startsWith("/downloads/")) a.setAttribute("download", ""); }
     else { a.href = `${pre}/download#${os}`; a.dataset.notify = os; }
