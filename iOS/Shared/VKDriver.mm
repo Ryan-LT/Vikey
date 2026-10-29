@@ -141,3 +141,4 @@ int VKCompletions(const char *prefix, int vietnamese, VKCandidate *out, int max)
 
 bool VKIsVietnameseSpelling(const char *letters) { return vAutoSwitchIsVietnameseSpelling(letters); }
 bool VKIsWord(int vietnamese, const char *letters) { return vAutoSwitchWordScore(vietnamese, letters, nullptr, nullptr) > -1000; }
+int VKWordScore(int vietnamese, const char *letters) { return vAutoSwitchWordScore(vietnamese, letters, nullptr, nullptr); }

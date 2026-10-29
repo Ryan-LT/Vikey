@@ -172,7 +172,7 @@ Phòng nào lớn nhất? Mình cần họp 20 người	Phòng nào lớn nhất
 Em vừa submit leave request cho tháng 12, xin vào duyệt	Em vừa submit leave request cho tháng 12, xin vào duyệt
 Meeting schedule conflict, can we move to another room?	Meeting schedule conflict, can we move to another room?
 Tháng này phép năm em còn bao nhiêu ngày?	Tháng này phép năm em còn bao nhiêu ngày?
-HR haven't processed my request yet, it's bên 5 days already	HR haven't processed my request yet, it's been 5 days already
+HR haven't processed my request yet, it's been 5 days already	HR haven't processed my request yet, it's been 5 days already
 Phòng họp 3 có wifi không? Internet ở đó yếu lắm	Phòng họp 3 có wifi không? Internet ở đó yếu lắm
 Xin luôn vài ngày để thăm nhà, em sẽ remote work	Xin luôn vài ngày để thăm nhà, em sẽ remote work
 Booking meeting room lúc nào cũng conflict, khó quá	Booking meeting room lúc nào cũng conflict, khó quá
@@ -587,7 +587,7 @@ vậy API endpoint nào bị issue thế anh	vậy API endpoint nào bị issue 
 cái authentication flow, em implement xong rồi nhưng chưa test kỹ	cái authentication flow, em implement xong rồi nhưng chưa test kỹ
 ok, anh có thể review code em trước khi merge không	ok, anh có thể review code em trước khi merge không
 em sẽ refactor lại component này để performance tốt hơn	em sẽ refactor lại component này để performance tốt hơn
-Can you send me the figma link again? I lót it	Can you send me the figma link again? I lost it
+Can you send me the figma link again? I lost it	Can you send me the figma link again? I lost it
 ơ cái link mà anh share lúc nãy bị hỏng hình như	ơ cái link mà anh share lúc nãy bị hỏng hình như
 em đã fix xong bug login rồi	em đã fix xong bug login rồi
 test lại xem được không, nếu có issue gì tthif ping em	test lại xem được không, nếu có issue gì tthif ping em
@@ -1422,7 +1422,7 @@ Bạn ơi, tôi không thể login được ứng dụng, nó báo lỗi gì đ�
 Chờ tôi check cái API logs một chút nhé	Chờ tôi check cái API logs một chút nhé
 có thể bạn chưa verify email đâu, hãy check inbox xem	có thể bạn chưa verify email đâu, hãy check inbox xem
 tôi đã verify rồi mà, email xác nhận đã nhậm từ hôm qua	tôi đã verify rồi mà, email xác nhận đã nhậm từ hôm qua
-I sê, let me reset your account access for you. Can you wait a few minutes?	I see, let me reset your account access for you. Can you wait a few minutes?
+I see, let me reset your account access for you. Can you wait a few minutes?	I see, let me reset your account access for you. Can you wait a few minutes?
 được, cảm ơn bbanj nhiều lắm	được, cảm ơn bbanj nhiều lắm
 Just restarted the service, try login again now	Just restarted the service, try login again now
 Login được rồi! Cảm ơn nha	Login được rồi! Cảm ơn nha

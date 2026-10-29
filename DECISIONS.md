@@ -23,6 +23,18 @@ If every listed change is intended, accept them with `Tools/autoswitch/check.sh 
 
 ---
 
+## 30. Word pairs decide ties
+
+**Asked by Tony.** "yes, try 4" (context beyond one word, for true ties like bus/bú, been/bên, mix/mĩ).
+
+**Decided.**
+- For a word that is a word both ways (734 ties), the engine looks up how often each reading follows the previous word in real text: Vietnamese web + forums with the English inside them (93M words), English web + Reddit (87M), our crawl (train part). Test-set sites and text excluded. Vote = 10·log10(Vietnamese pair count / English pair count), × 2, added to the frequency gap; common Vietnamese words still only switch on a strong English vote.
+- Table: pairs whose second word is a tie form, seen 10+ times: 101k pairs, ~1.5 MB of data (`Engine/BigramData.h`, `Tools/autoswitch/build_bigrams.py`). Binary search, only for ties: per-key speed unchanged within the budget.
+- Tuning set: wrong words 0.148 → 0.127%, manual switches 0.189 → 0.160 per 100. Locked test (looked at once): 0.139 → 0.119% wrong (99.86 → 99.88%), manual 0.178 → 0.151; mixed-typing groups 99.76 → 99.79%. Every group equal or better. "cho con bú", "xe bus", "ở bên", "it's been", "I lost it", "sang mĩ", "cách mix đồ".
+- iOS contraction fixes: a rare Vietnamese reading ("thát") no longer blocks "that's"; only common Vietnamese words (score 10+, "im") do.
+
+**Status:** Built 2026-10-29, not in a release yet.
+
 ## 29. Tuning set vs locked test set, mixed across topics
 
 **Asked by Tony.** Tune against one set and keep another locked; "make sure we have a good mix in each, i don't want our engine to be tuned toward a specific topic/use-case".

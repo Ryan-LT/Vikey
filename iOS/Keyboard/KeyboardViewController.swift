@@ -433,12 +433,12 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
             && typed.withCString { t in candidates.withUnsafeBufferPointer { VKShouldCorrect(t, $0.baseAddress!, n) } }
         pendingFix = willCorrect ? candidates.first.map { (cased(Self.text(of: $0)), $0.vietnamese == 1) } : nil
         // "dont" → "don't" from the keys typed (in Vietnamese mode "thats" shows as "thát" until the end of
-        // the word); a real Vietnamese word in Vietnamese mode stays ("im")
+        // the word); a common Vietnamese word in Vietnamese mode stays ("im")
         let shownNow = shownWord
         let typedCased = wordCaps == wordPrefix.count && wordPrefix.count > 1 ? typed.uppercased()
             : shownNow.first?.isUppercase == true ? typed.prefix(1).uppercased() + typed.dropFirst() : typed
         if autoCorrectOn, keepWord != typed, let c = Contractions.fix(typedCased),
-           driver.language == 0 || !typed.withCString({ VKIsWord(1, $0) }) {
+           driver.language == 0 || typed.withCString({ VKWordScore(1, $0) }) < 10 {   // a common Vietnamese word stays ("im"); a rare one ("thát") doesn't block "that's"
             pendingFix = (c, false); willCorrect = true
         }
         var comp = [VKCandidate](repeating: VKCandidate(), count: 6)

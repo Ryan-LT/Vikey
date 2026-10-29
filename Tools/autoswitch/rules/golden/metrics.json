@@ -1,10 +1,10 @@
 {
  "chat": {
-  "manual": 85,
+  "manual": 80,
   "wrong": 1
  },
  "chat_typos": {
-  "manual": 98,
+  "manual": 93,
   "wrong": 8
  }
 }

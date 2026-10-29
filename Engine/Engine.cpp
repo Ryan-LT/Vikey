@@ -12,6 +12,7 @@
 #include <cmath>
 #include <list>
 #include "AutoSwitchData.h"
+#include "BigramData.h"
 #include <string>
 #include <unordered_map>
 #include <cstdio>
@@ -1311,9 +1312,21 @@ int vAutoSwitchLastSide = -1;
 // ---- Word pairs for ties (D30, experiment) ---------------------------------------------------------------
 // For a word that is a word both ways (bus/bú, been/bên), how often each reading follows the previous word
 // in real text ("cho con bú" vs "the bus"). Loaded at run time for now (tests); off when not loaded.
-static std::unordered_map<std::string, int>* _asBigrams = nullptr;
-static float _asBigramWeight = 0;
+#ifndef AS_BIGRAM_W
+#define AS_BIGRAM_W 2.0f   //tuned on the val split (D29): 1 -> 0.128%, 2 -> 0.124%, 3 -> 0.124% wrong words
+#endif
+static std::unordered_map<std::string, int>* _asBigrams = nullptr;   //loaded at run time (tests) instead of the built-in table
+static float _asBigramWeight = AS_BIGRAM_W;
 static int _asBigramMin = 3;
+static int asBuiltInPair(const std::string& key) {
+    int lo = 0, hi = kBigramCount - 1;
+    while (lo <= hi) {
+        int mid = (lo + hi) / 2, c = strcmp(kBigramKeys + kBigramOffsets[mid], key.c_str());
+        if (c == 0) return (int)lround(exp2(kBigramLogCounts[mid] / 8.0));
+        if (c < 0) lo = mid + 1; else hi = mid - 1;
+    }
+    return 0;
+}
 void vAutoSwitchSetBigrams(const char* path, const float& weight, const int& minCount) {
     _asBigramWeight = weight; _asBigramMin = minCount;
     if (!path) return;
@@ -1342,10 +1355,13 @@ static bool asSurface(const char* letters, const bool& vietnamese, std::string& 
 }
 /** > 0: the Vietnamese reading follows prev more often, < 0: the English one (10 = 10x); 0: no data. */
 static int asBigramVote(const char* prevLetters, const bool& prevVietnamese, const char* letters) {
-    if (!_asBigrams || _asBigramWeight <= 0) return 0;
+    if (_asBigramWeight <= 0) return 0;
     std::string p, vn;
     if (!asSurface(prevLetters, prevVietnamese, p) || !asSurface(letters, true, vn)) return 0;
-    auto get = [&](const std::string& w) { auto it = _asBigrams->find(p + "\t" + w); return it == _asBigrams->end() ? 0 : it->second; };
+    auto get = [&](const std::string& w) {
+        std::string key = p + "\t" + w;
+        if (!_asBigrams) return asBuiltInPair(key);
+        auto it = _asBigrams->find(key); return it == _asBigrams->end() ? 0 : it->second; };
     int cv = get(vn), ce = get(letters);
     if (cv + ce < _asBigramMin) return 0;
     double v = 10 * log10((cv + 0.5) / (ce + 0.5));
@@ -1518,7 +1534,7 @@ static bool asShouldRestoreToEnglishCore() {
 #define AS_TIE_PREV 5       //a tie leaning English (3x) goes English right after a clearly English word (D22)
 #endif
     //word pairs (D30): the reading that follows the previous word more often in real text
-    if (_asBigrams && en != AS_MISSING && vn != AS_MISSING && _asPrevCount >= 1) {
+    if (_asBigramWeight > 0 && en != AS_MISSING && vn != AS_MISSING && _asPrevCount >= 1) {
         char praw[AS_KEY_LEN];
         if (asRawWord(_asPrev[0].raw, _asPrev[0].rawCount, praw)) {
             int vote = asBigramVote(praw, !_asPrev[0].same, raw);
@@ -1716,7 +1732,7 @@ bool vAutoSwitchCheckEnglishWord(const Uint32* keys, const int& count,
     int vn = asReplay(keys, count, result, resultCount);
     //word pairs (D30): "cho con bus" -> bú, "the bus" stays
     int pairVote = 0;
-    if (_asBigrams && en != AS_MISSING && vn != AS_MISSING && previousN >= 1 && previousCounts[0] >= 1) {
+    if (_asBigramWeight > 0 && en != AS_MISSING && vn != AS_MISSING && previousN >= 1 && previousCounts[0] >= 1) {
         char praw[AS_KEY_LEN];
         if (asRawWord(previous[0], previousCounts[0], praw)) pairVote = asBigramVote(praw, false, raw);
     }

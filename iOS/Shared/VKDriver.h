@@ -49,5 +49,7 @@ FOUNDATION_EXTERN int VKCompletions(const char *prefix, int vietnamese, VKCandid
 FOUNDATION_EXTERN bool VKIsVietnameseSpelling(const char *letters);
 /// Whether the keys make a word in the dictionary of that language ("im" is Vietnamese, "thats" → "thát" is not).
 FOUNDATION_EXTERN bool VKIsWord(int vietnamese, const char *letters);
+/// Frequency score of the keys as a word (10 = 10 per million, -1000 = not a word).
+FOUNDATION_EXTERN int VKWordScore(int vietnamese, const char *letters);
 
 NS_ASSUME_NONNULL_END
