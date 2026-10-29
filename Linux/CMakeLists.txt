@@ -8,6 +8,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()
+# Install to /usr like the packages do: the IBus component file bakes the libexec path in, so a /usr/local
+# default would make the .deb/.rpm point at a binary that is not there.
+if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+  set(CMAKE_INSTALL_PREFIX "/usr" CACHE PATH "install prefix" FORCE)
+endif()
 set(ROOT ${CMAKE_CURRENT_SOURCE_DIR}/..)
 set(ENGINE ${ROOT}/Engine)
 set(AS ${ROOT}/Tools/autoswitch)
