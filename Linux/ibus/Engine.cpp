@@ -25,6 +25,7 @@ typedef struct { IBusEngineClass parent; } VikeyEngineClass;
 static GType vikey_engine_get_type();
 #define VIKEY_TYPE_ENGINE (vikey_engine_get_type())
 static VikeyEngine* _active = nullptr;   // the engine with the focus
+static gint64 _lastOutputUs = 0;          // when we last let a key through or committed text (GTK resets the IM context right after inserting)
 static IBusBus* _bus = nullptr;
 
 static std::string utf8(const std::u32string& w) { std::string o; for (char32_t c : w) { if (c < 0x80) o += (char)c; else if (c < 0x800) { o += (char)(0xC0 | (c >> 6)); o += (char)(0x80 | (c & 0x3F)); } else if (c < 0x10000) { o += (char)(0xE0 | (c >> 12)); o += (char)(0x80 | ((c >> 6) & 0x3F)); o += (char)(0x80 | (c & 0x3F)); } else { o += (char)(0xF0 | (c >> 18)); o += (char)(0x80 | ((c >> 12) & 0x3F)); o += (char)(0x80 | ((c >> 6) & 0x3F)); o += (char)(0x80 | (c & 0x3F)); } } return o; }
@@ -97,6 +98,7 @@ static gboolean vikey_process_key_event(IBusEngine* engine, guint keyval, guint 
     unsigned flags = flagsOf(state);
     bool consumed = core::keyDown(m.key, m.shift || (flags & core::F_SHIFT), flags);
     updateLangProp(e);
+    _lastOutputUs = g_get_monotonic_time();
     return consumed ? TRUE : FALSE;
 }
 static void vikey_focus_in(IBusEngine* engine) {
@@ -106,7 +108,7 @@ static void vikey_focus_in(IBusEngine* engine) {
     updateLangProp(e);
 }
 static void vikey_focus_out(IBusEngine* engine) { core::click(); if (_active == (VikeyEngine*)engine) _active = nullptr; }
-static void vikey_reset(IBusEngine* engine) { core::click(); }
+static void vikey_reset(IBusEngine* engine) { if (g_get_monotonic_time() - _lastOutputUs < 300000) return; core::click(); }   // a reset caused by our own key/commit is not a click
 static void vikey_enable(IBusEngine* engine) { VikeyEngine* e = (VikeyEngine*)engine; e->enabled = TRUE; ibus_engine_get_surrounding_text(engine, nullptr, nullptr, nullptr); }
 static void vikey_disable(IBusEngine* engine) { ((VikeyEngine*)engine)->enabled = FALSE; core::flushTypingLog(); }
 static void vikey_set_capabilities(IBusEngine* engine, guint caps) { ((VikeyEngine*)engine)->caps = caps; }
@@ -133,7 +135,7 @@ static GType vikey_engine_get_type() {
 
 // ---- settings file watch + periodic flush -------------------------------------------------------------
 // Reload only when a write is done (not on every CHANGED: the file may be half-written).
-static void onSettingsChanged(GFileMonitor*, GFile*, GFile*, GFileMonitorEvent ev, gpointer) { if (ev == G_FILE_MONITOR_EVENT_CHANGES_DONE_HINT || ev == G_FILE_MONITOR_EVENT_MOVED_IN || ev == G_FILE_MONITOR_EVENT_RENAMED) { core::reloadSettings(); updateLangProp(_active); } }
+static void onSettingsChanged(GFileMonitor*, GFile*, GFile*, GFileMonitorEvent ev, gpointer) { if (ev == G_FILE_MONITOR_EVENT_CHANGES_DONE_HINT || ev == G_FILE_MONITOR_EVENT_MOVED_IN || ev == G_FILE_MONITOR_EVENT_RENAMED || ev == G_FILE_MONITOR_EVENT_CREATED) { core::reloadSettings(); updateLangProp(_active); } }
 static gboolean onFlush(gpointer) { core::flushTypingLog(); return TRUE; }
 static void onBusDisconnected(IBusBus*, gpointer) { core::shutdown(); ibus_quit(); }
 
@@ -153,7 +155,7 @@ int main(int argc, char** argv) {
         ibus_bus_register_component(_bus, c);
     }
     GFile* dir = g_file_new_for_path(prefs::configDir().c_str()); g_mkdir_with_parents(prefs::configDir().c_str(), 0700);
-    GFileMonitor* mon = g_file_monitor_directory(dir, G_FILE_MONITOR_NONE, nullptr, nullptr); if (mon) g_signal_connect(mon, "changed", G_CALLBACK(onSettingsChanged), nullptr);
+    GFileMonitor* mon = g_file_monitor_directory(dir, G_FILE_MONITOR_WATCH_MOVES, nullptr, nullptr); if (mon) g_signal_connect(mon, "changed", G_CALLBACK(onSettingsChanged), nullptr);
     g_timeout_add_seconds(10, onFlush, nullptr);
     ibus_main();
     core::shutdown();
