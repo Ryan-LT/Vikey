@@ -24,7 +24,7 @@ NAV = f"""<header class="nav"><div class="wrap">
 FOOTER = f"""<footer class="foot"><div class="wrap cols">
 <div class="col"><p class="muted">© {YEAR} Tony Dinh. Dựa trên <a href="https://github.com/tuyenvm/OpenKey">OpenKey</a> của Tuyen Mai. Mã nguồn mở theo giấy phép GPL-3.0.</p></div>
 <div class="col"><h4>Vikey</h4><a href="/">Trang chủ</a><a href="/download">Tải về</a><a href="/changelog">Phiên bản</a></div>
-<div class="col"><h4>Hỗ trợ</h4><a href="/faq">Câu hỏi thường gặp</a><a href="{GITHUB}/issues">Báo lỗi</a><a href="/privacy">Quyền riêng tư</a></div>
+<div class="col"><h4>Hỗ trợ</h4><a href="/faq">Câu hỏi thường gặp</a><a href="{GITHUB}/issues">Báo lỗi</a><a href="/privacy">Quyền riêng tư</a><a href="/acknowledgements">Ghi nhận</a></div>
 <div class="col"><h4>Mã nguồn</h4><a href="{GITHUB}">GitHub</a><a href="{GITHUB}/blob/main/LICENSE">Giấy phép GPL-3.0</a><a href="https://x.com/tdinh_me">@tdinh_me</a></div>
 </div></footer>"""
 

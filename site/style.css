@@ -283,3 +283,7 @@ h1 span{white-space:nowrap}
 /* footer credit line: links inline, not stacked */
 .foot .col p a{display:inline;margin:0;color:var(--muted);text-decoration:underline}
 .demo .brandlbl{display:inline-flex;align-items:center;gap:6px;color:var(--ink);text-transform:none;letter-spacing:0;font-size:13px}.demo .brandlbl img{width:16px;height:16px;border-radius:4px}
+
+/* long names (dataset ids, URLs) wrap instead of widening the page on phones */
+.prose li { overflow-wrap: anywhere; }
+.prose li .muted { white-space: nowrap; }

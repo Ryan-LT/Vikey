@@ -50,6 +50,7 @@ enum Windows {
         return w
     }()
     static let history = HostedWindow(title: "Nhật ký gõ", size: NSSize(width: 780, height: 640), resizable: true) { TypingLogView() }
+    static let acknowledgements = HostedWindow(title: "Ghi nhận", size: nil, resizable: false) { AcknowledgementsView() }
 }
 
 /// A menu bar app has no Dock icon, so its windows can open behind others. While a window is
@@ -91,6 +92,8 @@ enum AboutPanel {
         add("vikey.app", link: "https://vikey.app")
         add("  ·  ")
         add("GitHub", link: "https://github.com/tonyminibot/Vikey")
+        add("  ·  ")
+        add("Ghi nhận", link: "https://vikey.app/acknowledgements")
         NSApp.orderFrontStandardAboutPanel(options: [.credits: credits, .applicationName: "Vikey"])
     }
 }

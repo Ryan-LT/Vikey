@@ -23,6 +23,7 @@ targets:
       - path: App
       - path: Shared/VKSettings.swift
       - path: Shared/KBLog.swift
+      - path: ../App/Model/Acknowledgements.swift
     dependencies:
       - target: VikeyKeyboard
     info:

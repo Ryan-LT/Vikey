@@ -1008,6 +1008,102 @@
           }
         }
       }
+    },
+    "Ghi nhận": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Acknowledgements"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ghi nhận"
+          }
+        }
+      }
+    },
+    "Mã nguồn": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Code"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mã nguồn"
+          }
+        }
+      }
+    },
+    "Dữ liệu từ ngữ": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Word data"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dữ liệu từ ngữ"
+          }
+        }
+      }
+    },
+    "Dữ liệu kiểm thử": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Test data"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dữ liệu kiểm thử"
+          }
+        }
+      }
+    },
+    "Vikey tự chuyển Anh/Việt nhờ thống kê từ ngữ đếm từ các nguồn này. Trong ứng dụng chỉ có số liệu thống kê, không có văn bản nào.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vikey switches between English and Vietnamese using word statistics counted from these sources. The app contains only the statistics, never the text."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vikey tự chuyển Anh/Việt nhờ thống kê từ ngữ đếm từ các nguồn này. Trong ứng dụng chỉ có số liệu thống kê, không có văn bản nào."
+          }
+        }
+      }
+    },
+    "Chỉ dùng để đo và cải thiện độ chính xác, không có trong ứng dụng.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Used only to measure and improve accuracy; not in the app."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chỉ dùng để đo và cải thiện độ chính xác, không có trong ứng dụng."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

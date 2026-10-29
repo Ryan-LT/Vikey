@@ -81,6 +81,7 @@ struct MainView: View {
                     }
                     .foregroundStyle(.primary)
                     Button("Xem lại hướng dẫn") { didOnboard = false }
+                    NavigationLink("Ghi nhận") { AcknowledgementsView() }
                     Link("vikey.app", destination: URL(string: "https://vikey.app")!)
                     LabeledContent("Phiên bản", value: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "")
                 } footer: {

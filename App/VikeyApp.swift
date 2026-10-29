@@ -15,6 +15,7 @@ struct VikeyApp: App {
         .commands {
             CommandGroup(replacing: .appInfo) {
                 Button("Giới thiệu về Vikey") { AboutPanel.show() }   // with the credits
+                Button("Ghi nhận…") { Windows.acknowledgements.show() }
                 Button("Kiểm tra cập nhật…") { Updater.shared.checkForUpdates() }
                 Divider()
                 DebugMenu()
