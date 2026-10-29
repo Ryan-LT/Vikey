@@ -13,6 +13,10 @@ IDENT="Developer ID Application: Typing Technology Company Limited (3H6967F79Y)"
 NOTARY=(--key ~/.secrets/AuthKey_3QNAF6H8AT.p8 --key-id 3QNAF6H8AT --issuer 6587ae6d-4945-468e-8879-d58b7a6d33ad)
 
 echo "==> version $VER"
+# the site is in Vietnamese and English (D31): both changelogs need this release
+for f in site/pages/changelog.html site/pages_en/changelog.html; do
+  grep -q "<!-- release $VER -->" $f || { echo "missing <!-- release $VER --> in $f"; exit 1; }
+done
 BUILD=$(( $(grep 'CURRENT_PROJECT_VERSION' project.yml | grep -o '[0-9]\+') + 1 ))
 sed -i '' "s/MARKETING_VERSION: \".*\"/MARKETING_VERSION: \"$VER\"/; s/CURRENT_PROJECT_VERSION: \".*\"/CURRENT_PROJECT_VERSION: \"$BUILD\"/" project.yml
 xcodegen generate >/dev/null

@@ -6,29 +6,44 @@ import os, re, shutil, datetime, json
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 PAGES = os.path.join(ROOT, "pages")
+PAGES_EN = os.path.join(ROOT, "pages_en")   # English (D31), same file names
 DIST = os.path.join(ROOT, "dist")
 YEAR = datetime.date.today().year
 SITE = "https://vikey.app"
 GITHUB = "https://github.com/tonyminibot/Vikey"
 
-NAV = f"""<header class="nav"><div class="wrap">
-<a class="brand" href="/"><img src="/assets/icon.png" alt="" width="34" height="34"><span>Vi<b>key</b></span></a>
-<nav><a href="/faq">Câu hỏi</a><a href="/changelog">Phiên bản</a><a href="{GITHUB}">GitHub</a><a class="btn dl-direct" href="DOWNLOAD_URL" download>Tải về</a></nav>
-<button class="menu-btn" type="button" aria-label="Menu" aria-expanded="false" aria-controls="mnav"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+T = {   # layout text per language (D31: Vietnamese at /, English at /en/)
+    "vi": dict(faq="Câu hỏi", changelog="Phiên bản", download="Tải về", home="Trang chủ", support="Hỗ trợ",
+               faq_long="Câu hỏi thường gặp", bugs="Báo lỗi", privacy="Quyền riêng tư", ack="Ghi nhận", source="Mã nguồn",
+               license="Giấy phép GPL-3.0", switch="EN", switch_title="English", sitename="Vikey - Gõ tiếng Việt"),
+    "en": dict(faq="FAQ", changelog="Changelog", download="Download", home="Home", support="Support",
+               faq_long="FAQ", bugs="Report a bug", privacy="Privacy", ack="Acknowledgements", source="Source code",
+               license="GPL-3.0 license", switch="VI", switch_title="Tiếng Việt", sitename="Vikey - Gõ tiếng Việt"),
+}
+
+def nav(lang, pre, other):
+    t = T[lang]
+    sw = f'<a class="lang" href="{other}" hreflang="{"en" if lang == "vi" else "vi"}" title="{t["switch_title"]}">{t["switch"]}</a>'
+    return f"""<header class="nav"><div class="wrap">
+<a class="brand" href="{pre}/"><img src="/assets/icon.png" alt="" width="34" height="34"><span>Vi<b>key</b></span></a>
+<nav><a href="{pre}/faq">{t["faq"]}</a><a href="{pre}/changelog">{t["changelog"]}</a><a href="{GITHUB}">GitHub</a>{sw}<a class="btn dl-direct" href="DOWNLOAD_URL" download>{t["download"]}</a></nav>
+<div class="nav-m">{sw}<button class="menu-btn" type="button" aria-label="Menu" aria-expanded="false" aria-controls="mnav"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button></div>
 </div>
-<nav class="mnav" id="mnav" hidden><a href="/download">Tải về</a><a href="/faq">Câu hỏi</a><a href="/changelog">Phiên bản</a><a href="{GITHUB}">GitHub</a></nav>
+<nav class="mnav" id="mnav" hidden><a href="{pre}/download">{t["download"]}</a><a href="{pre}/faq">{t["faq"]}</a><a href="{pre}/changelog">{t["changelog"]}</a><a href="{GITHUB}">GitHub</a></nav>
 </header>
 <script>(()=>{{const b=document.querySelector(".menu-btn"),m=document.getElementById("mnav");if(!b)return;b.onclick=()=>{{const o=m.hidden;m.hidden=!o;b.setAttribute("aria-expanded",o)}};addEventListener("keydown",e=>{{if(e.key==="Escape"){{m.hidden=true;b.setAttribute("aria-expanded",false)}}}})}})()</script>
-<script>if(matchMedia("(max-width:900px),(pointer:coarse)").matches)document.querySelectorAll("a.dl-direct,a.dl-mac").forEach(a=>{{a.href="/download";a.removeAttribute("download")}})</script>"""
+<script>if(matchMedia("(max-width:900px),(pointer:coarse)").matches)document.querySelectorAll("a.dl-direct,a.dl-mac").forEach(a=>{{a.href="{pre}/download";a.removeAttribute("download")}})</script>"""
 
-FOOTER = f"""<footer class="foot"><div class="wrap cols">
-<div class="col"><p class="muted">© {YEAR} Tony Dinh. Dựa trên <a href="https://github.com/tuyenvm/OpenKey">OpenKey</a> của Tuyen Mai. Mã nguồn mở theo giấy phép GPL-3.0.</p></div>
-<div class="col"><h4>Vikey</h4><a href="/">Trang chủ</a><a href="/download">Tải về</a><a href="/changelog">Phiên bản</a></div>
-<div class="col"><h4>Hỗ trợ</h4><a href="/faq">Câu hỏi thường gặp</a><a href="{GITHUB}/issues">Báo lỗi</a><a href="/privacy">Quyền riêng tư</a><a href="/acknowledgements">Ghi nhận</a></div>
-<div class="col"><h4>Mã nguồn</h4><a href="{GITHUB}">GitHub</a><a href="{GITHUB}/blob/main/LICENSE">Giấy phép GPL-3.0</a><a href="https://x.com/tdinh_me">@tdinh_me</a></div>
+def footer(lang, pre):
+    t = T[lang]
+    return f"""<footer class="foot"><div class="wrap cols">
+<div class="col"><p class="muted">© {YEAR} Tony Dinh</p></div>
+<div class="col"><h4>Vikey</h4><a href="{pre}/">{t["home"]}</a><a href="{pre}/download">{t["download"]}</a><a href="{pre}/changelog">{t["changelog"]}</a></div>
+<div class="col"><h4>{t["support"]}</h4><a href="{pre}/faq">{t["faq_long"]}</a><a href="{GITHUB}/issues">{t["bugs"]}</a><a href="{pre}/privacy">{t["privacy"]}</a><a href="{pre}/acknowledgements">{t["ack"]}</a></div>
+<div class="col"><h4>{t["source"]}</h4><a href="{GITHUB}">GitHub</a><a href="{GITHUB}/blob/main/LICENSE">{t["license"]}</a><a href="https://x.com/tdinh_me">@tdinh_me</a></div>
 </div></footer>"""
 
-HEAD = """<!doctype html><html lang="vi"><head><meta charset="utf-8">
+HEAD = """<!doctype html><html lang="{lang}"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{title}</title>
 <meta name="description" content="{description}">
@@ -37,6 +52,7 @@ HEAD = """<!doctype html><html lang="vi"><head><meta charset="utf-8">
 <meta property="og:image" content="{site}/assets/og.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:type" content="website"><meta property="og:url" content="{site}{path}">
 <meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="{site}/assets/og.png">
 {canonical}
+{alternates}
 <link rel="stylesheet" href="/style.css?v={ver}">
 </head><body{bodyclass}>"""
 
@@ -54,18 +70,23 @@ def build():
     if rel: shutil.copy(os.path.join(ROOT, "release.json"), DIST)
     if os.path.exists(os.path.join(ROOT, "appcast.xml")): shutil.copy(os.path.join(ROOT, "appcast.xml"), DIST)   # Sparkle feed
     ver = str(int(os.path.getmtime(os.path.join(ROOT, "style.css"))))
-    for name in sorted(os.listdir(PAGES)):
+    for lang, srcdir, pre in (("vi", PAGES, ""), ("en", PAGES_EN, "/en")):
+      for name in sorted(os.listdir(srcdir)):
         if not name.endswith(".html"): continue
-        src = open(os.path.join(PAGES, name), encoding="utf-8").read()
+        src = open(os.path.join(srcdir, name), encoding="utf-8").read()
         meta = dict(re.findall(r"<!--\s*(\w+):\s*(.*?)\s*-->", "\n".join(src.split("\n")[:6])))
         body = re.sub(r"^(<!--.*?-->\s*)+", "", src, flags=re.S)
         slug = name[:-5]
-        path = "/" if slug == "index" else "/" + slug
+        rel_path = "/" if slug == "index" else "/" + slug
+        path = pre + rel_path if pre else rel_path
+        vi_path, en_path = rel_path, "/en" + rel_path
+        other = en_path if lang == "vi" else vi_path
         canonical = '<meta name="robots" content="noindex">' if meta.get("noindex") else f'<link rel="canonical" href="{SITE}{path}">'
+        alternates = f'<link rel="alternate" hreflang="vi" href="{SITE}{vi_path}"><link rel="alternate" hreflang="en" href="{SITE}{en_path}"><link rel="alternate" hreflang="x-default" href="{SITE}{vi_path}">'
         one = meta.get("layout") == "one"
-        page = HEAD.format(title=meta.get("title", "Vikey"), description=meta.get("description", ""), site=SITE, path=path, ver=ver,
-                           canonical=canonical, bodyclass=' class="one-page"' if one else "")
-        page += NAV + body + ("" if one else FOOTER) + "</body></html>\n"
+        page = HEAD.format(lang=lang, title=meta.get("title", "Vikey"), description=meta.get("description", ""), site=SITE, path=path, ver=ver,
+                           canonical=canonical, alternates=alternates, bodyclass=' class="one-page"' if one else "")
+        page += nav(lang, pre, other) + body + ("" if one else footer(lang, pre)) + "</body></html>\n"
         for k, v in {"VERSION": rel.get("version"), "DOWNLOAD_URL": rel.get("download_url"), "SHA256": rel.get("sha256")}.items():
             if v: page = page.replace(k, v)
         # cache-bust assets: /assets/x.png -> /assets/x.png?v=<mtime>, so browsers never show a stale screenshot
@@ -73,12 +94,14 @@ def build():
             f = os.path.join(ROOT, m.group(1).lstrip("/"))
             return m.group(0) if not os.path.exists(f) else f'{m.group(1)}?v={int(os.path.getmtime(f))}"'
         page = re.sub(r'(/assets/[\w./-]+\.(?:png|json|svg|jpg))"', bust, page)
-        out = os.path.join(DIST, "index.html" if slug == "index" else f"{slug}.html")
+        outdir = os.path.join(DIST, "en") if pre else DIST
+        os.makedirs(outdir, exist_ok=True)
+        out = os.path.join(outdir, "index.html" if slug == "index" else f"{slug}.html")
         open(out, "w", encoding="utf-8").write(page)
     open(os.path.join(DIST, "_headers"), "w").write("/*\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: strict-origin-when-cross-origin\n/downloads/*\n  Content-Disposition: attachment\n")
     open(os.path.join(DIST, "robots.txt"), "w").write(f"User-agent: *\nAllow: /\nSitemap: {SITE}/sitemap.xml\n")
     pages = [n[:-5] for n in os.listdir(PAGES) if n.endswith(".html") and n != "404.html"]
-    urls = "".join(f"<url><loc>{SITE}{'/' if p == 'index' else '/' + p}</loc></url>" for p in sorted(pages))
+    urls = "".join(f"<url><loc>{SITE}{pre}{'/' if p == 'index' else '/' + p}</loc></url>" for pre in ("", "/en") for p in sorted(pages))
     open(os.path.join(DIST, "sitemap.xml"), "w").write(f'<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{urls}</urlset>\n')
     print("built", len(os.listdir(DIST)), "entries into site/dist")
 

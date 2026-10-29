@@ -287,3 +287,10 @@ h1 span{white-space:nowrap}
 /* long names (dataset ids, URLs) wrap instead of widening the page on phones */
 .prose li { overflow-wrap: anywhere; }
 .prose li .muted { white-space: nowrap; }
+/* language switch (D31): small pill in the header; on phones it sits next to the menu button */
+.nav a.lang{font-size:13px;font-weight:600;letter-spacing:.02em;color:var(--muted,#667);border:1px solid var(--line);border-radius:999px;padding:3px 10px;line-height:1.4}
+.nav a.lang:hover{color:var(--ink);border-color:var(--ink)}
+.nav .nav-m{display:none;align-items:center;gap:12px}
+@media(max-width:900px){.nav .nav-m{display:flex}}
+.btns{flex-wrap:wrap}
+.one h1,.one .lead{text-wrap:balance}
