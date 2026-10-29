@@ -22,6 +22,8 @@ NOTES=$(sed -n "/<!-- release $VER -->/,/<!-- \/release -->/p" site/pages/change
 for ARCH in x64 arm64; do
   F=dist/windows/Vikey-$VER-$ARCH-Setup.exe
   [ -f "$F" ] || { echo "missing $F"; exit 1; }
+  # CI signs with the Certum certificate (secrets CERTUM_EMAIL/CERTUM_OTP); never publish an unsigned installer
+  osslsigncode verify "$F" >/dev/null 2>&1 || { echo "$F is not Authenticode-signed (CI secrets missing?)"; [ "$ALLOW_UNSIGNED" = 1 ] || exit 1; }
   SIG=$(~/.tools/sparkle/bin/sign_update --ed-key-file ~/.secrets/vikey_sparkle_ed25519 "$F")
   cp "$F" dist/windows/Vikey-$VER-$ARCH-portable.zip site/downloads/
   python3 Tools/release/appcast.py windows "$VER" "$BUILD" "$ARCH" "https://vikey.app/downloads/Vikey-$VER-$ARCH-Setup.exe" "$SIG" "$NOTES"

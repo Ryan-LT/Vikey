@@ -58,20 +58,40 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           path: artifacts
-      - name: Installers (Inno Setup) + portable zips
+      - name: Code signing tool (ssign: Certum SimplySign cloud cert, headless)
+        if: env.CERTUM_OTP != ''
+        run: |
+          Invoke-WebRequest -Uri https://github.com/Le-Syl21/ssign/releases/download/v0.1.8/ssign-windows-x86_64.zip -OutFile ssign.zip
+          Expand-Archive ssign.zip -DestinationPath ssign
+          $exe = (Get-ChildItem ssign -Recurse -Filter ssign.exe | Select-Object -First 1).FullName
+          "SSIGN=$exe" >> $env:GITHUB_ENV
+        shell: pwsh
+        env:
+          CERTUM_OTP: ${{ secrets.CERTUM_OTP }}
+      - name: Installers (Inno Setup) + portable zips, signed when the certificate secrets exist
         run: |
           $ver = (Select-String -Path project.yml -Pattern 'MARKETING_VERSION: "([^"]+)"').Matches[0].Groups[1].Value
           "$ver" | Out-Host
           New-Item -ItemType Directory -Force dist | Out-Null
+          function Sign($file) {
+            if (-not $env:SSIGN) { "unsigned: $file (no CERTUM_OTP secret)" | Out-Host; return }
+            & $env:SSIGN $file
+            if ($LASTEXITCODE -ne 0) { throw "signing failed: $file" }
+          }
           foreach ($arch in @('x64', 'arm64')) {
             $src = "artifacts/Vikey-windows-$arch"
+            Sign "$src/Vikey.exe"
             & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "/DVersion=$ver" "/DArch=$arch" "/DSrc=$((Resolve-Path $src).Path)" Windows/installer/Vikey.iss
             if ($LASTEXITCODE -ne 0) { exit 1 }
+            Sign "Windows/installer/out/Vikey-$ver-$arch-Setup.exe"
             Move-Item "Windows/installer/out/Vikey-$ver-$arch-Setup.exe" dist/
             Compress-Archive -Path "$src/Vikey.exe" -DestinationPath "dist/Vikey-$ver-$arch-portable.zip"
           }
           Get-ChildItem dist | Out-Host
         shell: pwsh
+        env:
+          CERTUM_EMAIL: ${{ secrets.CERTUM_EMAIL }}
+          CERTUM_OTP: ${{ secrets.CERTUM_OTP }}
       - name: Upload to the release
         run: gh release upload "${{ github.ref_name }}" dist/* --clobber -R ${{ github.repository }}
         shell: pwsh
