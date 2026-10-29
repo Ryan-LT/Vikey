@@ -1,0 +1,15 @@
+# name	start	keys	expected   (keys: \b Backspace, \n Enter, {alt+z} switch hotkey)
+telex_basic	vi	tieengs vieetj 	tiếng việt 
+telex_tone_anywhere	vi	truowfng truongwf truwownfg 	trường trường trường 
+hoa_modern	vi	hoaf 	hoà 
+restore_invalid	vi	TestFlight 	TestFlight 
+auto_vi_to_en_more	vi	more 	more 
+auto_en_word_mid_sentence	vi	this makes sense 	this makes sense 
+auto_double_key_err	vi	err 	err 
+auto_double_key_mix	vi	mixx 	mix 
+auto_en_to_vi	en	truowfng 	trường 
+auto_en_stays_en	en	theme rust been 	theme rust been 
+auto_tie_vi_kept	vi	tô thí 	tô thí 
+undo_backspace	vi	more \b	mỏe 
+identifier_guard	en	obj.dir my_var 	obj.dir my_var 
+hotkey_switch	vi	{alt+z}tieng 	tieng 
