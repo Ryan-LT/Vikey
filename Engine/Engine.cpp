@@ -1819,7 +1819,12 @@ static int asReplay(const Uint32* keys, const int& count, Uint32* result, int& r
 
 static bool asFewCapitals(const Uint32* keys, const int& count) {
     int capitals = 0;
-    for (int x = 0; x < count; x++) if (keys[x] & CAPS_MASK) capitals++;
+    for (int x = 0; x < count; x++) {
+        if (!(keys[x] & CAPS_MASK)) continue;
+        //DD is one letter, Đ: "DDaf Nawngx" is Đà Nẵng, while DDR, DDoS still have two capitals (D39)
+        if (x > 0 && (keys[x] & CHAR_MASK) == KEY_D && (keys[x - 1] & CHAR_MASK) == KEY_D && (keys[x - 1] & CAPS_MASK)) continue;
+        capitals++;
+    }
     return capitals < 2;   //USA, EST, IRS, camelCase: acronyms and identifiers stay as typed
 }
 

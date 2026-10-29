@@ -18,6 +18,7 @@ struct MenuBarContent: View {
         Button("Mở Vikey…") { Windows.main.show() }
             .keyboardShortcut(",")
         Divider()
+        Button("Hướng dẫn…") { OnboardingWindow.show() }
         Button("Kiểm tra cập nhật…") { Updater.shared.checkForUpdates() }
         Button("Giới thiệu Vikey") { AboutPanel.show() }
         Button("Thoát Vikey") { NSApp.terminate(nil) }

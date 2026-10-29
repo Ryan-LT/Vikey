@@ -4,6 +4,10 @@ import SwiftUI
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         Migration.fromOpenKeyIfNeeded()
+        // people who already use Vikey (permission granted) don't get the first-run guide on update
+        if UserDefaults.standard.object(forKey: OnboardingView.doneKey) == nil && VikeyCore.isAccessibilityTrusted() {
+            UserDefaults.standard.set(true, forKey: OnboardingView.doneKey)
+        }
         AppState.shared.startIfPossible()
         _ = Updater.shared                     // starts Sparkle: daily update checks
         EmojiPicker.shared.install()

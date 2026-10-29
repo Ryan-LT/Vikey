@@ -42,6 +42,8 @@ extern NSNotificationName const VikeyLanguageDidChangeNotification;
 + (void)setEmojiHotkeyHandler:(void (^)(void))handler;
 /// While open, keys reach the picker untouched (no Vietnamese typing).
 + (void)setEmojiPickerOpen:(BOOL)open;
+/// Forget the word being typed (the cursor moved to another field without a click).
++ (void)resetTyping;
 /// Types text into the focused app.
 + (void)insertText:(NSString *)text;
 

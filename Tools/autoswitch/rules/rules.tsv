@@ -111,3 +111,5 @@ D33	1	abc1def 	abc1def 	1	digits glued to letters: a code, left alone
 D33	1	sacj 2w 	sạc 2w 	1	a lone w right after a digit is a unit (W), not ư
 D34	0	test cos work 	test có work 	0	a word pair that is clearly Vietnamese (10x) beats D22 ("right after an English word, a tie stays English")
 D35	1	vaof office its nhaats 	vào office ít nhất 	1	look-forward: a word put back to English flips to Vietnamese when the next word makes it clear (ít nhất)
+D39	1	ddi DDaf Nawngx 	đi Đà Nẵng 	1	DD is one letter (Đ): a word starting with it has one capital, not an acronym (DDR, DDoS keep two)
+D39	0	DDR4 DDoS 	DDR4 DDoS 	0	the D39 Đ rule keeps real acronyms

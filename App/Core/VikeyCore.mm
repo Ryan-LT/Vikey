@@ -1280,10 +1280,14 @@ static NSTimer* _watchdog = nil;
 + (void)setEmojiHotkeyHandler:(void (^)(void))handler { vEmojiHandler = [handler copy]; }
 + (void)setEmojiPickerOpen:(BOOL)open { vEmojiOpen = open; }
 
-+ (void)insertText:(NSString*)text {
++ (void)resetTyping {
     ResetEnglishWord(true);
     _autoFixUndo.active = false;
     startNewSession();
+}
+
++ (void)insertText:(NSString*)text {
+    [self resetTyping];
     NSUInteger len = text.length;
     UniChar buf[64];
     for (NSUInteger start = 0; start < len; start += 16) {

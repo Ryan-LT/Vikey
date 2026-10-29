@@ -23,6 +23,16 @@ If every listed change is intended, accept them with `Tools/autoswitch/check.sh 
 
 ---
 
+## 39. DD counts as one capital (Đ)
+
+**Status:** Shipped 2026-10-29.
+
+**Problem.** "DDaf Nawngx" (Shift held for both Ds) stayed "DDaf" instead of "Đà". The acronym rule (D23, D27) keeps words with 2+ capitals as typed, and DD made two.
+
+**Fix.** A capital D right after a capital D is the same letter, Đ, so it isn't counted again. DDR and DDoS still have two capitals and stay as typed.
+
+**Result.** Locked test unchanged: 99.88%, caps group 1.75%. Rules: D39 (2 cases).
+
 ## 38. Vikey for Linux
 
 **Status:** Shipped 2026-10-29 as part of 1.0.14 (branch `linux` → main), Phases 0–6 of `Linux/PLAN.md`.
