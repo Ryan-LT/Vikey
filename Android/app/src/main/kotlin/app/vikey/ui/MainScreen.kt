@@ -12,6 +12,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material.icons.outlined.Keyboard
 import androidx.compose.material.icons.outlined.Share
+import androidx.compose.material.icons.outlined.UnfoldMore
+import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -102,9 +104,17 @@ fun MainScreen(onReviewOnboarding: () -> Unit, onAcknowledgements: () -> Unit) {
             Card {
                 Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
                     Tip(R.string.tone_placement, R.string.tone_placement_tip, Modifier.weight(1f))
-                    SingleChoiceSegmentedButtonRow {
-                        SegmentedButton(modern, { modern = true; save(Settings.MODERN_ORTHOGRAPHY, true) }, SegmentedButtonDefaults.itemShape(0, 2)) { Text("hoà, thuý") }
-                        SegmentedButton(!modern, { modern = false; save(Settings.MODERN_ORTHOGRAPHY, false) }, SegmentedButtonDefaults.itemShape(1, 2)) { Text("hòa, thúy") }
+                    // a menu like the iOS picker: the value and a chevron, never two lines
+                    var open by remember { mutableStateOf(false) }
+                    Box {
+                        Row(Modifier.clip(RoundedCornerShape(8.dp)).clickable { open = true }.background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f)).padding(start = 12.dp, end = 6.dp, top = 6.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Text(if (modern) "hoà, thuý" else "hòa, thúy", maxLines = 1)
+                            Icon(Icons.Outlined.UnfoldMore, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        DropdownMenu(open, { open = false }) {
+                            DropdownMenuItem({ Text("hoà, thuý") }, { modern = true; save(Settings.MODERN_ORTHOGRAPHY, true); open = false }, leadingIcon = { if (modern) Icon(Icons.Outlined.Check, null) else Spacer(Modifier.size(24.dp)) })
+                            DropdownMenuItem({ Text("hòa, thúy") }, { modern = false; save(Settings.MODERN_ORTHOGRAPHY, false); open = false }, leadingIcon = { if (!modern) Icon(Icons.Outlined.Check, null) else Spacer(Modifier.size(24.dp)) })
+                        }
                     }
                 }
                 HorizontalDivider(Modifier.padding(start = 16.dp))
