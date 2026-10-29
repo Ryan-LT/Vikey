@@ -26,10 +26,8 @@ static vector<Uint8> _charKeyCode = {
 static vector<Uint8> _breakCode = {
     KEY_ESC, KEY_TAB, KEY_ENTER, KEY_RETURN, KEY_LEFT, KEY_RIGHT, KEY_DOWN, KEY_UP, KEY_COMMA, KEY_DOT,
     KEY_SLASH, KEY_SEMICOLON, KEY_QUOTE, KEY_BACK_SLASH, KEY_MINUS, KEY_EQUALS, KEY_BACKQUOTE, KEY_TAB
-#if _WIN32
-	, VK_INSERT, VK_HOME, VK_END, VK_DELETE, VK_PRIOR, VK_NEXT, VK_SNAPSHOT, VK_PRINT, VK_SELECT, VK_HELP,
-	VK_EXECUTE, VK_NUMLOCK, VK_SCROLL
-#endif
+    // The engine always uses the macOS key codes (platforms/mac.h); every platform layer maps its own
+    // codes to these (Windows: VK_* -> KEY_*, with Insert/Home/End/Delete/PgUp/PgDn sent as KEY_ESC).
 };
 
 
