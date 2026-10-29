@@ -46,7 +46,15 @@ int wmain(int argc, wchar_t** argv) {
     HWND win = CreateWindowExW(WS_EX_TOPMOST, L"STATIC", L"Vikey live test", WS_OVERLAPPEDWINDOW | WS_VISIBLE, 100, 100, 600, 300, nullptr, nullptr, inst, nullptr);
     _edit = CreateWindowExW(0, L"EDIT", L"", WS_CHILD | WS_VISIBLE | WS_BORDER | ES_MULTILINE | ES_AUTOVSCROLL, 10, 10, 560, 240, win, nullptr, inst, nullptr);
     SendMessageW(_edit, WM_SETFONT, (WPARAM)GetStockObject(DEFAULT_GUI_FONT), TRUE);
-    SetForegroundWindow(win); SetFocus(_edit); Sleep(300);
+    // Bring our window to the front even when started from a console (foreground lock): the Alt-key trick.
+    auto toFront = [&]() {
+        INPUT alt[2] = {}; alt[0].type = alt[1].type = INPUT_KEYBOARD; alt[0].ki.wVk = alt[1].ki.wVk = VK_MENU; alt[1].ki.dwFlags = KEYEVENTF_KEYUP;
+        SendInput(2, alt, sizeof(INPUT));
+        SetForegroundWindow(win); BringWindowToTop(win); SetActiveWindow(win); SetFocus(_edit);
+    };
+    for (int i = 0; i < 10 && GetForegroundWindow() != win; i++) { toFront(); Sleep(200); }
+    printf("foreground is %s\n", GetForegroundWindow() == win ? "the test window" : "ANOTHER window");
+    Sleep(300);
     int fails = 0, total = 0; std::string line;
     while (std::getline(f, line)) {
         if (line.empty() || line[0] == '#') continue;
@@ -57,6 +65,7 @@ int wmain(int argc, wchar_t** argv) {
         // the simplest robust way is to toggle with the hotkey until the tray state matches, so we read it back from the registry.
         int want = col[1] == "vi" ? 1 : 0;
         for (int tries = 0; tries < 2 && vikey::prefs::getInt(L"InputMethod", 1) != want; tries++) typeKeys(L"{alt+z}");
+        if (GetForegroundWindow() != win) toFront();
         SetWindowTextW(_edit, L""); SetFocus(_edit); SendMessageW(_edit, EM_SETSEL, 0, 0); Sleep(150);
         key(VK_ESCAPE);   // Esc: a word break, resets the engine's session like a click would
         typeKeys(fromUtf8(col[2]));
