@@ -112,7 +112,8 @@ def platform_cards(lang, dl):
             btn = f'<a class="btn ghost dl" href="#{p}" data-notify="{p}">{t["notify"]}</a>'
             badge = f'<span class="badge">{t["soon"]}</span>'
             btn += '<span class="alt none" aria-hidden="true">.</span>'
-        out.append(f'<section class="pcard{"" if d else " pending"}" id="{p}" data-os="{p}">{badge}{os_icon(p, "picon")}'
+        shot = f'<img class="pshot" src="/assets/shots/dl-{p}.png" width="1200" height="900" alt="Vikey trên {PNAME[p]}" loading="lazy">'
+        out.append(f'<section class="pcard{"" if d else " pending"}" id="{p}" data-os="{p}">{shot}{badge}{os_icon(p, "picon")}'
                    f'<h2>{PNAME[p]}</h2><p>{PREQ[lang][p]}</p>{btn}</section>')
     return '<div class="pgrid">' + "".join(out) + "</div>"
 
