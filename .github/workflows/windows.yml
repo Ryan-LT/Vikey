@@ -53,21 +53,22 @@ jobs:
     runs-on: windows-latest
     permissions:
       contents: write
+    env:
+      CERTUM_EMAIL: ${{ secrets.CERTUM_EMAIL }}
+      CERTUM_OTP: ${{ secrets.CERTUM_OTP }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           path: artifacts
-      - name: Code signing tool (ssign: Certum SimplySign cloud cert, headless)
-        if: ${{ secrets.CERTUM_OTP != '' }}
+      - name: "Code signing tool (ssign - Certum SimplySign cloud cert, headless)"
+        if: env.CERTUM_OTP != ''
         run: |
           Invoke-WebRequest -Uri https://github.com/Le-Syl21/ssign/releases/download/v0.1.8/ssign-windows-x86_64.zip -OutFile ssign.zip
           Expand-Archive ssign.zip -DestinationPath ssign
           $exe = (Get-ChildItem ssign -Recurse -Filter ssign.exe | Select-Object -First 1).FullName
           "SSIGN=$exe" >> $env:GITHUB_ENV
         shell: pwsh
-        env:
-          CERTUM_OTP: ${{ secrets.CERTUM_OTP }}
       - name: Installers (Inno Setup) + portable zips, signed when the certificate secrets exist
         run: |
           $ver = (Select-String -Path project.yml -Pattern 'MARKETING_VERSION: "([^"]+)"').Matches[0].Groups[1].Value
@@ -89,9 +90,6 @@ jobs:
           }
           Get-ChildItem dist | Out-Host
         shell: pwsh
-        env:
-          CERTUM_EMAIL: ${{ secrets.CERTUM_EMAIL }}
-          CERTUM_OTP: ${{ secrets.CERTUM_OTP }}
       - name: Upload to the release
         run: gh release upload "${{ github.ref_name }}" dist/* --clobber -R ${{ github.repository }}
         shell: pwsh

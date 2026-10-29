@@ -9,4 +9,6 @@ std::wstring currentHost();
 void poll();
 /// True while a password field has the focus (checked by poll()).
 bool focusedIsPassword();
+/// Re-checks the focused control now (call on focus changes; poll() does it too).
+void pollPassword();
 }}

@@ -30,6 +30,7 @@ static bool looksLikeUrl(const std::wstring& v) {
 }
 
 static std::wstring hostOf(std::wstring v) {
+    if (v.rfind(L"file:", 0) == 0) return L"";   // a local file has no site
     size_t p = v.find(L"://"); if (p != std::wstring::npos) v = v.substr(p + 3);
     size_t e = v.find_first_of(L"/?#:"); if (e != std::wstring::npos) v = v.substr(0, e);
     std::transform(v.begin(), v.end(), v.begin(), ::towlower);
@@ -69,7 +70,7 @@ std::wstring currentHost() {
 /// The focused control is a password field (UIA IsPassword): the typing log must not record its keys.
 static bool _focusPassword = false;
 bool focusedIsPassword() { return _focusPassword; }
-static void pollPassword() {
+void pollPassword() {
     if (!_uia && FAILED(CoCreateInstance(CLSID_CUIAutomation, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&_uia)))) return;
     IUIAutomationElement* el = nullptr;
     if (FAILED(_uia->GetFocusedElement(&el)) || !el) { _focusPassword = false; return; }

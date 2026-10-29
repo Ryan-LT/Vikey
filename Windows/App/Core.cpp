@@ -33,7 +33,7 @@ enum : unsigned { F_SHIFT = 1, F_CONTROL = 2, F_ALT = 4, F_WIN = 8, F_CAPS = 16 
 #define OTHER_CONTROL_KEY ((_flag & F_CONTROL) || (_flag & F_ALT) || (_flag & F_WIN))
 
 static HHOOK _kbHook = nullptr, _mouseHook = nullptr;
-static HWINEVENTHOOK _fgHook = nullptr;
+static HWINEVENTHOOK _focusHook = nullptr, _fgHook = nullptr;
 static vKeyHookState* pData = nullptr;
 static unsigned _flag = 0, _lastFlag = 0;
 static Uint16 _keycode = 0;
@@ -491,11 +491,13 @@ bool start() {
     _kbHook = SetWindowsHookExW(WH_KEYBOARD_LL, keyboardHook, inst, 0);
     _mouseHook = SetWindowsHookExW(WH_MOUSE_LL, mouseHook, inst, 0);
     _fgHook = SetWinEventHook(EVENT_SYSTEM_FOREGROUND, EVENT_SYSTEM_FOREGROUND, nullptr, foregroundHook, 0, 0, WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNPROCESS);
+    // focus moves (into a password field, say) are checked right away, not only on the 1 s poll
+    _focusHook = SetWinEventHook(EVENT_OBJECT_FOCUS, EVENT_OBJECT_FOCUS, nullptr, [](HWINEVENTHOOK, DWORD, HWND, LONG, LONG, DWORD, DWORD) { site::pollPassword(); }, 0, 0, WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNPROCESS);
     return _kbHook != nullptr;
 }
 void stop() {
     flushTypingLog();
-    if (_kbHook) UnhookWindowsHookEx(_kbHook); if (_mouseHook) UnhookWindowsHookEx(_mouseHook); if (_fgHook) UnhookWinEvent(_fgHook);
+    if (_kbHook) UnhookWindowsHookEx(_kbHook); if (_mouseHook) UnhookWindowsHookEx(_mouseHook); if (_fgHook) UnhookWinEvent(_fgHook); if (_focusHook) UnhookWinEvent(_focusHook);
     _kbHook = nullptr; _mouseHook = nullptr; _fgHook = nullptr;
 }
 bool isRunning() { return _kbHook != nullptr; }
