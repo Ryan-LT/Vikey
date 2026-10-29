@@ -34,7 +34,10 @@ static void typeKeys(const std::wstring& s) {
             else if (cmd == L"wait") Sleep(1500);
             continue; }
         SHORT v = VkKeyScanW(c);
-        if (v == -1) continue;
+        if (v == -1) {   // no key for it on this layout (ô, í): type the character itself, as another input tool would
+            INPUT in[2] = {}; in[0].type = in[1].type = INPUT_KEYBOARD; in[0].ki.wScan = in[1].ki.wScan = c; in[0].ki.dwFlags = KEYEVENTF_UNICODE; in[1].ki.dwFlags = KEYEVENTF_UNICODE | KEYEVENTF_KEYUP;
+            SendInput(2, in, sizeof(INPUT)); Sleep(30); continue;
+        }
         key(LOBYTE(v), (HIBYTE(v) & 1) != 0);
     }
 }
@@ -74,11 +77,14 @@ int wmain(int argc, wchar_t** argv) {
         int want = col[1] == "vi" ? 1 : 0;
         HWND tray = FindWindowW(L"VikeyTray", nullptr);
         if (!tray) { printf("Vikey is not running\n"); return 98; }
-        SendMessageTimeoutW(tray, WM_APP + 2, want, 0, SMTO_NORMAL, 2000, nullptr);   // no hotkey: the hotkey pauses auto switch for 5 s
-        Sleep(100);
         if (GetForegroundWindow() != win) toFront();
         SetWindowTextW(_edit, L""); SetFocus(_edit); SendMessageW(_edit, EM_SETSEL, 0, 0); Sleep(150);
-        key(VK_ESCAPE);   // Esc: a word break, resets the engine's session like a click would
+        key(VK_ESCAPE);   // Esc: a word break, ends whatever the previous case left
+        Sleep(50);
+        // set the start language without the hotkey (the hotkey pauses auto switch for 5 s); it also starts a
+        // fresh session, so the first word of the case counts as a whole word (Esc alone would not)
+        SendMessageTimeoutW(tray, WM_APP + 2, want, 0, SMTO_NORMAL, 2000, nullptr);
+        Sleep(100);
         typeKeys(fromUtf8(col[2]));
         for (int t = 0; t < 20; t++) { MSG m; while (PeekMessageW(&m, nullptr, 0, 0, PM_REMOVE)) { TranslateMessage(&m); DispatchMessageW(&m); } Sleep(10); }
         std::wstring got = editText(); std::wstring exp = fromUtf8(col[3]);
