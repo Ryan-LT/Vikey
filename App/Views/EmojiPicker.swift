@@ -113,10 +113,11 @@ final class EmojiPanel: NSPanel {
         switch e.keyCode {
         case 53: onClose?()                                                    // Esc
         case 36, 76: if let x = model.current { EmojiPicker.shared.choose(x) }  // Return
+        // the first emoji is selected from the start (Tony); the arrows move from there
         case 123: model.allSelected = false; model.move(-1)
         case 124: model.allSelected = false; model.move(1)
-        case 125: model.move(EmojiGridView.columns)
-        case 126: model.move(-EmojiGridView.columns)
+        case 125: model.allSelected = false; model.moveRow(1)
+        case 126: model.allSelected = false; model.moveRow(-1)
         case 51: (cmd || model.allSelected) ? model.setRaw("") : opt ? model.deleteWord() : model.deleteBack()   // ⌫
         default:
             if cmd {
@@ -152,7 +153,7 @@ final class EmojiPickerModel: ObservableObject {
     }
     @Published private(set) var recents: [Emoji] = []
     private var observer: Any?
-    var mouseAtOpen = NSPoint.zero   // hover selects only after the mouse really moves
+    var lastMouse = NSPoint.zero   // hover selects only when the mouse really moved (not when the grid scrolled under it)
 
     /// The emoji this Mac can draw (newer Unicode versions show as boxes on older macOS).
     static let maxVersion: Double = {
@@ -174,15 +175,14 @@ final class EmojiPickerModel: ObservableObject {
 
     var display: String { vietnamese ? Telex.convert(raw) : raw }
     var searching: Bool { !raw.trimmingCharacters(in: .whitespaces).isEmpty }
-    /// Everything the arrows walk through, in grid order.
-    var visible: [Emoji] { searching ? results : recents + all }
     var current: Emoji? { let v = visible; return v.indices.contains(selected) ? v[selected] : nil }
 
     func reset(vietnamese: Bool) {
         self.vietnamese = vietnamese
-        raw = ""; allSelected = false; results = []; selected = 0; mouseAtOpen = NSEvent.mouseLocation
+        raw = ""; allSelected = false; results = []; selected = 0; lastMouse = NSEvent.mouseLocation
         let byChar = Dictionary(all.map { ($0.char, $0) }, uniquingKeysWith: { a, _ in a })
         recents = EmojiUsage.frequent(in: .standard, count: EmojiGridView.columns * 3).compactMap { byChar[$0] }
+        relayout()
     }
 
     func setRaw(_ s: String) { raw = s; allSelected = false; search() }
@@ -198,6 +198,47 @@ final class EmojiPickerModel: ObservableObject {
     private func search() {
         results = searching ? EmojiIndex.shared.search(raw, vietnamese: vietnamese, limit: 400, among: all) : []
         selected = 0
+        relayout()
+    }
+
+    /// The grid as rows of up to 9, per section, so the arrows move by what you see and scrolling lands
+    /// on exact rows (nested lazy grids scrolled to wrong places: Tony).
+    struct Row: Identifiable { let id: Int; let section: Int; let start: Int; let count: Int }
+    private(set) var sections: [(title: String, rows: [Row])] = []
+    private(set) var allRows: [Row] = []
+    private(set) var visible: [Emoji] = []          // everything the arrows walk through, in grid order
+    /// Rebuilt when the content changes, never per row while drawing.
+    private func relayout() {
+        visible = searching ? results : recents + all
+        sections = makeSections()
+        allRows = sections.flatMap(\.rows)
+    }
+    private func makeSections() -> [(title: String, rows: [Row])] {
+        let cols = EmojiGridView.columns
+        var out: [(String, [Row])] = [], start = 0, rid = 0
+        func add(_ title: String, _ n: Int) {
+            var rows: [Row] = []
+            var i = 0
+            while i < n { rows.append(Row(id: rid, section: out.count, start: start + i, count: min(cols, n - i))); rid += 1; i += cols }
+            out.append((title, rows)); start += n
+        }
+        if searching { add("", results.count) }
+        else {
+            if !recents.isEmpty { add(vietnamese ? "Dùng thường xuyên" : "Frequently Used", recents.count) }
+            for (g, list) in groups { add(vietnamese ? EmojiGridView.groupNames[g] : EmojiGridView.groupNamesEN[g], list.count) }
+        }
+        return out
+    }
+    func row(of i: Int) -> Row? { allRows.first { i >= $0.start && i < $0.start + $0.count } }
+
+    /// ↑/↓: the row above/below, same column (or its last emoji).
+    func moveRow(_ d: Int) {
+        let rows = allRows
+        guard let r = rows.firstIndex(where: { selected >= $0.start && selected < $0.start + $0.count }) else { return }
+        let t = r + d
+        guard rows.indices.contains(t) else { return }
+        selectedByKeys = true
+        selected = rows[t].start + min(selected - rows[r].start, rows[t].count - 1)
     }
 
     func move(_ d: Int) {
@@ -217,9 +258,9 @@ struct EmojiGridView: View {
     @ObservedObject var model: EmojiPickerModel
     @State private var caret = true
 
-    private static let groupNames = ["Mặt cười & cảm xúc", "Người & cơ thể", "", "Động vật & thiên nhiên", "Đồ ăn & thức uống",
+    static let groupNames = ["Mặt cười & cảm xúc", "Người & cơ thể", "", "Động vật & thiên nhiên", "Đồ ăn & thức uống",
                                      "Du lịch & địa điểm", "Hoạt động", "Đồ vật", "Biểu tượng", "Cờ"]
-    private static let groupNamesEN = ["Smileys & Emotion", "People & Body", "", "Animals & Nature", "Food & Drink",
+    static let groupNamesEN = ["Smileys & Emotion", "People & Body", "", "Animals & Nature", "Food & Drink",
                                        "Travel & Places", "Activities", "Objects", "Symbols", "Flags"]
 
     var body: some View {
@@ -256,18 +297,16 @@ struct EmojiGridView: View {
         ScrollViewReader { proxy in
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 0, pinnedViews: [.sectionHeaders]) {
-                    if model.searching {
-                        if model.results.isEmpty {
-                            Text(model.vietnamese ? "Không tìm thấy emoji nào" : "No emoji found")
-                                .foregroundStyle(.secondary).frame(maxWidth: .infinity).padding(.top, 110)
-                        } else { cells(model.results, offset: 0) }
+                    if model.searching && model.results.isEmpty {
+                        Text(model.vietnamese ? "Không tìm thấy emoji nào" : "No emoji found")
+                            .foregroundStyle(.secondary).frame(maxWidth: .infinity).padding(.top, 110)
                     } else {
-                        if !model.recents.isEmpty {
-                            Section(header: header(model.vietnamese ? "Dùng thường xuyên" : "Frequently Used")) { cells(model.recents, offset: 0) }
-                        }
-                        ForEach(model.groups, id: \.0) { g, list in
-                            Section(header: header(model.vietnamese ? Self.groupNames[g] : Self.groupNamesEN[g])) {
-                                cells(list, offset: model.recents.count + model.groups.prefix { $0.0 < g }.reduce(0) { $0 + $1.1.count })
+                        let secs = model.sections
+                        ForEach(secs.indices, id: \.self) { si in
+                            if secs[si].title.isEmpty {
+                                ForEach(secs[si].rows) { r in row(r) }
+                            } else {
+                                Section(header: header(secs[si].title)) { ForEach(secs[si].rows) { r in row(r) } }
                             }
                         }
                     }
@@ -275,7 +314,9 @@ struct EmojiGridView: View {
                 .padding(.horizontal, 12).padding(.bottom, 8)
                 .padding(.top, model.searching ? 10 : 0)   // results have no section title above them
             }
-            .onChange(of: model.selected) { i in if model.selectedByKeys { proxy.scrollTo(i) } }
+            .onChange(of: model.selected) { i in
+                if model.selectedByKeys, let r = model.row(of: i) { proxy.scrollTo(r.id) }   // the least scrolling that shows it
+            }
             .onChange(of: model.raw) { _ in proxy.scrollTo(0, anchor: .top) }
         }
     }
@@ -283,23 +324,35 @@ struct EmojiGridView: View {
     private func header(_ t: String) -> some View {
         Text(t).font(.system(size: 11, weight: .semibold)).foregroundStyle(.secondary)
             .frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 6).padding(.top, 2)
-            .background(.regularMaterial.opacity(0.0001))
+            .padding(.horizontal, 12).padding(.horizontal, -12)
+            .background(.ultraThickMaterial)   // pinned over the rows: solid, so emoji don't show through
     }
 
-    private func cells(_ list: [Emoji], offset: Int) -> some View {
-        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 0), count: Self.columns), spacing: 0) {
-            ForEach(Array(list.enumerated()), id: \.offset) { i, e in
-                let idx = offset + i
-                Text(e.withSkin(model.tone))
-                    .font(.system(size: 28))
-                    .frame(maxWidth: .infinity).frame(height: Self.cell)
-                    .background(RoundedRectangle(cornerRadius: 8).fill(idx == model.selected ? Color.brand.opacity(0.22) : .clear))
-                    .contentShape(Rectangle())
-                    .onHover { if $0 && NSEvent.mouseLocation != model.mouseAtOpen { model.selectedByKeys = false; model.selected = idx } }
-                    .onTapGesture { EmojiPicker.shared.choose(e) }
-                    .id(idx)
+    private func row(_ r: EmojiPickerModel.Row) -> some View {
+        let list = model.visible
+        return HStack(spacing: 0) {
+            ForEach(0..<Self.columns, id: \.self) { c in
+                let idx = r.start + c
+                if c < r.count, list.indices.contains(idx) { cell(list[idx], idx) }
+                else { Color.clear.frame(maxWidth: .infinity).frame(height: Self.cell) }
             }
         }
+        .id(r.id)
+    }
+
+    private func cell(_ e: Emoji, _ idx: Int) -> some View {
+        Text(e.withSkin(model.tone))
+            .font(.system(size: 28))
+            .frame(maxWidth: .infinity).frame(height: Self.cell)
+            .background(RoundedRectangle(cornerRadius: 8).fill(idx == model.selected ? Color.brand.opacity(0.22) : .clear))
+            .contentShape(Rectangle())
+            .onHover { inside in
+                let m = NSEvent.mouseLocation
+                guard inside, m != model.lastMouse else { return }
+                model.lastMouse = m
+                model.selectedByKeys = false; model.selected = idx
+            }
+            .onTapGesture { EmojiPicker.shared.choose(e) }
     }
 
     private var footer: some View {
