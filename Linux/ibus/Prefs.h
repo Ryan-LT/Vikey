@@ -17,4 +17,9 @@ void setBinary(const char* key, const unsigned char* data, size_t n);
 bool has(const char* key);
 void remove(const char* key);
 std::vector<std::string> keys();
+/// True when the settings file on disk was last written by someone else (not this process).
+bool changedByOthers();
+/// One-shot command to the engine (written by the settings app / tests, consumed by the engine): "lang vi quiet", "lang en user".
+std::string commandPath();
+void sendCommand(const std::string& cmd);
 }}

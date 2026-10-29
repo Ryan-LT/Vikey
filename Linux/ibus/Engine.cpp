@@ -7,6 +7,7 @@
 #include <string>
 #include <cstring>
 #include <cstdlib>
+#include <unistd.h>
 #include "Core.h"
 #include "Prefs.h"
 #include "KeyMap.h"
@@ -135,7 +136,13 @@ static GType vikey_engine_get_type() {
 
 // ---- settings file watch + periodic flush -------------------------------------------------------------
 // Reload only when a write is done (not on every CHANGED: the file may be half-written).
-static void onSettingsChanged(GFileMonitor*, GFile*, GFile*, GFileMonitorEvent ev, gpointer) { if (ev == G_FILE_MONITOR_EVENT_CHANGES_DONE_HINT || ev == G_FILE_MONITOR_EVENT_MOVED_IN || ev == G_FILE_MONITOR_EVENT_RENAMED || ev == G_FILE_MONITOR_EVENT_CREATED) { core::reloadSettings(); updateLangProp(_active); } }
+static void readCommand() {
+    std::string path = prefs::commandPath(); FILE* f = fopen(path.c_str(), "r"); if (!f) return;
+    char line[256] = {0}; if (fgets(line, sizeof line, f)) { std::string l = line; while (!l.empty() && (l.back() == '\n' || l.back() == '\r')) l.pop_back(); core::command(l); }
+    fclose(f); unlink(path.c_str()); updateLangProp(_active);
+}
+static void onSettingsChanged(GFileMonitor*, GFile* file, GFile*, GFileMonitorEvent ev, gpointer) {
+    if (file) { char* b = g_file_get_basename(file); bool isCmd = b && !strcmp(b, "command"); g_free(b); if (isCmd) { if (ev == G_FILE_MONITOR_EVENT_CHANGES_DONE_HINT || ev == G_FILE_MONITOR_EVENT_MOVED_IN || ev == G_FILE_MONITOR_EVENT_RENAMED || ev == G_FILE_MONITOR_EVENT_CREATED) readCommand(); return; } } if (ev == G_FILE_MONITOR_EVENT_CHANGES_DONE_HINT || ev == G_FILE_MONITOR_EVENT_MOVED_IN || ev == G_FILE_MONITOR_EVENT_RENAMED || ev == G_FILE_MONITOR_EVENT_CREATED) { if (prefs::changedByOthers()) core::reloadSettings(); updateLangProp(_active); } }
 static gboolean onFlush(gpointer) { core::flushTypingLog(); return TRUE; }
 static void onBusDisconnected(IBusBus*, gpointer) { core::shutdown(); ibus_quit(); }
 
@@ -158,7 +165,7 @@ int main(int argc, char** argv) {
     GFileMonitor* mon = g_file_monitor_directory(dir, G_FILE_MONITOR_WATCH_MOVES, nullptr, nullptr); if (mon) g_signal_connect(mon, "changed", G_CALLBACK(onSettingsChanged), nullptr);
     GFile* sf = g_file_new_for_path(prefs::settingsPath().c_str());
     GFileMonitor* fmon = g_file_monitor_file(sf, G_FILE_MONITOR_WATCH_MOVES, nullptr, nullptr); if (fmon) g_signal_connect(fmon, "changed", G_CALLBACK(onSettingsChanged), nullptr);
-    g_timeout_add(1000, [](gpointer) -> gboolean { core::pollSettingsFile(); return TRUE; }, nullptr);   // belt and braces: mtime poll
+    g_timeout_add(1000, [](gpointer) -> gboolean { core::pollSettingsFile(); readCommand(); return TRUE; }, nullptr);   // belt and braces: mtime poll + command file
     g_timeout_add_seconds(10, onFlush, nullptr);
     ibus_main();
     core::shutdown();

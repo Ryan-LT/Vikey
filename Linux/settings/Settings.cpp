@@ -44,7 +44,7 @@ static void refreshEnabled() {
 }
 static void syncSeg() { int vi = prefs::getInt("InputMethod", 1); gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(_seg[0]), vi); gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(_seg[1]), !vi); }
 static gboolean onSwitch(GtkSwitch* s, gboolean state, gpointer key) { prefs::setInt((const char*)key, state ? 1 : 0); gtk_switch_set_state(s, state); refreshEnabled(); return TRUE; }
-static void onSeg(GtkToggleButton* b, gpointer which) { if (!gtk_toggle_button_get_active(b)) return; prefs::setInt("InputMethod", GPOINTER_TO_INT(which) == 0 ? 1 : 0); prefs::setInt("LanguageByUser", 1); }
+static void onSeg(GtkToggleButton* b, gpointer which) { if (!gtk_toggle_button_get_active(b)) return; prefs::sendCommand(GPOINTER_TO_INT(which) == 0 ? "lang vi user" : "lang en user"); }
 static void onMark(GObject* dd, GParamSpec*, gpointer) { prefs::setInt("ModernOrthography", gtk_drop_down_get_selected(GTK_DROP_DOWN(dd)) == 0 ? 1 : 0); }
 static void onBeep(GtkSwitch* s, gboolean state, gpointer) { int hk = (currentHotkey() & ~0x8000) | (state ? 0x8000 : 0); prefs::setInt("SwitchKeyStatus", hk); gtk_switch_set_state(s, state); }
 static gboolean onRecordKey(GtkEventControllerKey*, guint keyval, guint, GdkModifierType state, gpointer) {

@@ -21,7 +21,8 @@ bool modifier(unsigned bit, bool down);
 void click();                       // a click, cursor move or reset: ends the word
 void focusChanged(const std::string& app);   // app in front changed (per-app memory)
 void reloadSettings();
-void pollSettingsFile();   // reloads when the file's mtime changed (cheap, once a second)
+void pollSettingsFile();
+void command(const std::string& line);   // "lang vi quiet" | "lang en user"   // reloads when the file's mtime changed (cheap, once a second)
 void flushTypingLog(); void clearTypingLog(); std::string typingLogPath();
 void setLanguageByUser(int lang); void setLanguageQuiet(int lang); void toggleLanguage(const char* via);
 int language();

@@ -7,10 +7,14 @@ import gi, sys, os, subprocess, time, json
 gi.require_version('Gtk', '4.0'); from gi.repository import Gtk, GLib
 cases = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(__file__), '..', '..', 'Windows', 'Tests', 'cases.tsv')
 SET = os.path.expanduser('~/.config/vikey/settings.json')
+CMD = os.path.expanduser('~/.config/vikey/command')
 def set_lang(vi):
-    d = json.load(open(SET)) if os.path.exists(SET) else {}
-    d['InputMethod'] = 1 if vi else 0; d['LanguageQuiet'] = 1   # the engine reloads the file and takes the language without the 5 s pause
-    os.makedirs(os.path.dirname(SET), exist_ok=True); json.dump(d, open(SET + '.new', 'w')); os.replace(SET + '.new', SET); time.sleep(0.5)   # atomic: the engine reads on changes-done
+    os.makedirs(os.path.dirname(CMD), exist_ok=True)
+    open(CMD + '.tmp', 'w').write('lang %s quiet\n' % ('vi' if vi else 'en')); os.replace(CMD + '.tmp', CMD)   # the engine consumes the command file
+    for _ in range(40):
+        time.sleep(0.05)
+        if not os.path.exists(CMD): break
+    time.sleep(0.15)
 def xdo(*a): subprocess.run(['xdotool', *a], check=False)
 class App(Gtk.Application):
     def __init__(self): super().__init__(application_id='app.vikey.LiveTest'); self.results = []

@@ -47,7 +47,12 @@ static void saveMap(const std::map<std::string, std::string>& m, const std::stri
     { std::ofstream f(tmp); f << "{\n"; bool first = true; for (auto& kv : m) { f << (first ? "" : ",\n") << jstr(kv.first) << ": " << kv.second; first = false; } f << "\n}\n"; }
     rename(tmp.c_str(), path.c_str());
 }
-static void save() { mkdirp(configDir()); saveMap(_v, settingsPath()); }
+static time_t _ownSec = 0; static long _ownNs = 0;
+static void noteOwnWrite() { struct stat st; if (stat(settingsPath().c_str(), &st) == 0) { _ownSec = st.st_mtime; _ownNs = st.st_mtim.tv_nsec; } }
+static void save() { mkdirp(configDir()); saveMap(_v, settingsPath()); noteOwnWrite(); }
+bool changedByOthers() { struct stat st; if (stat(settingsPath().c_str(), &st) != 0) return false; return st.st_mtime != _ownSec || st.st_mtim.tv_nsec != _ownNs; }
+std::string commandPath() { return configDir() + "/command"; }
+void sendCommand(const std::string& cmd) { mkdirp(configDir()); std::string tmp = commandPath() + ".tmp"; { std::ofstream f(tmp); f << cmd << "\n"; } rename(tmp.c_str(), commandPath().c_str()); }
 static void saveStats() { mkdirp(dataDir()); saveMap(_st, statsPath()); }
 /// Before changing a key: re-read the file, so another writer's keys survive.
 static std::map<std::string, std::string>& mapFor(const char* key, bool forWrite) { if (isStat(key)) return _st; if (forWrite) loadInto(_v, settingsPath()); return _v; }
