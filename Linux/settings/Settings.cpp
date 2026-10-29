@@ -78,7 +78,7 @@ static GtkWidget* switchRow(GtkWidget* group, const char* label, const char* tip
 static GtkWidget* group(GtkWidget* page, const char* title) { GtkWidget* g = adw_preferences_group_new(); if (title) adw_preferences_group_set_title(ADW_PREFERENCES_GROUP(g), title); adw_preferences_page_add(ADW_PREFERENCES_PAGE(page), ADW_PREFERENCES_GROUP(g)); return g; }
 
 static void buildMain(GtkApplication* app) {
-    GtkWidget* win = adw_application_window_new(app); gtk_window_set_title(GTK_WINDOW(win), "Vikey"); gtk_window_set_default_size(GTK_WINDOW(win), 480, 640); gtk_window_set_resizable(GTK_WINDOW(win), FALSE);
+    GtkWidget* win = adw_application_window_new(app); gtk_window_set_title(GTK_WINDOW(win), "Vikey"); gtk_window_set_default_size(GTK_WINDOW(win), 480, 760); gtk_window_set_resizable(GTK_WINDOW(win), FALSE);
     GtkWidget* tv = adw_toolbar_view_new(); GtkWidget* hb = adw_header_bar_new(); adw_header_bar_set_show_title(ADW_HEADER_BAR(hb), FALSE); adw_toolbar_view_add_top_bar(ADW_TOOLBAR_VIEW(tv), hb);
     GtkWidget* page = adw_preferences_page_new();
     // header: icon, wordmark + hint, segmented Tiếng Việt / English
@@ -141,7 +141,7 @@ static void onOpenLog(GtkButton*, gpointer) { std::string d = tlDataDir(); gchar
 static void onClearLog(GtkButton*, gpointer) { ::remove((tlDataDir() + "/typing-log.jsonl").c_str()); ::remove((tlDataDir() + "/typing-log.1.jsonl").c_str()); for (auto& k : prefs::keys()) if (k.rfind("TLStat_", 0) == 0) prefs::remove(k.c_str()); }
 static void onAboutClosed(AdwDialog*, gpointer w) { gtk_window_destroy(GTK_WINDOW(w)); }
 static void buildLog(GtkApplication* app) {
-    GtkWidget* win = adw_application_window_new(app); gtk_window_set_title(GTK_WINDOW(win), "Nhật ký gõ"); gtk_window_set_default_size(GTK_WINDOW(win), 720, 560);
+    GtkWidget* win = adw_application_window_new(app); gtk_window_set_title(GTK_WINDOW(win), "Nhật ký gõ"); gtk_window_set_default_size(GTK_WINDOW(win), 720, 720);
     GtkWidget* tv = adw_toolbar_view_new(); adw_toolbar_view_add_top_bar(ADW_TOOLBAR_VIEW(tv), adw_header_bar_new());
     GtkWidget* box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 12); for (auto f : {gtk_widget_set_margin_start, gtk_widget_set_margin_end, gtk_widget_set_margin_top, gtk_widget_set_margin_bottom}) f(box, 16);
     auto autoN = [](int d) { return statSum(d, "auto_vi_word_to_en") + statSum(d, "auto_en_word_to_vi") + statSum(d, "auto_double_key"); };
@@ -166,7 +166,8 @@ static void buildLog(GtkApplication* app) {
     std::ifstream f(tlDataDir() + "/typing-log.jsonl"); std::vector<std::string> lines; std::string l; while (std::getline(f, l)) if (!l.empty()) lines.push_back(l);
     int n = 0;
     for (auto it = lines.rbegin(); it != lines.rend() && n < 200; ++it, ++n) {
-        std::string e = jget(*it, "e"), to = jget(*it, "to") == "vi" ? "Tiếng Việt" : "Anh", t = jget(*it, "t"), app = jget(*it, "app"); std::string time = t.size() >= 19 ? t.substr(5, 14) : t; for (auto& ch : time) if (ch == 'T') ch = ' ';
+        std::string e = jget(*it, "e"), to = jget(*it, "to") == "vi" ? "Tiếng Việt" : "Anh", t = jget(*it, "t"), app = jget(*it, "app");
+        if (e == "cmd" || e == "key" || e == "reload" || e == "reset") { n--; continue; }   // engine debug events std::string time = t.size() >= 19 ? t.substr(5, 14) : t; for (auto& ch : time) if (ch == 'T') ch = ' ';
         std::string title, detail;
         if (e == "word") { title = jget(*it, "lang") == "vi" ? "Từ (Việt)" : "Từ (Anh)"; detail = jget(*it, "keys") + "   [" + jget(*it, "end") + "]"; }
         else if (e == "auto") { title = "Tự chuyển → " + to; std::string r = jget(*it, "rule"); detail = r == "vi_word_to_en" ? "từ tiếng Anh gõ khi đang ở Tiếng Việt" : r == "en_word_to_vi" ? "từ tiếng Việt gõ khi đang ở Anh" : "gõ dấu hai lần"; }
@@ -174,7 +175,7 @@ static void buildLog(GtkApplication* app) {
         else if (e == "undo") { title = "Hoàn tác → " + to; detail = "bằng Delete"; } else if (e == "context") title = "Theo ứng dụng → " + to; else title = e;
         GtkWidget* row = adw_action_row_new(); adw_preferences_row_set_title(ADW_PREFERENCES_ROW(row), (time + "  ·  " + app + "  ·  " + title).c_str()); adw_action_row_set_subtitle(ADW_ACTION_ROW(row), detail.c_str()); gtk_list_box_append(GTK_LIST_BOX(list), row);
     }
-    GtkWidget* sc = gtk_scrolled_window_new(); gtk_widget_set_vexpand(sc, TRUE); gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(sc), list); gtk_box_append(GTK_BOX(box), sc);
+    GtkWidget* sc = gtk_scrolled_window_new(); gtk_widget_set_vexpand(sc, TRUE); gtk_widget_set_size_request(sc, -1, 220); gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(sc), list); gtk_box_append(GTK_BOX(box), sc);
     GtkWidget* btns = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8); GtkWidget* open = gtk_button_new_with_label("Mở file log"); GtkWidget* clear = gtk_button_new_with_label("Xoá log…"); gtk_widget_add_css_class(clear, "destructive-action"); gtk_widget_set_hexpand(open, TRUE); gtk_widget_set_halign(open, GTK_ALIGN_START);
     g_signal_connect(open, "clicked", G_CALLBACK(onOpenLog), nullptr);
     g_signal_connect(clear, "clicked", G_CALLBACK(onClearLog), nullptr);
@@ -182,7 +183,7 @@ static void buildLog(GtkApplication* app) {
     adw_toolbar_view_set_content(ADW_TOOLBAR_VIEW(tv), box); adw_application_window_set_content(ADW_APPLICATION_WINDOW(win), tv); gtk_window_present(GTK_WINDOW(win));
 }
 static void buildAbout(GtkApplication* app) {
-    GtkWidget* win = adw_application_window_new(app); gtk_window_set_default_size(GTK_WINDOW(win), 300, 200);
+    GtkWidget* win = adw_application_window_new(app); gtk_window_set_default_size(GTK_WINDOW(win), 420, 560); gtk_window_set_title(GTK_WINDOW(win), "Giới thiệu Vikey");
     AdwDialog* d = adw_about_dialog_new();
     adw_about_dialog_set_application_name(ADW_ABOUT_DIALOG(d), "Vikey"); adw_about_dialog_set_application_icon(ADW_ABOUT_DIALOG(d), "vikey"); adw_about_dialog_set_version(ADW_ABOUT_DIALOG(d), VIKEY_VERSION);
     adw_about_dialog_set_developer_name(ADW_ABOUT_DIALOG(d), "Tony Dinh"); adw_about_dialog_set_website(ADW_ABOUT_DIALOG(d), "https://vikey.app"); adw_about_dialog_set_license_type(ADW_ABOUT_DIALOG(d), GTK_LICENSE_GPL_3_0);
