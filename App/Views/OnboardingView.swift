@@ -81,7 +81,7 @@ struct OnboardingView: View {
 
     private var footer: some View {
         HStack {
-            if step != .welcome && step != .permission {
+            if step != .welcome {
                 Button("Quay lại") { go(Step(rawValue: step.rawValue - 1)!) }.controlSize(.large)
             }
             Spacer()
@@ -90,7 +90,13 @@ struct OnboardingView: View {
                 Button("Bắt đầu") { go(state.isRunning && !previewPermission ? .practice : .permission) }
                     .buttonStyle(.borderedProminent).controlSize(.large).keyboardShortcut(.defaultAction)
             case .permission:
-                EmptyView()
+                if !state.isRunning || previewPermission {
+                    ProgressView().controlSize(.small)
+                    Text("Đang chờ quyền…").foregroundStyle(.secondary).padding(.trailing, 6)
+                }
+                Button("Tiếp tục") { go(.practice) }
+                    .buttonStyle(.borderedProminent).controlSize(.large)
+                    .disabled(!state.isRunning || previewPermission)
             case .practice, .hotkey:
                 Button("Tiếp tục") { go(Step(rawValue: step.rawValue + 1)!) }
                     .buttonStyle(.borderedProminent).controlSize(.large)
@@ -152,8 +158,6 @@ struct OnboardingView: View {
                 }
                 .buttonStyle(.borderedProminent).controlSize(.large)
                 Spacer()
-                ProgressView().controlSize(.small)
-                Text("Đang chờ quyền…").foregroundStyle(.secondary)
             }
         }
     }
