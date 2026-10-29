@@ -4,19 +4,17 @@
 <title>Vikey</title>
 <link>https://vikey.app</link>
 <item>
-<title>Vikey 1.0.13</title>
-<pubDate>Wed, 28 Oct 2026 23:18:00 +0000</pubDate>
-<sparkle:version>15</sparkle:version>
-<sparkle:shortVersionString>1.0.13</sparkle:shortVersionString>
+<title>Vikey 1.0.14</title>
+<pubDate>Thu, 29 Oct 2026 00:50:57 +0000</pubDate>
+<sparkle:version>16</sparkle:version>
+<sparkle:shortVersionString>1.0.14</sparkle:shortVersionString>
 <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
 <description><![CDATA[<ul>
-<li>Tự chuyển chính xác hơn với tiếng Việt khi chat: học thêm từ 2,5 triệu chữ trên diễn đàn và bình luận (ạ, đc, đt…).</li>
-<li>"visa", "meme" không còn thành "vía", "mêm".</li>
-<li>"deepseek" không còn bị mất chữ thành "deepsek".</li>
-<li>"web(" không còn thành "ưeb(".</li>
-<li>Từ viết hoa giữa câu như NAS luôn được giữ nguyên.</li>
+<li>Tự chuyển thông minh hơn với những từ vừa là tiếng Anh vừa là tiếng Việt: Vikey nhìn cả từ đứng trước ("cho con bú" nhưng "đi xe bus", "ở bên" nhưng "it's been").</li>
+<li>Học thêm từ hơn 180 triệu chữ tiếng Việt và tiếng Anh, gõ sai ít hơn và phải chuyển tay ít hơn.</li>
+<li>"ạ" ngay sau một từ tiếng Anh không còn thành "aj".</li>
 </ul>]]></description>
-<enclosure url="https://vikey.app/downloads/Vikey-1.0.13.dmg" type="application/octet-stream" sparkle:edSignature="htGKOHGcOIijPAS6JXLXzlZq3SJ1JCDlW+5xLa0ZwYLdydgl3QWpPQ6LTA9VYszGKS061KiA4LLdRabd+WeTCA==" length="2337640"/>
+<enclosure url="https://vikey.app/downloads/Vikey-1.0.14.dmg" type="application/octet-stream" sparkle:edSignature="3mChuRpMemgF9IdXofY6DTad/ztR6R/OKuiAObiQDXtAylSdjGQDrB05ib/vaDccV4BVGbjHjaB0QNyz+RAUBA==" length="3400050"/>
 </item>
 </channel>
 </rss>
