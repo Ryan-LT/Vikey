@@ -132,7 +132,8 @@ static GType vikey_engine_get_type() {
 }
 
 // ---- settings file watch + periodic flush -------------------------------------------------------------
-static void onSettingsChanged(GFileMonitor*, GFile*, GFile*, GFileMonitorEvent ev, gpointer) { if (ev == G_FILE_MONITOR_EVENT_CHANGES_DONE_HINT || ev == G_FILE_MONITOR_EVENT_MOVED_IN || ev == G_FILE_MONITOR_EVENT_RENAMED) {   // not on every write: the file may be half-written core::reloadSettings(); updateLangProp(_active); } }
+// Reload only when a write is done (not on every CHANGED: the file may be half-written).
+static void onSettingsChanged(GFileMonitor*, GFile*, GFile*, GFileMonitorEvent ev, gpointer) { if (ev == G_FILE_MONITOR_EVENT_CHANGES_DONE_HINT || ev == G_FILE_MONITOR_EVENT_MOVED_IN || ev == G_FILE_MONITOR_EVENT_RENAMED) { core::reloadSettings(); updateLangProp(_active); } }
 static gboolean onFlush(gpointer) { core::flushTypingLog(); return TRUE; }
 static void onBusDisconnected(IBusBus*, gpointer) { core::shutdown(); ibus_quit(); }
 
