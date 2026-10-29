@@ -20,10 +20,11 @@ static std::string unjstr(const std::string& t) {   // t includes the quotes
     std::string o; for (size_t i = 1; i + 1 < t.size(); i++) { char c = t[i]; if (c == '\\' && i + 2 < t.size()) { char d = t[++i]; if (d == 'n') o += '\n'; else if (d == 't') o += '\t'; else if (d == 'u' && i + 4 < t.size()) { o += (char)strtol(t.substr(i + 1, 4).c_str(), nullptr, 16); i += 4; } else o += d; } else o += c; } return o;
 }
 static void load() {
-    _v.clear(); _loaded = true;
-    std::ifstream f(settingsPath()); if (!f) return;
+    _loaded = true;
+    std::ifstream f(settingsPath()); if (!f) { _v.clear(); return; }
     std::stringstream ss; ss << f.rdbuf(); std::string s = ss.str();
-    size_t i = s.find('{'); if (i == std::string::npos) return; i++;
+    size_t i = s.find('{'); if (i == std::string::npos || s.find('}') == std::string::npos) return;   // half-written: keep what we have
+    _v.clear(); i++;
     while (i < s.size()) {
         while (i < s.size() && (isspace((unsigned char)s[i]) || s[i] == ',')) i++;
         if (i >= s.size() || s[i] == '}') break;

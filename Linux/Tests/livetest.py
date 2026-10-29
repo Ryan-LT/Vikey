@@ -10,7 +10,7 @@ SET = os.path.expanduser('~/.config/vikey/settings.json')
 def set_lang(vi):
     d = json.load(open(SET)) if os.path.exists(SET) else {}
     d['InputMethod'] = 1 if vi else 0; d['LanguageQuiet'] = 1   # the engine reloads the file and takes the language without the 5 s pause
-    os.makedirs(os.path.dirname(SET), exist_ok=True); json.dump(d, open(SET, 'w')); time.sleep(0.4)
+    os.makedirs(os.path.dirname(SET), exist_ok=True); json.dump(d, open(SET + '.new', 'w')); os.replace(SET + '.new', SET); time.sleep(0.5)   # atomic: the engine reads on changes-done
 def xdo(*a): subprocess.run(['xdotool', *a], check=False)
 class App(Gtk.Application):
     def __init__(self): super().__init__(application_id='app.vikey.LiveTest'); self.results = []
