@@ -74,8 +74,8 @@ PLATFORMS = ("macos", "windows", "linux", "ios", "android")
 PNAME = dict(macos="macOS", windows="Windows", linux="Linux", ios="iOS", android="Android")
 PREQ = {"vi": dict(macos="macOS 13 trở lên", windows="Windows 10 và 11", linux="Ubuntu, Debian, Fedora", ios="iPhone, iOS 17+", android="Điện thoại Android"),
         "en": dict(macos="macOS 13 or later", windows="Windows 10 and 11", linux="Ubuntu, Debian, Fedora", ios="iPhone, iOS 17+", android="Android phones")}
-PTXT = {"vi": dict(dl="Tải về", store="App Store", soon="Sắp có", notify="Báo tôi khi có", arm="Bản cho chip ARM"),
-        "en": dict(dl="Download", store="App Store", soon="Soon", notify="Notify me", arm="ARM64 build")}
+PTXT = {"vi": dict(dl="Tải về", store="App Store", soon="Sắp có", notify="Báo tôi khi có", arm="Bản cho chip ARM", play="Google Play"),
+        "en": dict(dl="Download", store="App Store", soon="Soon", notify="Notify me", arm="ARM64 build", play="Google Play")}
 
 def downloads(rel):
     """Where each platform's download lives, from release.json; None = no build yet ("pending" + notify form).
@@ -106,13 +106,14 @@ def platform_cards(lang, dl):
                 arms = [f'<a href="{d[k]}" download>{n}</a>' for k, n in (("deb_arm", ".deb"), ("rpm_arm", ".rpm")) if d.get(k)]
                 if arms: btn += '<span class="alt">ARM64: ' + " · ".join(arms) + "</span>"
             if p == "windows" and d.get("arm"): btn += f'<a class="alt" href="{d["arm"]}" download>{t["arm"]}</a>'
+            if p == "android": btn = f'<div class="two"><a class="btn dl" href="{d["url"]}" download>APK</a><span class="btn ghost soon" title="{t["soon"]}">{t["play"]}<small>{t["soon"]}</small></span></div>'
             badge = ""
             if p not in ("windows", "linux") or not (d.get("arm") or d.get("deb_arm")): btn += '<span class="alt none" aria-hidden="true">.</span>'
         else:
             btn = f'<a class="btn ghost dl" href="#{p}" data-notify="{p}">{t["notify"]}</a>'
             badge = f'<span class="badge">{t["soon"]}</span>'
             btn += '<span class="alt none" aria-hidden="true">.</span>'
-        shot = f'<img class="pshot" src="/assets/shots/dl-{p}.png" width="1200" height="900" alt="Vikey trên {PNAME[p]}" loading="lazy">'
+        shot = f'<img class="pshot zoom" src="/assets/shots/dl-{p}.webp" width="1200" height="900" alt="Vikey {"trên" if lang == "vi" else "on"} {PNAME[p]}" loading="lazy">'
         out.append(f'<section class="pcard{"" if d else " pending"}" id="{p}" data-os="{p}">{shot}{badge}{os_icon(p, "picon")}'
                    f'<h2>{PNAME[p]}</h2><p>{PREQ[lang][p]}</p>{btn}</section>')
     return '<div class="pgrid">' + "".join(out) + "</div>"

@@ -1,7 +1,7 @@
 <!-- title: Download Vikey for macOS, Windows, Linux, iOS and Android – Vikey - Gõ tiếng Việt -->
 <!-- description: Download Vikey for free. Available for macOS, Windows, Linux and Android, coming soon to iPhone. -->
 <main class="wrap prose center dlpage">
-<h1>Download Vikey</h1>
+<h1>Download Vi<b>key</b></h1>
 <p class="muted">Free · open source · version VERSION</p>
 <!-- PLATFORMS -->
 <details class="howto">
@@ -35,3 +35,10 @@
 </details>
 <p class="muted small"><span class="nw">Every version and the source code are on <a href="https://github.com/tonyminibot/Vikey/releases">GitHub</a></span> · <span class="nw"><a href="/en/changelog">Changelog</a></span></p>
 </main>
+<div class="lightbox" id="lb" hidden><img alt=""></div>
+<script>
+const lb=document.getElementById("lb"),lbi=lb.querySelector("img");
+document.querySelectorAll("img.zoom").forEach(i=>i.addEventListener("click",()=>{lbi.src=i.src;lbi.alt=i.alt;lb.hidden=false;document.body.classList.add("lb-open")}));
+const closeLb=()=>{lb.hidden=true;document.body.classList.remove("lb-open")};
+lb.addEventListener("click",closeLb);addEventListener("keydown",e=>{if(e.key==="Escape")closeLb()});
+</script>
