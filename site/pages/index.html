@@ -1,0 +1,61 @@
+<!-- title: Vikey - Gõ tiếng Việt, tự chuyển Anh/Việt chính xác tới 99.73% -->
+<!-- description: Vikey là bộ gõ tiếng Việt thế hệ mới cho macOS, tối ưu cho gõ song ngữ Anh-Việt. Tự chuyển Anh/Việt chính xác tới 99.73%. Miễn phí, mã nguồn mở. -->
+<!-- layout: one -->
+<link rel="preload" as="fetch" crossorigin href="/assets/demo.json" data-demo>
+<main class="one">
+<div class="wrap">
+<div class="one-l">
+<span class="pill">Miễn phí · Mã nguồn mở</span>
+<h1>Tự chuyển Anh/Việt<br><span>chính xác tới 99.73%</span></h1>
+<p class="lead"><span class="nw">Vikey là bộ gõ tiếng Việt thế hệ mới,</span> <span class="nw">tối ưu cho gõ song ngữ Anh-Việt</span> <span class="nw">với tốc độ cực nhanh.</span></p>
+<div class="btns"><a class="btn big" data-cta="long" href="/download">Tải về</a></div>
+<!-- PLATFORM_ROW -->
+<p class="sub">Telex · v<span data-ver>VERSION</span> · <a href="https://github.com/tonyminibot/Vikey">Mã nguồn</a></p>
+</div>
+<div class="one-r">
+<div class="stage">
+<img class="pop zoom" src="/assets/shots/main.png" width="460" height="605" alt="Cửa sổ Vikey: chuyển Tiếng Việt/English, phím tắt, tự chuyển, kiểu đặt dấu">
+<div class="demo" aria-label="Minh hoạ: gõ lẫn tiếng Anh và tiếng Việt, Vikey tự chuyển">
+<div class="demo-bar"><span class="dots"><i></i><i></i><i></i></span><span class="demo-title">Tin nhắn</span><span class="vk" id="vk" title="Chế độ hiện tại">V</span></div>
+<div class="demo-body">
+<div class="row plain"><span class="lbl">Bộ gõ thông thường</span><div class="txt" id="plain"></div></div>
+<div class="row vikey"><span class="lbl brandlbl"><img src="/assets/icon.png" alt="" width="16" height="16"><span>Vi<b>key</b></span></span><div class="txt" id="out"></div></div>
+</div>
+</div>
+</div>
+</div>
+<nav class="links"><a href="/download">Tải về</a><a href="/faq">Câu hỏi thường gặp</a><a href="/changelog">Phiên bản</a><a href="/privacy">Quyền riêng tư</a><a href="https://github.com/tonyminibot/Vikey">GitHub</a><a href="https://github.com/tonyminibot/Vikey/issues">Báo lỗi</a></nav>
+</div>
+</main>
+<div class="lightbox" id="lb" hidden><img alt=""></div>
+<script>
+const lb=document.getElementById("lb"),lbi=lb.querySelector("img");
+document.querySelectorAll("img.zoom").forEach(i=>i.addEventListener("click",()=>{lbi.src=i.src;lbi.alt=i.alt;lb.hidden=false;document.body.classList.add("lb-open")}));
+const closeLb=()=>{lb.hidden=true;document.body.classList.remove("lb-open")};
+lb.addEventListener("click",closeLb);addEventListener("keydown",e=>{if(e.key==="Escape")closeLb()});
+// Typing demo: every frame was produced by the real engine, one keystroke at a time (Vikey, and plain Telex for comparison).
+(async()=>{
+ const scenes=await (await fetch(document.querySelector('link[data-demo]').href)).json();
+ for(let i=scenes.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[scenes[i],scenes[j]]=[scenes[j],scenes[i]]}
+ const $=id=>document.getElementById(id),out=$("out"),plain=$("plain"),vk=$("vk");
+ const wait=ms=>new Promise(r=>setTimeout(r,ms));
+ const esc=t=>t.replace(/&/g,"&amp;").replace(/</g,"&lt;");
+ const setLang=(l,announce)=>{vk.textContent=l?"V":"E";vk.classList.toggle("en",!l);
+  if(announce){vk.classList.remove("flip");void vk.offsetWidth;vk.classList.add("flip")}};
+ const caret='<span class="caret"></span>';
+ // mark the words where plain Telex and Vikey disagree
+ const marked=(a,b,cls)=>{const wa=a.split(" "),wb=b.split(" ");return wa.map((w,i)=>w&&w!==wb[i]?`<mark class="${cls}">${esc(w)}</mark>`:esc(w)).join(" ")};
+ const show=(f,done)=>{
+  if(!f){out.innerHTML=caret;plain.innerHTML="";return}
+  out.innerHTML=marked(f.v,f.p,"good")+(done?"":caret);
+  plain.innerHTML=marked(f.p,f.v,"bad")};
+ const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+ if(reduce){const s=scenes[0],f=s.frames[s.frames.length-1];show({k:s.frames.map(x=>x[0]).join(""),v:f[1],p:f[3]},true);setLang(f[2],false);return}
+ for(;;){for(const s of scenes){
+  show(null);setLang(s.start,false);await wait(600);
+  let lang=s.start,k="";
+  for(const [c,v,l,p] of s.frames){k+=c;show({k,v,p},false);if(l!==lang){setLang(l,true);lang=l}await wait(c===" "?160:55+Math.random()*35)}
+  const f=s.frames[s.frames.length-1];show({k,v:f[1],p:f[3]},true);
+  await wait(2200)}}
+})();
+</script>
