@@ -14,6 +14,7 @@
 #pragma comment(lib, "advapi32.lib")
 
 static const UINT WM_TRAY = WM_APP + 1;
+static const UINT WM_VIKEY_SETLANG = WM_APP + 2;   // tests: wParam = language (0 English, 1 Vietnamese)
 static const UINT TIMER_FLUSH = 1, TIMER_SITE = 2;
 enum { ID_VIET = 100, ID_ENG, ID_SETTINGS, ID_AUTOSWITCH, ID_SMART, ID_SITE, ID_SPELL, ID_RESTORE, ID_MODERN, ID_LOGIN, ID_LOG, ID_ABOUT, ID_QUIT };
 
@@ -102,6 +103,7 @@ static LRESULT CALLBACK wndProc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
         case ID_QUIT: DestroyWindow(h); break;
         }
         return 0;
+    case WM_VIKEY_SETLANG: core::setLanguageQuiet((int)wp); return 1;
     case WM_TIMER: if (wp == TIMER_FLUSH) core::flushTypingLog(); else if (wp == TIMER_SITE) vikey::site::poll(); return 0;
     case WM_SETTINGCHANGE: { bool dark = darkTaskbar(); DestroyIcon(_iconV); DestroyIcon(_iconE); _iconV = makeIcon(L'V', dark); _iconE = makeIcon(L'E', dark); updateTray(core::language()); return 0; }
     case WM_DESTROY: core::stop(); Shell_NotifyIconW(NIM_DELETE, &_nid); PostQuitMessage(0); return 0;

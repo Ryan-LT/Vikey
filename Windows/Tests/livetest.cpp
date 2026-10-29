@@ -64,7 +64,10 @@ int wmain(int argc, wchar_t** argv) {
         // set the start language through the registry + a hotkey-free path: the tray app re-reads InputMethod on reloadSettings;
         // the simplest robust way is to toggle with the hotkey until the tray state matches, so we read it back from the registry.
         int want = col[1] == "vi" ? 1 : 0;
-        for (int tries = 0; tries < 2 && vikey::prefs::getInt(L"InputMethod", 1) != want; tries++) typeKeys(L"{alt+z}");
+        HWND tray = FindWindowW(L"VikeyTray", nullptr);
+        if (!tray) { printf("Vikey is not running\n"); return 98; }
+        SendMessageTimeoutW(tray, WM_APP + 2, want, 0, SMTO_NORMAL, 2000, nullptr);   // no hotkey: the hotkey pauses auto switch for 5 s
+        Sleep(100);
         if (GetForegroundWindow() != win) toFront();
         SetWindowTextW(_edit, L""); SetFocus(_edit); SendMessageW(_edit, EM_SETSEL, 0, 0); Sleep(150);
         key(VK_ESCAPE);   // Esc: a word break, resets the engine's session like a click would

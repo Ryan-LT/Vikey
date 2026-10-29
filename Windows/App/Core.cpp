@@ -328,6 +328,10 @@ void setLanguageByUser(int lang) {
     PauseAutoSwitchAfterManual(); _autoFixUndo.active = false; ResetEnglishWord(true);
     vLanguage = lang; TLManual("menu", vLanguage); VKLanguageChanged(true); startNewSession();
 }
+void setLanguageQuiet(int lang) {
+    _autoFixUndo.active = false; ResetEnglishWord(true); _autoPauseUntil = 0; vAutoSwitchByTyping = prefs::getInt(L"AutoSwitchByTyping", 1);
+    vLanguage = lang ? 1 : 0; VKLanguageChanged(false); startNewSession();
+}
 int language() { return vLanguage; }
 void setLanguageObserver(std::function<void(int)> f) { _observer = f; }
 
