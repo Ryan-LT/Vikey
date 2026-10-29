@@ -59,7 +59,7 @@ jobs:
         with:
           path: artifacts
       - name: Code signing tool (ssign: Certum SimplySign cloud cert, headless)
-        if: env.CERTUM_OTP != ''
+        if: ${{ secrets.CERTUM_OTP != '' }}
         run: |
           Invoke-WebRequest -Uri https://github.com/Le-Syl21/ssign/releases/download/v0.1.8/ssign-windows-x86_64.zip -OutFile ssign.zip
           Expand-Archive ssign.zip -DestinationPath ssign
