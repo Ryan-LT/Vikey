@@ -271,6 +271,7 @@ bool keyDown(Uint16 key, bool shift, unsigned flags) {
     if (vLanguage == 0) return vAutoSwitchByTyping && HandleEnglishKeyForAutoSwitch();
     vAutoSwitchRequest = -1;
     vKeyHandleEvent(vKeyEvent::Keyboard, vKeyEventState::KeyDown, _keycode, (_flag & F_SHIFT) ? 1 : ((_flag & F_CAPS) ? 2 : 0), OTHER_CONTROL_KEY);
+    if (vTypingLogEnabled && getenv("VIKEY_DEBUG")) TLWrite("\"e\":\"key\",\"k\":" + std::to_string(_keycode) + ",\"flag\":" + std::to_string(_flag) + ",\"code\":" + std::to_string(pData->code) + ",\"bs\":" + std::to_string(pData->backspaceCount) + ",\"nc\":" + std::to_string(pData->newCharCount) + ",\"req\":" + std::to_string(vAutoSwitchRequest));
     if (pData->code == vDoNothing) return false;
     if (pData->code == vWillProcess || pData->code == vRestore || pData->code == vRestoreAndStartNewSession) {
         bool autoSwitchAtBreak = vAutoSwitchRequest == 0 && !IsLetterKey(_keycode);
