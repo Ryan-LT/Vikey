@@ -159,3 +159,27 @@ enum Telex {
         return ["oa", "oe", "uy"].contains(pair) ? nucleus[1] : nucleus[0]
     }
 }
+
+/// Frequently used emoji, shared by the Mac panel and the iOS keyboard: each pick adds 1 and every older
+/// score fades a little, so a favorite stays on top but this week's emoji still climbs.
+enum EmojiUsage {
+    static let key = "EmojiUsage"
+    /// Until enough picks exist, the block is filled with the emoji people use most.
+    static let starter = ["😂", "❤️", "🥰", "😍", "😭", "👍", "🙏", "😊", "🔥", "😘", "🤣", "🥺", "😅", "🎉", "💕", "😁", "🙂", "😉",
+                          "🤔", "👏", "😎", "💪", "✨", "😢", "🙌", "💯", "😆", "🤗", "😴", "👌"]
+
+    static func record(_ char: String, in d: UserDefaults) {
+        var s = d.dictionary(forKey: key) as? [String: Double] ?? [:]
+        for k in s.keys { s[k]! *= 0.97 }
+        s[char, default: 0] += 1
+        if s.count > 80 { for (k, _) in s.sorted(by: { $0.value < $1.value }).prefix(s.count - 80) { s[k] = nil } }
+        d.set(s, forKey: key)
+    }
+
+    static func frequent(in d: UserDefaults, count n: Int) -> [String] {
+        let s = d.dictionary(forKey: key) as? [String: Double] ?? [:]
+        var list = s.sorted { $0.value != $1.value ? $0.value > $1.value : $0.key < $1.key }.map(\.key)
+        for e in starter where list.count < n && !list.contains(e) { list.append(e) }
+        return Array(list.prefix(n))
+    }
+}

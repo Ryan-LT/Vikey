@@ -45,8 +45,7 @@ final class EmojiKeyboardView: UIView, UICollectionViewDataSource, UICollectionV
         if #available(iOS 17.4, *) { return 15.1 }
         return 15
     }()
-    static let recentsKey = "emojiRecents", toneKey = "emojiTone"
-    private static let starter = ["😂", "❤️", "🥰", "😍", "😭", "👍", "🙏", "😊", "🔥", "😘", "🤣", "🥺", "😅", "🎉", "💕", "😁", "🙂", "😉"]
+    static let toneKey = "emojiTone"
     private var tone: Int { VKSettings.defaults.integer(forKey: Self.toneKey) }
 
     override init(frame: CGRect) {
@@ -92,7 +91,7 @@ final class EmojiKeyboardView: UIView, UICollectionViewDataSource, UICollectionV
         let all = EmojiIndex.shared.all.filter { $0.version <= Self.maxVersion }
         func g(_ ids: Int...) -> [Emoji] { all.filter { ids.contains($0.group) } }
         let t: [(String, String, String, [Emoji])] = [
-            ("Dùng gần đây", "Frequently Used", "clock", []),
+            ("Dùng thường xuyên", "Frequently Used", "clock", []),
             ("Mặt cười & người", "Smileys & People", "face.smiling", g(0, 1)),
             ("Động vật & thiên nhiên", "Animals & Nature", "pawprint", g(3)),
             ("Đồ ăn & thức uống", "Food & Drink", "fork.knife", g(4)),
@@ -121,9 +120,7 @@ final class EmojiKeyboardView: UIView, UICollectionViewDataSource, UICollectionV
     private func reloadRecents() {
         guard !categories.isEmpty else { return }
         let byChar = Dictionary(EmojiIndex.shared.all.map { ($0.char, $0) }, uniquingKeysWith: { a, _ in a })
-        let saved = VKSettings.defaults.stringArray(forKey: Self.recentsKey) ?? []
-        var list = saved
-        for e in Self.starter where list.count < 18 && !list.contains(e) { list.append(e) }   // a full block, like iOS
+        let list = EmojiUsage.frequent(in: VKSettings.defaults, count: 24)
         categories[0].items = list.compactMap { byChar[$0] }
         grid.reloadData()
     }
@@ -240,10 +237,7 @@ final class EmojiKeyboardView: UIView, UICollectionViewDataSource, UICollectionV
     private func choose(_ text: String, _ e: Emoji) {
         if haptics { feedback?.tick() } else { UIDevice.current.playInputClick() }
         delegate?.emojiKeyboard(self, insert: text)
-        var r = VKSettings.defaults.stringArray(forKey: Self.recentsKey) ?? []
-        r.removeAll { $0 == e.char }
-        r.insert(e.char, at: 0)
-        VKSettings.defaults.set(Array(r.prefix(32)), forKey: Self.recentsKey)
+        EmojiUsage.record(e.char, in: VKSettings.defaults)
     }
 
     func scrollViewDidScroll(_ s: UIScrollView) { if !searching { updateTitle() } }

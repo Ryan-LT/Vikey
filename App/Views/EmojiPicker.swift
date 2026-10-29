@@ -182,7 +182,7 @@ final class EmojiPickerModel: ObservableObject {
         self.vietnamese = vietnamese
         raw = ""; allSelected = false; results = []; selected = 0; mouseAtOpen = NSEvent.mouseLocation
         let byChar = Dictionary(all.map { ($0.char, $0) }, uniquingKeysWith: { a, _ in a })
-        recents = (UserDefaults.standard.stringArray(forKey: PrefEmoji.recents) ?? []).compactMap { byChar[$0] }
+        recents = EmojiUsage.frequent(in: .standard, count: EmojiGridView.columns * 3).compactMap { byChar[$0] }
     }
 
     func setRaw(_ s: String) { raw = s; allSelected = false; search() }
@@ -207,12 +207,7 @@ final class EmojiPickerModel: ObservableObject {
         selected = min(max(0, selected + d), n - 1)
     }
 
-    func remember(_ e: Emoji) {
-        var r = UserDefaults.standard.stringArray(forKey: PrefEmoji.recents) ?? []
-        r.removeAll { $0 == e.char }
-        r.insert(e.char, at: 0)
-        UserDefaults.standard.set(Array(r.prefix(EmojiGridView.columns * 2)), forKey: PrefEmoji.recents)
-    }
+    func remember(_ e: Emoji) { EmojiUsage.record(e.char, in: .standard) }
 }
 
 struct EmojiGridView: View {
@@ -268,7 +263,7 @@ struct EmojiGridView: View {
                         } else { cells(model.results, offset: 0) }
                     } else {
                         if !model.recents.isEmpty {
-                            Section(header: header(model.vietnamese ? "Dùng gần đây" : "Frequently Used")) { cells(model.recents, offset: 0) }
+                            Section(header: header(model.vietnamese ? "Dùng thường xuyên" : "Frequently Used")) { cells(model.recents, offset: 0) }
                         }
                         ForEach(model.groups, id: \.0) { g, list in
                             Section(header: header(model.vietnamese ? Self.groupNames[g] : Self.groupNamesEN[g])) {
@@ -314,6 +309,12 @@ struct EmojiGridView: View {
                 Text(model.vietnamese ? e.nameVI : e.nameEN).font(.callout).lineLimit(1).foregroundStyle(.secondary)
             }
             Spacer()
+            HStack(spacing: 5) {   // branding (Tony): the app icon and the wordmark, quiet
+                Image(nsImage: NSApp.applicationIconImage).resizable().frame(width: 16, height: 16)
+                Wordmark(size: 13)
+            }
+            .opacity(0.85)
+            Divider().frame(height: 16)
             Menu {
                 ForEach(0..<6) { t in
                     Button(["✋", "✋🏻", "✋🏼", "✋🏽", "✋🏾", "✋🏿"][t]) { model.tone = t }
