@@ -88,7 +88,7 @@ D23	1	ASUS 	ASUS 	0	same with a doubled tone key: the capitals keep both presses
 D23	1	VDDV HDDND 	VĐV HĐND 	1	Vietnamese acronyms with only đ changed stay Vietnamese
 D23	1	Wi-Fi 	Wi-Fi 	0	before a hyphen, a rare w-word ("Ưi") starts an English compound
 D23	1	now-ron 	nơ-ron 	1	Vietnamese loanword syllables with hyphens stay (nơ-ron)
-D23	0	TOOI DDI HOCJ 	TOOI ĐI HỌC 	1	EN mode, Caps Lock Vietnamese: inside a run of capitals, all-caps words convert to common syllables
+D23	0	TOOI DDI HOCJ 	TÔI ĐI HỌC 	1	EN mode, Caps Lock Vietnamese: inside a run of capitals, all-caps words convert to common syllables
 D23	0	USA EST 	USA EST 	0	all-caps English or rare readings never convert
 D23	0	HW 	HW 	0	a lone all-caps word (not in a run of capitals) never converts
 D27	1	deepseek 	deepseek 	0	a foreign word restored as typed gets back the keys Telex undid on the way (not deepsek)
@@ -114,3 +114,8 @@ D35	1	vaof office its nhaats 	vào office ít nhất 	1	look-forward: a word put
 D39	1	ddi DDaf Nawngx 	đi Đà Nẵng 	1	DD is one letter (Đ): a word starting with it has one capital, not an acronym (DDR, DDoS keep two)
 D39	0	DDR4 DDoS 	DDR4 DDoS 	0	the D39 Đ rule keeps real acronyms
 D40	1	see you owr DDaf Nawngx 	see you ở Đà Nẵng 	1	"sê" is not a Vietnamese word (Tony): see stays English
+D41	0	THOONG 	THÔNG 	1	a lone all-caps word marked as Telex (doubled vowel, w after a vowel) converts in English mode
+D41	0	THUOWNGF VIEETJ 	THƯỜNG VIỆT 	1	the same, two words
+D41	0	HW IRS USA NASA 	HW IRS USA NASA 	0	unmarked acronyms stay as typed
+D42	1	e lieen heej been ASL 	e liên hệ bên ASL 	0	an acronym put back to its keys does not flip the word before it (bên ASL, not been ASL)
+D42	1	been USA 	bên USA 	0	the same with an acronym that is an English word

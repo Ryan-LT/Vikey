@@ -3,6 +3,10 @@ import SwiftUI
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
+        #if DEBUG
+        // before anything else: no event tap, no windows, no focus taken (it runs while others use the Mac)
+        if let dir = UserDefaults.standard.string(forKey: "emojiSelfTest") { EmojiSelfTest.run(dir: dir); return }
+        #endif
         Migration.fromOpenKeyIfNeeded()
         // people who already use Vikey (permission granted) don't get the first-run guide on update
         if UserDefaults.standard.object(forKey: OnboardingView.doneKey) == nil && VikeyCore.isAccessibilityTrusted() {
@@ -14,6 +18,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if UserDefaults.standard.bool(forKey: "showOnboarding") { OnboardingWindow.show() }   // -showOnboarding YES (screenshots)
         if UserDefaults.standard.bool(forKey: "showAbout") { AboutPanel.show() }             // -showAbout YES (screenshots)
         if UserDefaults.standard.bool(forKey: "showMain") { Windows.main.show() }           // -showMain YES (screenshots)
+        #if DEBUG
+        if UserDefaults.standard.bool(forKey: "forceDark") { NSApp.appearance = NSAppearance(named: .darkAqua) }   // screenshots
+        #endif
         if UserDefaults.standard.bool(forKey: "showEmoji") {                                 // -showEmoji YES [-emojiQuery horse] (screenshots)
             EmojiPicker.shared.open()
             if let q = UserDefaults.standard.string(forKey: "emojiQuery") { EmojiPicker.shared.model.setRaw(q) }

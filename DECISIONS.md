@@ -23,7 +23,7 @@ If every listed change is intended, accept them with `Tools/autoswitch/check.sh 
 
 ---
 
-## 41. Vikey for Android
+## 43. Vikey for Android
 
 **Status:** Built 2026-10-29 on branch `android` (release build signed, live test 14/14 on the emulator). Publishing waits for a try on Tony's phone.
 
@@ -42,6 +42,26 @@ If every listed change is intended, accept them with `Tools/autoswitch/check.sh 
 **Details:** `Android/PLAN.md`.
 
 ---
+## 42. Acronyms don't flip the word before them
+
+**Status:** Shipped 2026-10-29.
+
+**Problem.** "e liên hệ bên ASL" came out "e liên hệ been ASL" (Tony). ASL in Telex is "ÁL", invalid, so its keys go back and the mode switches to English; look-back then flips the tie before it (bên 29 vs been 32) to "been". Same with "team bên US".
+
+**Fix.** When the word put back has 2+ capitals, look-back stays off. The acronym itself is still put back as typed. Vietnamese text is full of acronyms, so they say nothing about the words before them.
+
+**Result.** Locked test 99.88% (manual switches 0.151 → 0.150/100, social and tech wrong words -0.01); chat golden: "team bên US". Rules D42 (2 cases).
+
+## 41. A lone all-caps word converts when Telex marks it
+
+**Status:** Shipped 2026-10-29.
+
+**Problem.** In English mode, THOONG, THUOWNGF, VIEETJ stayed as typed (Tony). D23 converts all-caps words only inside a run of capitals, so a lone HW or CWS stays an acronym. The first word of a Caps Lock run never converted either ("TOOI DDI HOCJ" gave "TOOI ĐI HỌC").
+
+**Fix.** A lone all-caps word of 4+ letters converts when its keys carry a Telex mark: a doubled a/e/o/d, or w after a/o/u. The D23 floor (a common syllable, no English reading) still applies. Acronyms rarely have these marks: HW, IRS, USA, NASA stay.
+
+**Result.** Caps group 1.75% → 1.41% wrong words (tuning set 1.40%); everything else unchanged, locked test 99.88%. Rules D41 (3 cases); D23's run case now expects "TÔI ĐI HỌC".
+
 ## 40. "sê" is not a Vietnamese word
 
 **Status:** Shipped 2026-10-29.

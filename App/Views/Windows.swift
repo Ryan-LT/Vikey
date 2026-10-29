@@ -36,9 +36,23 @@ final class HostedWindow<Content: View> {
             window = w
             Self.centerExactly(w)
         }
+        let first = window?.isVisible == false && !centered
         WindowFocus.bringForward()
         window?.makeKeyAndOrderFront(nil)
+        if first, let w = window {
+            // SwiftUI settles the content size after the window is on screen; measure and center again then
+            // (Tony: the main window still opened off-center)
+            centered = true
+            DispatchQueue.main.async { [size] in
+                if size == nil, let v = w.contentViewController?.view {
+                    v.layoutSubtreeIfNeeded()
+                    if v.fittingSize.height > 0, abs(v.fittingSize.height - w.contentLayoutRect.height) > 1 { w.setContentSize(v.fittingSize) }
+                }
+                w.centerExactly()
+            }
+        }
     }
+    private var centered = false
 
     func close() { window?.close() }
 
@@ -59,7 +73,9 @@ enum Windows {
 extension NSWindow {
     /// NSWindow.center() puts a window a third of the way down; this is the true middle of the screen it's on.
     func centerExactly() {
-        guard let screen = screen ?? NSScreen.main else { center(); return }
+        // the screen with the mouse (where the user is looking), then the window's own, then the main one
+        let mouse = NSScreen.screens.first { NSMouseInRect(NSEvent.mouseLocation, $0.frame, false) }
+        guard let screen = mouse ?? screen ?? NSScreen.main else { center(); return }
         let v = screen.visibleFrame, f = frame
         setFrameOrigin(NSPoint(x: (v.midX - f.width / 2).rounded(), y: (v.midY - f.height / 2).rounded()))
     }

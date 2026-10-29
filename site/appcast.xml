@@ -4,17 +4,15 @@
 <title>Vikey</title>
 <link>https://vikey.app</link>
 <item>
-<title>Vikey 1.0.17</title>
-<pubDate>Thu, 29 Oct 2026 08:30:49 +0000</pubDate>
-<sparkle:version>19</sparkle:version>
-<sparkle:shortVersionString>1.0.17</sparkle:shortVersionString>
+<title>Vikey 1.0.23</title>
+<pubDate>Thu, 29 Oct 2026 11:27:54 +0000</pubDate>
+<sparkle:version>25</sparkle:version>
+<sparkle:shortVersionString>1.0.23</sparkle:shortVersionString>
 <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
 <description><![CDATA[<ul>
-<li>Hướng dẫn khi mở lần đầu: Vikey dùng Telex, gõ thử vài câu, chọn phím chuyển Anh/Việt và phím mở bảng emoji.</li>
-<li>Bảng emoji: mục Dùng thường xuyên, chọn sẵn emoji đầu tiên, phím mũi tên đi đúng từng hàng, ⌘A trong ô tìm, không còn viền trắng ở góc.</li>
-<li>"see you" không còn ra "sê you"; giữ Shift gõ "DDaf Nawngx" ra "Đà Nẵng".</li>
+<li>Chữ viết tắt không còn đổi từ đứng trước: "bên ASL", "team bên US" giữ nguyên tiếng Việt.</li>
 </ul>]]></description>
-<enclosure url="https://vikey.app/downloads/Vikey-1.0.17.dmg" type="application/octet-stream" sparkle:edSignature="5i2V/nuAw6Y5jakQiPB23yrPJcgXX0GfKYbmcuxnm8HKVjKk6SQ6wshPicfipUajbhqF2zOMQPu8DEZHcSGICQ==" length="4520687"/>
+<enclosure url="https://vikey.app/downloads/Vikey-1.0.23.dmg" type="application/octet-stream" sparkle:edSignature="U6M0vUVRtvNW0BMpL6rEoGLGqe6ztZj+n0SZ0UyzRuGFNNlTcRv48WPrH5c7w3ghVbI6yArQS9VufkFZlXdpDQ==" length="4525574"/>
 </item>
 <item>
 <title>Vikey 1.0.15 for Windows (x64)</title>
