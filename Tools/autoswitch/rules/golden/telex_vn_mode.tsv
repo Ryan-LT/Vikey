@@ -698,7 +698,7 @@ bupj	bụp 	0	1
 bups	búp 	0	1
 bura	bủa 	0	1
 burn	burn 	1	0
-bus	bus 	1	0
+bus	bú 	0	1
 busa	búa 	0	1
 busi	búi 	0	1
 busn	bún 	0	1
@@ -7964,7 +7964,7 @@ rea	rea 	0	1
 reach	reach 	0	1
 ream	ream 	0	1
 ree	rê 	0	1
-reef	rề 	0	1
+reef	reef 	1	0
 reefn	rền 	0	1
 reejp	rệp 	0	1
 reejt	rệt 	0	1
@@ -8532,7 +8532,7 @@ soox	sỗ 	0	1
 sor	sỏ 	0	1
 sora	sora 	1	0
 sori	sỏi 	0	1
-sos	só 	0	1
+sos	sos 	1	0
 sosat	soát 	0	1
 sosc	sóc 	0	1
 sosi	sói 	0	1

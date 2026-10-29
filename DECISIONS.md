@@ -23,6 +23,19 @@ If every listed change is intended, accept them with `Tools/autoswitch/check.sh 
 
 ---
 
+## 29. Tuning set vs locked test set, mixed across topics
+
+**Asked by Tony.** Tune against one set and keep another locked; "make sure we have a good mix in each, i don't want our engine to be tuned toward a specific topic/use-case".
+
+**Decided.**
+- Every test source is split 50/50 by message (md5 of the line, stable): `val` (tune against) and `test` (locked: only for reporting, never for choosing). 20% of our crawl leaves the counting text and is split between them. Built by `vikey-data/evalsets/build.py`; VietMix splits stay local.
+- Groups: social/chat (synthetic chat, ViLexNorm, ViCTSD, VietMix, news/car-forum comments), tech (Tinhte, Viblo, tech forums), news (VnExpress), mixed (synthetic everyday), Vietnamese-only, English-only. The headline is the macro average: each group counts the same, whatever its size. All-caps typing is a guardrail reported beside it.
+- `vikey-data/evalsets/run.py val` is what tuning looks at; `run.py test` only for release numbers. check.sh's ViLexNorm auto-correct lock uses the val half.
+- Found and fixed a leak: the keep-list read the Tinhte test set. Web data is being filtered of test-set domains.
+- Baseline (current engine): val 99.85%, locked test 99.86% (macro, lazy typist). Groups (test): social 0.25%, tech 0.23%, news 0.08%, mixed 0.23%, Vietnamese-only 0.01%, English-only 0.03% wrong words; caps 2.70%.
+
+**Status:** Built 2026-10-29.
+
 ## 28. Web Vietnamese data; Early Switch rejected
 
 **Asked by Tony.** "we need about 10 times data both vietnamese and english"; "Early Switch: if we detect 3 words in a row that are clearly in VN/EN, switch right away".
