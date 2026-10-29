@@ -7,6 +7,7 @@
 #include "Prefs.h"
 #include "Site.h"
 #include "Settings.h"
+#include "Updater.h"
 #include "../../Engine/Vietnamese.h"
 #include "resource.h"
 
@@ -93,14 +94,15 @@ static LRESULT CALLBACK wndProc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
         case ID_VIET: core::setLanguageByUser(!core::language()); break;
         case ID_AUTOSWITCH: toggle(L"AutoSwitchByTyping", 1); break;
         case ID_SETTINGS: ui::showSettings(GetModuleHandleW(nullptr), false); break;
-        case ID_UPDATE: MessageBoxW(nullptr, L"Kiểm tra cập nhật sẽ có trong bản tiếp theo.", L"Vikey", MB_OK | MB_ICONINFORMATION); break;
+        case ID_UPDATE: updater::checkNow(h); break;
         case ID_ABOUT: ui::showAbout(GetModuleHandleW(nullptr)); break;
         case ID_LOGTOGGLE: toggle(L"TypingLogEnabled", 0); break;
         case ID_LOG: ui::showTypingLog(GetModuleHandleW(nullptr)); break;
-        case ID_QUIT: DestroyWindow(h); break;
+        case ID_QUIT: updater::installPendingAndQuit(); DestroyWindow(h); break;
         }
         return 0;
     case WM_APP + 3: ui::showSettings(GetModuleHandleW(nullptr), false); return 0;
+    case updater::WM_UPDATER: updater::onEvent(wp); return 0;
     case WM_VIKEY_SETLANG: core::setLanguageQuiet((int)wp); return 1;
     case WM_TIMER: if (wp == TIMER_FLUSH) core::flushTypingLog(); else if (wp == TIMER_SITE) vikey::site::poll(); return 0;
     case WM_SETTINGCHANGE: { bool dark = darkTaskbar(); DestroyIcon(_iconV); DestroyIcon(_iconE); _iconV = makeIcon(L'V', dark); _iconE = makeIcon(L'E', dark); updateTray(core::language()); return 0; }
@@ -115,6 +117,7 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE, PWSTR, int) {
         HWND t = FindWindowW(L"VikeyTray", nullptr); if (t) PostMessageW(t, WM_APP + 3, 0, 0); return 0;
     }
     SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
+    if (vikey::updater::installPendingAtLaunch()) return 0;   // an update downloaded earlier installs now and relaunches Vikey
     vikey::prefs::migrateFromOpenKey();
     WNDCLASSW wc = {}; wc.lpfnWndProc = wndProc; wc.hInstance = inst; wc.lpszClassName = L"VikeyTray";
     RegisterClassW(&wc);
@@ -128,6 +131,7 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE, PWSTR, int) {
     updateTray(vikey::core::language());
     if (!vikey::prefs::has(L"FirstRunDone")) vikey::ui::showSettings(inst, true);
     SetTimer(_hwnd, TIMER_FLUSH, 10000, nullptr);
+    vikey::updater::start(_hwnd);
     SetTimer(_hwnd, TIMER_SITE, 1000, nullptr);   // per-website memory: the active tab can change without any event we see
     MSG msg; while (GetMessageW(&msg, nullptr, 0, 0)) { TranslateMessage(&msg); DispatchMessageW(&msg); }
     ReleaseMutex(single); CloseHandle(single);
