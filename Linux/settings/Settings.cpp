@@ -167,7 +167,8 @@ static void buildLog(GtkApplication* app) {
     int n = 0;
     for (auto it = lines.rbegin(); it != lines.rend() && n < 200; ++it, ++n) {
         std::string e = jget(*it, "e"), to = jget(*it, "to") == "vi" ? "Tiếng Việt" : "Anh", t = jget(*it, "t"), app = jget(*it, "app");
-        if (e == "cmd" || e == "key" || e == "reload" || e == "reset") { n--; continue; }   // engine debug events std::string time = t.size() >= 19 ? t.substr(5, 14) : t; for (auto& ch : time) if (ch == 'T') ch = ' ';
+        if (e == "cmd" || e == "key" || e == "reload" || e == "reset") { n--; continue; }   // engine debug events
+        std::string time = t.size() >= 19 ? t.substr(5, 14) : t; for (auto& ch : time) if (ch == 'T') ch = ' ';
         std::string title, detail;
         if (e == "word") { title = jget(*it, "lang") == "vi" ? "Từ (Việt)" : "Từ (Anh)"; detail = jget(*it, "keys") + "   [" + jget(*it, "end") + "]"; }
         else if (e == "auto") { title = "Tự chuyển → " + to; std::string r = jget(*it, "rule"); detail = r == "vi_word_to_en" ? "từ tiếng Anh gõ khi đang ở Tiếng Việt" : r == "en_word_to_vi" ? "từ tiếng Việt gõ khi đang ở Anh" : "gõ dấu hai lần"; }
