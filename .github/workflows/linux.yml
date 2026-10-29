@@ -7,6 +7,10 @@ on:
   pull_request:
     paths: [Engine/**, Tools/autoswitch/**, Linux/**, .github/workflows/linux.yml]
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Existing GitHub release tag to upload the packages to (e.g. v1.0.14)"
+        required: false
 jobs:
   engine:
     strategy:
@@ -21,9 +25,34 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Tools
-        run: sudo apt-get update -q && sudo apt-get install -y -q ninja-build cmake g++ python3 libibus-1.0-dev libx11-dev libgtk-4-dev libadwaita-1-dev
+        run: sudo apt-get update -q && sudo apt-get install -y -q ninja-build cmake g++ python3 rpm libibus-1.0-dev libx11-dev libgtk-4-dev libadwaita-1-dev
       - name: Engine lock (rule cases, golden, Telex lock, driver parity, perf)
         run: bash Linux/check.sh
-      - name: Build IBus engine (when present)
+      - name: Build IBus engine + settings app, package .deb and .rpm
         if: hashFiles('Linux/ibus/CMakeLists.txt') != ''
-        run: cmake -S Linux -B Linux/build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build Linux/build
+        run: |
+          cmake -S Linux -B Linux/build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build Linux/build
+          cd Linux/build && cpack -G DEB && cpack -G RPM && ls -la ./*.deb ./*.rpm
+      - uses: actions/upload-artifact@v4
+        if: hashFiles('Linux/ibus/CMakeLists.txt') != ''
+        with:
+          name: Vikey-linux-${{ matrix.arch }}
+          path: |
+            Linux/build/*.deb
+            Linux/build/*.rpm
+  # Tag v<version>: put the packages on the GitHub release (release.sh --linux publishes them to vikey.app).
+  release:
+    needs: engine
+    if: startsWith(github.ref, 'refs/tags/v') || inputs.release_tag != ''
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Upload to the release
+        run: gh release upload "${{ inputs.release_tag || github.ref_name }}" artifacts/*/* --clobber -R ${{ github.repository }}
+        env:
+          GH_TOKEN: ${{ github.token }}
