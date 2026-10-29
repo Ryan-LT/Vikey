@@ -160,6 +160,8 @@ bool vAutoSwitchIsVietnameseSpelling(const char* letters);
 int vAutoSwitchWordSide(const Uint32* keys, const int& count);
 /** The side of the word just finished in Vietnamese mode with nothing to fix (set at its space), -1 if none. */
 extern int vAutoSwitchLastSide;
+/** Word pairs for ties (D30, experiment): load "prev<TAB>next<TAB>count" lines; weight 0 = off. */
+void vAutoSwitchSetBigrams(const char* path, const float& weight, const int& minCount);
 
 int vAutoSwitchCompletions(const int& vietnamese, const char* prefix, char out[][32], int* scores, const int& maxOut);
 

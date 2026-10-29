@@ -12,6 +12,9 @@
 #include <cmath>
 #include <list>
 #include "AutoSwitchData.h"
+#include <string>
+#include <unordered_map>
+#include <cstdio>
 
 static vector<Uint8> _charKeyCode = {
     KEY_BACKQUOTE, KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9, KEY_0, KEY_MINUS, KEY_EQUALS,
@@ -1305,6 +1308,51 @@ static inline bool asEnabled() {
 /** Vietnamese mode: a word was ended by a single space and stays Vietnamese. Keep it for look-back. */
 int vAutoSwitchLastSide = -1;
 
+// ---- Word pairs for ties (D30, experiment) ---------------------------------------------------------------
+// For a word that is a word both ways (bus/bú, been/bên), how often each reading follows the previous word
+// in real text ("cho con bú" vs "the bus"). Loaded at run time for now (tests); off when not loaded.
+static std::unordered_map<std::string, int>* _asBigrams = nullptr;
+static float _asBigramWeight = 0;
+static int _asBigramMin = 3;
+void vAutoSwitchSetBigrams(const char* path, const float& weight, const int& minCount) {
+    _asBigramWeight = weight; _asBigramMin = minCount;
+    if (!path) return;
+    FILE* f = fopen(path, "r"); if (!f) return;
+    if (!_asBigrams) _asBigrams = new std::unordered_map<std::string, int>();
+    char line[256];
+    while (fgets(line, sizeof line, f)) {
+        char* t1 = strchr(line, '\t'); if (!t1) continue; char* t2 = strchr(t1 + 1, '\t'); if (!t2) continue;
+        *t2 = 0; (*_asBigrams)[std::string(line)] += atoi(t2 + 1);
+    }
+    fclose(f);
+}
+static std::string asUtf8(const Uint16* t, int n) {
+    std::string s;
+    for (int i = 0; i < n; i++) { unsigned c = t[i];
+        if (c < 0x80) s += (char)c; else if (c < 0x800) { s += (char)(0xC0 | c >> 6); s += (char)(0x80 | (c & 63)); }
+        else { s += (char)(0xE0 | c >> 12); s += (char)(0x80 | ((c >> 6) & 63)); s += (char)(0x80 | (c & 63)); } }
+    return s;
+}
+/** The word as it shows (lowercase): the letters, or their Vietnamese reading. */
+static bool asSurface(const char* letters, const bool& vietnamese, std::string& out) {
+    if (!vietnamese) { out = letters; return true; }
+    Uint16 t[64]; int n = 0;
+    if (vAutoSwitchWordScore(1, letters, t, &n) <= AS_MISSING || n <= 0) return false;
+    out = asUtf8(t, n); return true;
+}
+/** > 0: the Vietnamese reading follows prev more often, < 0: the English one (10 = 10x); 0: no data. */
+static int asBigramVote(const char* prevLetters, const bool& prevVietnamese, const char* letters) {
+    if (!_asBigrams || _asBigramWeight <= 0) return 0;
+    std::string p, vn;
+    if (!asSurface(prevLetters, prevVietnamese, p) || !asSurface(letters, true, vn)) return 0;
+    auto get = [&](const std::string& w) { auto it = _asBigrams->find(p + "\t" + w); return it == _asBigrams->end() ? 0 : it->second; };
+    int cv = get(vn), ce = get(letters);
+    if (cv + ce < _asBigramMin) return 0;
+    double v = 10 * log10((cv + 0.5) / (ce + 0.5));
+    if (v > 30) v = 30; if (v < -30) v = -30;
+    return (int)lround(v * _asBigramWeight);
+}
+
 static void asRememberWord() {
 #ifdef AS_NO_LOOKBACK
     _asPrevCount = 0; return;
@@ -1469,6 +1517,14 @@ static bool asShouldRestoreToEnglishCore() {
 #ifndef AS_TIE_PREV
 #define AS_TIE_PREV 5       //a tie leaning English (3x) goes English right after a clearly English word (D22)
 #endif
+    //word pairs (D30): the reading that follows the previous word more often in real text
+    if (_asBigrams && en != AS_MISSING && vn != AS_MISSING && _asPrevCount >= 1) {
+        char praw[AS_KEY_LEN];
+        if (asRawWord(_asPrev[0].raw, _asPrev[0].rawCount, praw)) {
+            int vote = asBigramVote(praw, !_asPrev[0].same, raw);
+            if (vote != 0) return en - vn - vote >= AS_PREFER && (vn < AS_VN_FLOOR || vote <= -AS_PREFER);
+        }
+    }
     if (en != AS_MISSING && vn != AS_MISSING && en - vn >= AS_TIE_PREV && _asPrevCount >= 1 &&
         _asPrev[0].same && _asPrev[0].en != AS_MISSING && _asPrev[0].vn == AS_MISSING)
         return true;   //"video call thí" -> "this"
@@ -1658,7 +1714,13 @@ bool vAutoSwitchCheckEnglishWord(const Uint32* keys, const int& count,
     Uint32 result[MAX_BUFF];
     int resultCount;
     int vn = asReplay(keys, count, result, resultCount);
-    if (vn == AS_MISSING || !(en == AS_MISSING || (en < AS_EN_FLOOR && vn - en >= AS_PREFER))) return false;
+    //word pairs (D30): "cho con bus" -> bú, "the bus" stays
+    int pairVote = 0;
+    if (_asBigrams && en != AS_MISSING && vn != AS_MISSING && previousN >= 1 && previousCounts[0] >= 1) {
+        char praw[AS_KEY_LEN];
+        if (asRawWord(previous[0], previousCounts[0], praw)) pairVote = asBigramVote(praw, false, raw);
+    }
+    if (vn == AS_MISSING || !(en == AS_MISSING || (en < AS_EN_FLOOR && vn - en + pairVote >= AS_PREFER))) return false;
 #ifndef AS_CAPS_VN_FLOOR
 #define AS_CAPS_VN_FLOOR 15   //all capitals convert only to a common syllable (IRS stays, not "Í"): D23, D27
 #endif
