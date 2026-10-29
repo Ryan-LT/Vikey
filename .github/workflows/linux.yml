@@ -21,7 +21,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Tools
-        run: sudo apt-get update -q && sudo apt-get install -y -q ninja-build cmake g++ python3 libibus-1.0-dev libgtk-4-dev libadwaita-1-dev
+        run: sudo apt-get update -q && sudo apt-get install -y -q ninja-build cmake g++ python3 libibus-1.0-dev libx11-dev libgtk-4-dev libadwaita-1-dev
       - name: Engine lock (rule cases, golden, Telex lock, driver parity, perf)
         run: bash Linux/check.sh
       - name: Build IBus engine (when present)
