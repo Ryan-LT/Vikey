@@ -23,6 +23,15 @@ struct MainView: View {
     var body: some View {
         NavigationStack {
             Form {
+                Section {   // the wordmark header (design/BRAND.md) instead of a plain navigation title
+                    HStack(spacing: 12) {
+                        Image("Logo").resizable().frame(width: 40, height: 40)
+                            .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+                        Wordmark(size: 32)
+                    }
+                    .listRowBackground(Color.clear)
+                    .listRowInsets(EdgeInsets(top: 4, leading: 4, bottom: 0, trailing: 0))
+                }
                 if !added {
                     Section {
                         Button { KeyboardStatus.openSettings() } label: {
@@ -89,6 +98,8 @@ struct MainView: View {
                 }
             }
             .navigationTitle("Vikey")
+            .toolbar(.hidden, for: .navigationBar)
+            .tint(Color.brand)   // one accent color (design/BRAND.md)
         }
         .onChange(of: phase) { _, p in if p == .active { added = KeyboardStatus.isAdded; logText = KBLog.read() } }
         .onAppear { logText = KBLog.read() }

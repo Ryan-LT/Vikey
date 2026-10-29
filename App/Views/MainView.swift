@@ -106,7 +106,7 @@ struct MainView: View {
                 .resizable()
                 .frame(width: 44, height: 44)
             VStack(alignment: .leading, spacing: 2) {
-                Text("Vikey").font(.title2.weight(.bold))
+                Wordmark(size: 22)
                 if state.isRunning {
                     Text("Bấm \(Hotkey(raw: hotkeyRaw).display) để chuyển")
                         .font(.callout).foregroundStyle(.secondary)
