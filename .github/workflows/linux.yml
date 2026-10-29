@@ -31,7 +31,7 @@ jobs:
       - name: Build IBus engine + settings app, package .deb and .rpm
         if: hashFiles('Linux/ibus/CMakeLists.txt') != ''
         run: |
-          cmake -S Linux -B Linux/build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake -S Linux -B Linux/build -G Ninja -DCMAKE_BUILD_TYPE=Release -DVIKEY_IBUS=ON
           cmake --build Linux/build
           cd Linux/build && cpack -G DEB && cpack -G RPM && ls -la ./*.deb ./*.rpm
       - uses: actions/upload-artifact@v4
