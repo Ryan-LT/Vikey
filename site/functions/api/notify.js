@@ -11,6 +11,10 @@ export async function onRequestPost({ request, env }) {
   const lang = d.lang === "en" ? "en" : "vi";
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return json({ ok: false, error: "email" }, 400);
   if (!PLATFORMS.includes(platform)) return json({ ok: false, error: "platform" }, 400);
+  // Cloudflare Turnstile (widget "vikey-notify"); the secret is a Pages secret, TURNSTILE_SECRET
+  const v = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", { method: "POST",
+    body: new URLSearchParams({ secret: env.TURNSTILE_SECRET, response: String(d.token || ""), remoteip: request.headers.get("CF-Connecting-IP") || "" }) });
+  if (!(await v.json()).success) return json({ ok: false, error: "captcha" }, 403);
   await env.DB.prepare("INSERT OR IGNORE INTO notify (email, platform, lang) VALUES (?, ?, ?)").bind(email, platform, lang).run();
   return json({ ok: true });
 }
