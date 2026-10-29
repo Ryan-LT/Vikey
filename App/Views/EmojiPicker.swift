@@ -296,7 +296,7 @@ struct EmojiGridView: View {
     private var grid: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                LazyVStack(alignment: .leading, spacing: 0, pinnedViews: [.sectionHeaders]) {
+                LazyVStack(alignment: .leading, spacing: 0) {   // titles scroll with the grid: a pinned one needs a background (Tony: odd band)
                     if model.searching && model.results.isEmpty {
                         Text(model.vietnamese ? "Không tìm thấy emoji nào" : "No emoji found")
                             .foregroundStyle(.secondary).frame(maxWidth: .infinity).padding(.top, 110)
@@ -324,8 +324,7 @@ struct EmojiGridView: View {
     private func header(_ t: String) -> some View {
         Text(t).font(.system(size: 11, weight: .semibold)).foregroundStyle(.secondary)
             .frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 6).padding(.top, 2)
-            .padding(.horizontal, 12).padding(.horizontal, -12)
-            .background(.ultraThickMaterial)   // pinned over the rows: solid, so emoji don't show through
+
     }
 
     private func row(_ r: EmojiPickerModel.Row) -> some View {
