@@ -1,5 +1,6 @@
 # Vikey.exe: tray app + hooks. Built only on Windows (MSVC).
 # One version for every platform: project.yml's MARKETING_VERSION, unless -DVIKEY_VERSION overrides it.
+unset(VIKEY_VERSION CACHE)   # never a stale cached value
 if(NOT VIKEY_VERSION)
   file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/../../project.yml" _mv REGEX "MARKETING_VERSION: \"")
   string(REGEX REPLACE ".*MARKETING_VERSION: \"([^\"]+)\".*" "\\1" VIKEY_VERSION "${_mv}")

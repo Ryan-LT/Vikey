@@ -37,7 +37,7 @@ jobs:
         run: |
           $ver = (Select-String -Path project.yml -Pattern 'MARKETING_VERSION: "([^"]+)"').Matches[0].Groups[1].Value
           "VIKEY_VERSION=$ver" >> $env:GITHUB_ENV
-          cmake -S Windows -B Windows/build -G Ninja -DCMAKE_BUILD_TYPE=Release -DVIKEY_VERSION=$ver
+          cmake -S Windows -B Windows/build -G Ninja -DCMAKE_BUILD_TYPE=Release
           cmake --build Windows/build --config Release --target vikey
         shell: pwsh
       - uses: actions/upload-artifact@v4
