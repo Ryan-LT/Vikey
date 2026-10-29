@@ -85,8 +85,35 @@ def android(raw, out):
     bg = gradient([(120, 150, 140), ((190, 214, 196), (120, 110, 100)), ((236, 206, 180), (470, 330, 150)), ((150, 180, 210), (300, 420, 160))])
     place_phone(bg, android_frame(raw), out)
 
+def scene(src, box, out):
+    """A region of a real desktop screenshot (window + bars + dock), scaled to the picture."""
+    im = Image.open(src).convert("RGB").crop(box)
+    im = im.resize((W, H), Image.LANCZOS)
+    im.save(out, quality=88, method=6); print(out, box)
+
+def macdesk(full_shot, bar_h, dock_box, wallpaper, window, out):
+    """macOS: the real menu bar (left and right ends, 2x) and the real dock from a 1x screenshot of the Mac,
+    the window (2x) on the wallpaper. dock_box = l,t,r,b of the dock in the screenshot."""
+    shot = Image.open(full_shot).convert("RGBA")
+    bg = cover(wallpaper)
+    half = W // 4   # each end of the bar: 600 px at 1x -> 1200 px at 2x
+    left = shot.crop((0, 0, half, bar_h)).resize((half * 2, bar_h * 2), Image.LANCZOS)
+    right = shot.crop((shot.width - half, 0, shot.width, bar_h)).resize((half * 2, bar_h * 2), Image.LANCZOS)
+    dock = shot.crop(dock_box); k = min(1.6, (W - 40) / dock.width)
+    dock = dock.resize((int(dock.width * k), int(dock.height * k)), Image.LANCZOS)
+    win = Image.open(window).convert("RGBA")
+    maxh = H - bar_h * 2 - dock.height - 140
+    s = min(1.0, maxh / win.height); win = win.resize((int(win.width * s), int(win.height * s)), Image.LANCZOS)
+    mask = rounded_mask(win.size, int(22 * s)); pic = Image.new("RGBA", win.size, (0, 0, 0, 0)); pic.paste(win, (0, 0), mask)
+    drop(bg, pic, ((W - win.width) // 2, bar_h * 2 + (maxh - win.height) // 2 + 60), mask)
+    bg.alpha_composite(left, (0, 0)); bg.alpha_composite(right, (W - half * 2, 0))
+    bg.alpha_composite(dock, ((W - dock.width) // 2, H - dock.height - 8))
+    bg.convert("RGB").save(out, quality=88, method=6); print(out, win.size, dock.size)
+
 if __name__ == "__main__":
     k = sys.argv[1]
     if k == "desktop": desktop(sys.argv[2], tuple(map(int, sys.argv[3].split(","))), sys.argv[4], sys.argv[5], int(sys.argv[6]) if len(sys.argv) > 6 else 14, float(sys.argv[7]) if len(sys.argv) > 7 else 1.0)
     elif k == "iphone": iphone(sys.argv[2], sys.argv[3])
     elif k == "android": android(sys.argv[2], sys.argv[3])
+    elif k == "scene": scene(sys.argv[2], tuple(map(int, sys.argv[3].split(","))), sys.argv[4])
+    elif k == "macdesk": macdesk(sys.argv[2], int(sys.argv[3]), tuple(map(int, sys.argv[4].split(","))), sys.argv[5], sys.argv[6], sys.argv[7])
