@@ -16,6 +16,7 @@ def set_lang(vi):
         if not os.path.exists(CMD): break
     time.sleep(0.15)
 def xdo(*a): subprocess.run(['xdotool', *a], check=False)
+subprocess.run(['ibus', 'engine', 'vikey'], check=False); time.sleep(0.8)   # IBus drops the global engine when the last client goes away
 class App(Gtk.Application):
     def __init__(self): super().__init__(application_id='app.vikey.LiveTest'); self.results = []
     def do_activate(self):
