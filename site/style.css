@@ -294,3 +294,5 @@ h1 span{white-space:nowrap}
 @media(max-width:900px){.nav .nav-m{display:flex}}
 .btns{flex-wrap:wrap}
 .one h1,.one .lead{text-wrap:balance}
+.nav a.lang{display:inline-flex;align-items:center;gap:6px}
+.nav a.lang .flag{width:20px;height:13px;border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.12);flex:none}

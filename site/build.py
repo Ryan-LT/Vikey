@@ -21,13 +21,23 @@ T = {   # layout text per language (D31: Vietnamese at /, English at /en/)
                license="GPL-3.0 license", switch="VI", switch_title="Tiếng Việt", sitename="Vikey - Gõ tiếng Việt"),
 }
 
+FLAG_VN = '<svg class="flag" viewBox="0 0 30 20" aria-hidden="true"><rect width="30" height="20" fill="#DA251D"/><polygon fill="#FFFF00" points="15,4 16.18,7.62 19.98,7.62 16.9,9.86 18.08,13.48 15,11.24 11.92,13.48 13.1,9.86 10.02,7.62 13.82,7.62"/></svg>'
+def flag_gb(i):   # Union Jack; ids unique per copy (the switch appears twice per page)
+    return (f'<svg class="flag" viewBox="0 0 60 30" aria-hidden="true"><clipPath id="gbs{i}"><path d="M0,0v30h60v-30z"/></clipPath>'
+            f'<clipPath id="gbt{i}"><path d="M30,15h30v15zv15h-30zh-30v-15zv-15h30z"/></clipPath><g clip-path="url(#gbs{i})">'
+            '<path d="M0,0v30h60v-30z" fill="#012169"/><path d="M0,0L60,30M60,0L0,30" stroke="#fff" stroke-width="6"/>'
+            f'<path d="M0,0L60,30M60,0L0,30" clip-path="url(#gbt{i})" stroke="#C8102E" stroke-width="4"/>'
+            '<path d="M30,0v30M0,15h60" stroke="#fff" stroke-width="10"/><path d="M30,0v30M0,15h60" stroke="#C8102E" stroke-width="6"/></g></svg>')
+
 def nav(lang, pre, other):
     t = T[lang]
-    sw = f'<a class="lang" href="{other}" hreflang="{"en" if lang == "vi" else "vi"}" title="{t["switch_title"]}">{t["switch"]}</a>'
+    def sw(i):   # the flag of the language it switches TO, so it's easy to spot
+        flag = flag_gb(i) if lang == "vi" else FLAG_VN
+        return f'<a class="lang" href="{other}" hreflang="{"en" if lang == "vi" else "vi"}" title="{t["switch_title"]}">{flag}{t["switch"]}</a>'
     return f"""<header class="nav"><div class="wrap">
 <a class="brand" href="{pre}/"><img src="/assets/icon.png" alt="" width="34" height="34"><span>Vi<b>key</b></span></a>
-<nav><a href="{pre}/faq">{t["faq"]}</a><a href="{pre}/changelog">{t["changelog"]}</a><a href="{GITHUB}">GitHub</a>{sw}<a class="btn dl-direct" href="DOWNLOAD_URL" download>{t["download"]}</a></nav>
-<div class="nav-m">{sw}<button class="menu-btn" type="button" aria-label="Menu" aria-expanded="false" aria-controls="mnav"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button></div>
+<nav><a href="{pre}/faq">{t["faq"]}</a><a href="{pre}/changelog">{t["changelog"]}</a><a href="{GITHUB}">GitHub</a>{sw(1)}<a class="btn dl-direct" href="DOWNLOAD_URL" download>{t["download"]}</a></nav>
+<div class="nav-m">{sw(2)}<button class="menu-btn" type="button" aria-label="Menu" aria-expanded="false" aria-controls="mnav"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button></div>
 </div>
 <nav class="mnav" id="mnav" hidden><a href="{pre}/download">{t["download"]}</a><a href="{pre}/faq">{t["faq"]}</a><a href="{pre}/changelog">{t["changelog"]}</a><a href="{GITHUB}">GitHub</a></nav>
 </header>
