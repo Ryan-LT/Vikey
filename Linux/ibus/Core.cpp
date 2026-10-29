@@ -129,7 +129,6 @@ void reloadSettings() {
     prefs::reload();
     int fileLang = prefs::getInt("InputMethod", 1) ? 1 : 0;
     bool byUser = prefs::getInt("LanguageByUser", 0) != 0, quiet = prefs::getInt("LanguageQuiet", 0) != 0;
-    if (pData && vTypingLogEnabled) { std::string ks; for (auto& k : prefs::keys()) ks += k + " "; TLWrite(std::string("\"e\":\"reload\",\"file\":\"") + TLLang(fileLang) + "\",\"cur\":\"" + TLLang(vLanguage) + "\",\"quiet\":" + (quiet ? "true" : "false") + ",\"keys\":\"" + ks + "\""); }
     if (pData && (fileLang != vLanguage || quiet)) {   // the settings app (or a test) set the language in the file
         if (byUser) { PauseAutoSwitchAfterManual(); _autoFixUndo.active = false; ResetEnglishWord(true); vLanguage = fileLang; TLManual("menu", vLanguage); VKLanguageChanged(true); startNewSession(); }
         else { _autoFixUndo.active = false; ResetEnglishWord(true); if (quiet) { _autoPauseUntil = 0; vAutoSwitchByTyping = prefs::getInt("AutoSwitchByTyping", 1); } vLanguage = fileLang; VKLanguageChanged(false); startNewSession(); }

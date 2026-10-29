@@ -8,7 +8,10 @@
 #include <cstring>
 #include <cstdio>
 namespace vikey { namespace prefs {
-static std::map<std::string, std::string> _v;   // raw JSON value text: "123" or "\"str\""
+static std::map<std::string, std::string> _v;   // settings.json: raw JSON value text: "123" or "\"str\""
+static std::map<std::string, std::string> _st;  // stats.json (TLStat_* counters): written only by the engine
+static bool isStat(const char* k) { return strncmp(k, "TLStat_", 7) == 0; }
+static std::string statsPath() { return dataDir() + "/stats.json"; }
 static bool _loaded = false; static std::mutex _m;
 static std::string env(const char* n, const std::string& d) { const char* e = getenv(n); return e && *e ? e : d; }
 std::string configDir() { return env("XDG_CONFIG_HOME", env("HOME", "/tmp") + "/.config") + "/vikey"; }
@@ -19,9 +22,10 @@ static std::string jstr(const std::string& s) { std::string o = "\""; for (unsig
 static std::string unjstr(const std::string& t) {   // t includes the quotes
     std::string o; for (size_t i = 1; i + 1 < t.size(); i++) { char c = t[i]; if (c == '\\' && i + 2 < t.size()) { char d = t[++i]; if (d == 'n') o += '\n'; else if (d == 't') o += '\t'; else if (d == 'u' && i + 4 < t.size()) { o += (char)strtol(t.substr(i + 1, 4).c_str(), nullptr, 16); i += 4; } else o += d; } else o += c; } return o;
 }
-static void load() {
-    _loaded = true;
-    std::ifstream f(settingsPath()); if (!f) { _v.clear(); return; }
+static void loadInto(std::map<std::string, std::string>& _v, const std::string& path);
+static void load() { _loaded = true; loadInto(_v, settingsPath()); loadInto(_st, statsPath()); }
+static void loadInto(std::map<std::string, std::string>& _v, const std::string& path) {
+    std::ifstream f(path); if (!f) { _v.clear(); return; }
     std::stringstream ss; ss << f.rdbuf(); std::string s = ss.str();
     size_t i = s.find('{'); if (i == std::string::npos || s.find('}') == std::string::npos) return;   // half-written: keep what we have
     _v.clear(); i++;
@@ -38,18 +42,21 @@ static void load() {
         _v[key] = val;
     }
 }
-static void save() {
-    mkdirp(configDir());
-    std::string tmp = settingsPath() + ".tmp";
-    { std::ofstream f(tmp); f << "{\n"; bool first = true; for (auto& kv : _v) { f << (first ? "" : ",\n") << jstr(kv.first) << ": " << kv.second; first = false; } f << "\n}\n"; }
-    rename(tmp.c_str(), settingsPath().c_str());
+static void saveMap(const std::map<std::string, std::string>& m, const std::string& path) {
+    std::string tmp = path + ".tmp";
+    { std::ofstream f(tmp); f << "{\n"; bool first = true; for (auto& kv : m) { f << (first ? "" : ",\n") << jstr(kv.first) << ": " << kv.second; first = false; } f << "\n}\n"; }
+    rename(tmp.c_str(), path.c_str());
 }
+static void save() { mkdirp(configDir()); saveMap(_v, settingsPath()); }
+static void saveStats() { mkdirp(dataDir()); saveMap(_st, statsPath()); }
+/// Before changing a key: re-read the file, so another writer's keys survive.
+static std::map<std::string, std::string>& mapFor(const char* key, bool forWrite) { if (isStat(key)) return _st; if (forWrite) loadInto(_v, settingsPath()); return _v; }
 static void ensure() { if (!_loaded) load(); }
 void reload() { std::lock_guard<std::mutex> g(_m); load(); }
-int getInt(const char* key, int fallback) { std::lock_guard<std::mutex> g(_m); ensure(); auto it = _v.find(key); if (it == _v.end() || it->second.empty() || it->second[0] == '"') return fallback; return atoi(it->second.c_str()); }
-void setInt(const char* key, int value) { std::lock_guard<std::mutex> g(_m); ensure(); _v[key] = std::to_string(value); save(); }
-std::string getString(const char* key, const std::string& fallback) { std::lock_guard<std::mutex> g(_m); ensure(); auto it = _v.find(key); if (it == _v.end() || it->second.empty() || it->second[0] != '"') return fallback; return unjstr(it->second); }
-void setString(const char* key, const std::string& value) { std::lock_guard<std::mutex> g(_m); ensure(); _v[key] = jstr(value); save(); }
+int getInt(const char* key, int fallback) { std::lock_guard<std::mutex> g(_m); ensure(); auto& m = mapFor(key, false); auto it = m.find(key); if (it == m.end() || it->second.empty() || it->second[0] == '"') return fallback; return atoi(it->second.c_str()); }
+void setInt(const char* key, int value) { std::lock_guard<std::mutex> g(_m); ensure(); auto& m = mapFor(key, true); m[key] = std::to_string(value); if (isStat(key)) saveStats(); else save(); }
+std::string getString(const char* key, const std::string& fallback) { std::lock_guard<std::mutex> g(_m); ensure(); auto& m = mapFor(key, false); auto it = m.find(key); if (it == m.end() || it->second.empty() || it->second[0] != '"') return fallback; return unjstr(it->second); }
+void setString(const char* key, const std::string& value) { std::lock_guard<std::mutex> g(_m); ensure(); auto& m = mapFor(key, true); m[key] = jstr(value); if (isStat(key)) saveStats(); else save(); }
 static const char* B64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 std::vector<unsigned char> getBinary(const char* key) {
     std::string s = getString(key, ""); std::vector<unsigned char> out; int val = 0, bits = -8;
@@ -62,7 +69,7 @@ void setBinary(const char* key, const unsigned char* d, size_t n) {
     if (bits > -6) o += B64[((val << 8) >> (bits + 8)) & 63]; while (o.size() % 4) o += '=';
     setString(key, o);
 }
-bool has(const char* key) { std::lock_guard<std::mutex> g(_m); ensure(); return _v.count(key) != 0; }
-void remove(const char* key) { std::lock_guard<std::mutex> g(_m); ensure(); if (_v.erase(key)) save(); }
-std::vector<std::string> keys() { std::lock_guard<std::mutex> g(_m); ensure(); std::vector<std::string> k; for (auto& kv : _v) k.push_back(kv.first); return k; }
+bool has(const char* key) { std::lock_guard<std::mutex> g(_m); ensure(); return mapFor(key, false).count(key) != 0; }
+void remove(const char* key) { std::lock_guard<std::mutex> g(_m); ensure(); auto& m = mapFor(key, true); if (m.erase(key)) { if (isStat(key)) saveStats(); else save(); } }
+std::vector<std::string> keys() { std::lock_guard<std::mutex> g(_m); ensure(); std::vector<std::string> k; for (auto& kv : _v) k.push_back(kv.first); for (auto& kv : _st) k.push_back(kv.first); return k; }
 }}
