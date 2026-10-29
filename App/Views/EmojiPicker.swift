@@ -210,6 +210,9 @@ final class EmojiPickerModel: ObservableObject {
     private(set) var visible: [Emoji] = []          // everything the arrows walk through, in grid order
     /// Rebuilt when the content changes, never per row while drawing.
     private var generation = 0
+    /// A new list for each search and each open: it starts at the top with no old scroll offset under new
+    /// content (a search after scrolling showed its results cut off: Tony)
+    var listKey: String { searching ? "q\(generation)" : "b\(opened)" }
     private func relayout() {
         generation += 1   // new row identities: rows keyed by position alone were drawn stale after a search (Tony)
         visible = searching ? results : recents + all
@@ -270,7 +273,7 @@ struct EmojiGridView: View {
         VStack(spacing: 0) {
             searchField.padding(.horizontal, 14).padding(.top, 14).padding(.bottom, 8)
             Divider().opacity(0.5)
-            grid
+            grid.padding(.vertical, 8)   // the scrolling area itself is inset: a gap under the divider at any scroll (Tony)
             Divider().opacity(0.5)
             footer.padding(.horizontal, 14).frame(height: 44)
         }
@@ -301,7 +304,7 @@ struct EmojiGridView: View {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 0) {   // titles scroll with the grid: a pinned one needs a background (Tony: odd band)
                     // the top of the list: scrolling here shows the first title too (scrolling to the first row hid it: Tony)
-                    Color.clear.frame(height: model.searching ? 10 : 0).id("top")
+                    Color.clear.frame(height: 0).id("top")
                     if model.searching && model.results.isEmpty {
                         Text(model.vietnamese ? "Không tìm thấy emoji nào" : "No emoji found")
                             .foregroundStyle(.secondary).frame(maxWidth: .infinity).padding(.top, 110)
@@ -309,26 +312,26 @@ struct EmojiGridView: View {
                         let secs = model.sections
                         // titles are plain rows, not Section headers: macOS gives headers a background band (Tony)
                         ForEach(secs.indices, id: \.self) { si in
-                            if !secs[si].title.isEmpty { header(secs[si].title) }
+                            if !secs[si].title.isEmpty { header(secs[si].title, first: si == 0) }
                             ForEach(secs[si].rows) { r in row(r) }
                         }
                     }
                 }
-                .padding(.horizontal, 12).padding(.bottom, 8)
+                .padding(.horizontal, 12)
             }
             .onChange(of: model.selected) { i in
                 guard model.selectedByKeys, let r = model.row(of: i) else { return }
                 if r.id == model.allRows.first?.id { proxy.scrollTo("top", anchor: .top) }   // back on top: the title shows too
                 else { proxy.scrollTo(r.id) }   // the least scrolling that shows it
             }
-            .onChange(of: model.raw) { _ in proxy.scrollTo("top", anchor: .top) }
-            .onChange(of: model.opened) { _ in proxy.scrollTo("top", anchor: .top) }
+            .id(model.listKey)
         }
     }
 
-    private func header(_ t: String) -> some View {
+    private func header(_ t: String, first: Bool) -> some View {
         Text(t).font(.system(size: 11, weight: .semibold)).foregroundStyle(.secondary)
-            .frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 6).padding(.top, 2)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.top, first ? 0 : 8).padding(.bottom, 6)   // the list's own 8 pt inset is the first title's gap
 
     }
 
