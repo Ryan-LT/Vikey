@@ -27,11 +27,19 @@ and Wayland, GNOME and KDE. Same `Engine/` C++ as macOS/Windows/iOS; the platfor
 
 | # | Phase | Status |
 |---|---|---|
-| 0 | Ubuntu 24.04 VM "Vikey-Linux" in VMPal | created; blocked on host disk space (see memory) |
+| 0 | Ubuntu 24.04 VM "Vikey-Linux" in VMPal | done (needed host disk cleanup) |
 | 1 | Engine lock on Linux CI | done (ubuntu-latest + ubuntu-24.04-arm) |
-| 2 | IBus engine | written, compiles in CI; live test pending |
-| 3 | Settings app / typing log / About | written, compiles in CI; screenshots pending |
-| 4 | Packages: .deb + .rpm (CPack), CI upload to the GitHub release, `release.sh --linux` | written |
-| 5 | QA: `Linux/Tests/livetest.py` 14/14 on GNOME (Wayland session, XWayland test window), package install on a clean VM | pending |
+| 2 | IBus engine | done: live suite 14/14 in the VM (GNOME Wayland) from the installed .deb |
+| 3 | Settings app / typing log / About | done (screenshots sent to Tony) |
+| 4 | Packages: .deb + .rpm (CPack), CI upload to the GitHub release, `release.sh --linux` | done; .deb installed and tested in the VM (prefix /usr) |
+| 5 | QA: `Linux/Tests/livetest.py` 14/14 on GNOME (Wayland session, XWayland test window), package install | done in the dev VM; clean-VM install not done (no disk) |
 | 6 | Site: Linux card on /download, home button (behind `<!-- linux -->` until release.json has `linux`) | written |
 | later | Fcitx5 engine, apt repo for updates, browser extension for per-site memory | |
+
+## Gotchas learned (also in memory)
+
+- IBus drops the global engine when the last client goes away: tests run `ibus engine vikey` first.
+- GTK resets the IM context right after inserting a passthrough key: the engine ignores a `reset` within 300 ms of its own output, or the auto-switch look-back is wiped after every word.
+- Settings are a shared JSON file: stats go to `stats.json` (engine only), settings are re-read before each write, language switches go through the one-shot `~/.config/vikey/command` file.
+- The IBus component bakes the libexec path: the default install prefix is `/usr`, like the packages.
+- `Tools/autoswitch/{driver/bench,driver/drvlazy,touch/touchsim,sim/sim0,test/h0,test/h10}` are tracked macOS binaries; a Linux build overwrites them (`git checkout -- Tools` before pulling in the VM).
