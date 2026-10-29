@@ -7,6 +7,7 @@
 #include "Prefs.h"
 #include "Site.h"
 #include "Settings.h"
+#include "../../Engine/Vietnamese.h"
 #include "resource.h"
 
 #pragma comment(lib, "user32.lib")
@@ -58,7 +59,7 @@ static void toggle(const wchar_t* key, int fallback) { vikey::prefs::setInt(key,
 static std::wstring hotkeyLabel() {
     int hk = vikey::prefs::getInt(L"SwitchKeyStatus", 0); if (!hk) hk = 0x7A000206;
     std::wstring t; if (hk & 0x100) t += L"Ctrl+"; if (hk & 0x200) t += L"Alt+"; if (hk & 0x800) t += L"Shift+"; if (hk & 0x400) t += L"Win+";
-    int k = hk & 0xFF; if (k != 0xFE) { extern unsigned short keyCodeToCharacter(unsigned int); unsigned short ch = keyCodeToCharacter(k | 0x10000); if (k == 49) t += L"Space"; else if (ch) t += (wchar_t)ch; } else if (!t.empty()) t.pop_back();
+    int k = hk & 0xFF; if (k != 0xFE) { unsigned short ch = keyCodeToCharacter((unsigned int)(k | 0x10000)); if (k == 49) t += L"Space"; else if (ch) t += (wchar_t)ch; } else if (!t.empty()) t.pop_back();
     return t;
 }
 static void showMenu() {
