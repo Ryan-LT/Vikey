@@ -67,7 +67,14 @@ echo "==> site + GitHub release"
 mkdir -p site/downloads
 cp "$DMG" site/downloads/
 SHA=$(shasum -a 256 "$DMG" | cut -d' ' -f1)
-printf '{"version": "%s", "download_url": "/downloads/Vikey-%s.dmg", "sha256": "%s"}\n' "$VER" "$VER" "$SHA" > site/release.json
+# merge, don't overwrite: release.json also carries the other platforms (windows, linux, ios)
+python3 - "$VER" "$SHA" <<'PY2'
+import json, os, sys
+ver, sha = sys.argv[1:]; p = "site/release.json"
+rel = json.load(open(p)) if os.path.exists(p) else {}
+rel.update(version=ver, download_url=f"/downloads/Vikey-{ver}.dmg", sha256=sha)
+json.dump(rel, open(p, "w"), indent=0); open(p, "a").write("\n")
+PY2
 # Sparkle feed: EdDSA-signed DMG, notes from the changelog
 SIG=$(~/.tools/sparkle/bin/sign_update --ed-key-file ~/.secrets/vikey_sparkle_ed25519 "$DMG")
 NOTES=$(sed -n "/<!-- release $VER -->/,/<!-- \/release -->/p" site/pages/changelog.html | grep -v '<h2>\|<!--')
