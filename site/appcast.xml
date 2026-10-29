@@ -4,17 +4,20 @@
 <title>Vikey</title>
 <link>https://vikey.app</link>
 <item>
-<title>Vikey 1.0.14</title>
-<pubDate>Thu, 29 Oct 2026 00:50:57 +0000</pubDate>
-<sparkle:version>16</sparkle:version>
-<sparkle:shortVersionString>1.0.14</sparkle:shortVersionString>
+<title>Vikey 1.0.15</title>
+<pubDate>Thu, 29 Oct 2026 04:56:55 +0000</pubDate>
+<sparkle:version>17</sparkle:version>
+<sparkle:shortVersionString>1.0.15</sparkle:shortVersionString>
 <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
 <description><![CDATA[<ul>
-<li>Tự chuyển thông minh hơn với những từ vừa là tiếng Anh vừa là tiếng Việt: Vikey nhìn cả từ đứng trước ("cho con bú" nhưng "đi xe bus", "ở bên" nhưng "it's been").</li>
-<li>Học thêm từ hơn 180 triệu chữ tiếng Việt và tiếng Anh, gõ sai ít hơn và phải chuyển tay ít hơn.</li>
-<li>"ạ" ngay sau một từ tiếng Anh không còn thành "aj".</li>
+<li>Gõ tiếp sau khi bấm Xoá để hoàn tác: "vaay" → Xoá → thêm "j" ra "vậy".</li>
+<li>Số dính liền chữ: "5trawm" ra "5trăm", "mua 1casi" ra "1cái"; "100W" vẫn là W.</li>
+<li>Nhìn cả từ đứng sau: "vào office ít nhất", "lát nữa"; gõ chữ hoa toàn bộ tiếng Việt chính xác hơn.</li>
+<li>Ít phải chuyển tay hơn khi xen tiếng Anh: "test có work", "em sẽ optimize".</li>
+<li>Âm báo khi chuyển mới: lên giọng sang tiếng Việt, xuống giọng sang tiếng Anh.</li>
+<li>Tên các tuỳ chọn gọn hơn; thêm mục Ghi nhận.</li>
 </ul>]]></description>
-<enclosure url="https://vikey.app/downloads/Vikey-1.0.14.dmg" type="application/octet-stream" sparkle:edSignature="3mChuRpMemgF9IdXofY6DTad/ztR6R/OKuiAObiQDXtAylSdjGQDrB05ib/vaDccV4BVGbjHjaB0QNyz+RAUBA==" length="3400050"/>
+<enclosure url="https://vikey.app/downloads/Vikey-1.0.15.dmg" type="application/octet-stream" sparkle:edSignature="cpWh9QP2ilf0fQnr+OxHtgXF2X/1JvRCjH24odA8LDu+GRh64dXv9RWVb/JtjUHSERjXNWJZJut2bL2C9zg2CA==" length="4123632"/>
 </item>
 <item>
 <title>Vikey 1.0.14 for Windows (x64)</title>

@@ -87,7 +87,7 @@ struct OnboardingView: View {
         VStack(alignment: .leading, spacing: 18) {
             Spacer()
             Text("Thử ngay").font(.largeTitle.bold())
-            Text("Chạm vào ô bên dưới, giữ 🌐 để chọn Vikey, rồi gõ thử \"sorry em tooiws treex\".")
+            Text("Chạm vào ô bên dưới, giữ 🌐 để chọn Vikey, rồi gõ thử \"tooi ddi meeting nhes\".")
                 .foregroundStyle(.secondary)
             TextField("Gõ ở đây", text: $sample, axis: .vertical)
                 .lineLimit(3...6)

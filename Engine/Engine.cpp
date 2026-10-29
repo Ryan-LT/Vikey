@@ -1400,6 +1400,46 @@ static int asBigramVote(const char* prevLetters, const bool& prevVietnamese, con
     return (int)lround(v * _asBigramWeight);
 }
 
+// ---- Capitalised mid-sentence ties (D37) ------------------------------------------------------------------
+// "Max"/"Mã", "Bar"/"Bả", "Docs"/"Dóc": in the middle of a sentence a capital means a name or a brand, and
+// real Vietnamese text says which reading people write that way. Loaded at run time for now; off when not loaded.
+static std::unordered_map<std::string, int>* _asCapMid = nullptr;
+static int _asCapMidMin = 5;
+void vAutoSwitchSetCapitalised(const char* path, const int& minCount) {
+    _asCapMidMin = minCount;
+    if (!path) return;
+    FILE* f = fopen(path, "r"); if (!f) return;
+    if (!_asCapMid) _asCapMid = new std::unordered_map<std::string, int>();
+    char line[256];
+    while (fgets(line, sizeof line, f)) {
+        if (line[0] == '#') continue;
+        char* t = strchr(line, '\t'); if (!t) continue; *t = 0;
+        (*_asCapMid)[std::string(line)] += atoi(t + 1);
+    }
+    fclose(f);
+}
+#ifndef AS_CAP_MARGIN
+#define AS_CAP_MARGIN 10   //a capitalised reading this much more common mid-sentence (10x) decides
+#endif
+/** Only the first key is a capital ("Max", not "MAX" or "max"). */
+static bool asCapitalisedOnly(const Uint32* keys, const int& count) {
+    if (count < 2 || !(keys[0] & CAPS_MASK)) return false;
+    for (int x = 1; x < count; x++) if (keys[x] & CAPS_MASK) return false;
+    return true;
+}
+/** > 0: the capitalised Vietnamese reading ("Mã") is the one written mid-sentence, < 0: the English one ("Max"). */
+static int asCapVote(const char* letters) {
+    if (!_asCapMid) return 0;
+    std::string vn;
+    if (!asSurface(letters, true, vn)) return 0;
+    auto get = [&](const std::string& w) { auto it = _asCapMid->find(w); return it == _asCapMid->end() ? 0 : it->second; };
+    int cv = get(vn), ce = get(letters);
+    if (cv + ce < _asCapMidMin) return 0;
+    double v = 10 * log10((cv + 0.5) / (ce + 0.5));
+    if (v > 30) v = 30; if (v < -30) v = -30;
+    return (int)lround(v);
+}
+
 #ifndef AS_NEXT_PAIR
 #define AS_NEXT_PAIR 20   //how sure (tuned on val: 10 -> 0.122%, 20 -> 0.120%) (20 = 100x) the following word must be of the Vietnamese reading to flip a word kept English (D35)
 #endif
@@ -1519,6 +1559,13 @@ static bool asShouldRestoreToEnglishCore() {
     if (!asRawWord(KeyStates, _stateIndex, raw)) return false;
     int en = asEnglishScore(raw);
     int vn = asVietnameseScore(word);
+    //a capitalised word mid-sentence (D37): which capitalised reading real text uses
+    if (_asCapMid && vn != AS_MISSING && _asPrevCount >= 1 && asCapitalisedOnly(KeyStates, _stateIndex)) {   //names need not be English words (Los, Las)
+        int cv = asCapVote(raw);
+        if (cv <= -AS_CAP_MARGIN) return true;
+        if (cv >= AS_CAP_MARGIN) return false;
+    }
+
 #ifndef AS_ACRONYM
 #define AS_ACRONYM 1
 #endif
@@ -1803,7 +1850,12 @@ bool vAutoSwitchCheckEnglishWord(const Uint32* keys, const int& count,
             if (pairVote == 0) pairVote = asBigramVote(praw, false, raw);
         }
     }
-    if (vn == AS_MISSING || !(en == AS_MISSING || (en < AS_EN_FLOOR && vn - en + pairVote >= AS_PREFER))) return false;
+    int capVote = 0;   //D37: a capitalised word mid-sentence goes with the capitalised reading real text uses
+    if (_asCapMid && vn != AS_MISSING && previousN >= 1 && asCapitalisedOnly(keys, count)) {
+        capVote = asCapVote(raw);
+        if (capVote <= -AS_CAP_MARGIN) return false;
+    }
+    if (vn == AS_MISSING || !(en == AS_MISSING || capVote >= AS_CAP_MARGIN || (en < AS_EN_FLOOR && vn - en + pairVote >= AS_PREFER))) return false;
 #ifndef AS_CAPS_VN_FLOOR
 #define AS_CAPS_VN_FLOOR 15   //all capitals convert only to a common syllable (IRS stays, not "Í"): D23, D27
 #endif
@@ -1817,7 +1869,7 @@ bool vAutoSwitchCheckEnglishWord(const Uint32* keys, const int& count,
 #ifndef AS_PAIR_OVERRIDES_D22
 #define AS_PAIR_OVERRIDES_D22 10   //word pairs this sure of the Vietnamese reading (10x) beat D22: "team bên US" (D34)
 #endif
-    if (en != AS_MISSING && previousN >= 1 && previousCounts[0] >= 1 && pairVote < AS_PAIR_OVERRIDES_D22 && !vAutoSwitchPrevRestored) {
+    if (en != AS_MISSING && previousN >= 1 && previousCounts[0] >= 1 && pairVote < AS_PAIR_OVERRIDES_D22 && !vAutoSwitchPrevRestored && capVote < AS_CAP_MARGIN) {
         char praw[AS_KEY_LEN];
         Uint32 tmp[MAX_BUFF]; int tmpCount;
         if (asRawWord(previous[0], previousCounts[0], praw)) {

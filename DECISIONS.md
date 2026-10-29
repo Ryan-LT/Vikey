@@ -23,6 +23,14 @@ If every listed change is intended, accept them with `Tools/autoswitch/check.sh 
 
 ---
 
+## 37. Capitalised names mid-sentence: tried, not shipped
+
+**Asked by Tony.** "do #2 too" (Max/Mã, Los Angeles, Bar, Docs).
+
+**Tried.** For a capitalised word in the middle of a sentence that has both readings, decide by how often each capitalised form appears mid-sentence in real Vietnamese text (93M web words + crawl: Bar 564 vs Bả 27, Los 766 vs Ló 3, but Mã 3457 vs Max 1239, Lê 13245 vs Lee 1625). Tuning set: 0.121% either way (social -0.01, tech +0.01; 32 words fixed, 14 broken out of 5M). The remaining capital errors are specific names in specific texts (a story character "Max"): no general count settles them.
+
+**Decided.** Not shipped. Engine support stays, off unless counts are loaded (`vAutoSwitchSetCapitalised`, `SIM_CAP`).
+
 ## 36. Vikey for Windows
 
 **Status:** Agreed 2026-10-29, built on branch `windows` (Phases 0–5 of `Windows/PLAN.md` done); ships after the code-signing certificate arrives.

@@ -117,6 +117,8 @@ extern Uint32 vAutoSwitchRestoredKeys[];
 extern int vAutoSwitchRestoredCount;
 /** Set by the platform: the previous word passed to vAutoSwitchCheckEnglishWord was put back to English by auto switch. */
 extern bool vAutoSwitchPrevRestored;
+/** Capitalised mid-sentence counts for ties (D37, experiment): "form<TAB>count" lines. */
+void vAutoSwitchSetCapitalised(const char* path, const int& minCount);
 
 /**
  * English mode, at a word break: if the raw keys of the finished word are clearly a

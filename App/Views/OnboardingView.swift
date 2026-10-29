@@ -14,7 +14,7 @@ enum OnboardingWindow {
         }
         WindowFocus.bringForward()
         window?.layoutIfNeeded()
-        window?.center()
+        window?.centerExactly()
         window?.makeKeyAndOrderFront(nil)
     }
 
