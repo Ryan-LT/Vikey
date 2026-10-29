@@ -8,6 +8,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <unistd.h>
+#include <glob.h>
 #include "Core.h"
 #include "Prefs.h"
 #include "KeyMap.h"
@@ -45,7 +46,13 @@ static void outBeep() { gchar* argv[] = {(gchar*)"canberra-gtk-play", (gchar*)"-
 static std::string frontAppX11() {
 #ifdef VIKEY_HAVE_X11
     static Display* d = nullptr; static bool tried = false;
-    if (!d && !tried) { tried = true; d = XOpenDisplay(nullptr); }
+    if (!d && !tried) {
+        tried = true;
+        // the engine is started by ibus-daemon (a user service) without the session's X variables: fill in GNOME's
+        if (!getenv("DISPLAY")) setenv("DISPLAY", ":0", 0);
+        if (!getenv("XAUTHORITY")) { const char* rt = getenv("XDG_RUNTIME_DIR"); std::string dir = rt ? rt : "/run/user/1000"; glob_t g = {}; if (glob((dir + "/.mutter-Xwaylandauth.*").c_str(), 0, nullptr, &g) == 0 && g.gl_pathc > 0) setenv("XAUTHORITY", g.gl_pathv[0], 0); globfree(&g); }
+        d = XOpenDisplay(nullptr);
+    }
     if (!d) return "";
     // XGetInputFocus works on XWayland too (its root has no _NET_ACTIVE_WINDOW); walk up to the window with a class
     Window w = 0; int revert = 0; XGetInputFocus(d, &w, &revert);
