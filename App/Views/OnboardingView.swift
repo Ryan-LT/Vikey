@@ -32,7 +32,7 @@ struct OnboardingView: View {
                     .resizable()
                     .frame(width: 56, height: 56)
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Vikey").font(.system(size: 26, weight: .bold))
+                    Wordmark(size: 26)
                     Text("Gõ tiếng Việt, tự chuyển Anh/Việt cho bạn.")
                         .foregroundStyle(.secondary)
                 }

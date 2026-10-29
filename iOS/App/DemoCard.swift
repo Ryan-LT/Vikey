@@ -31,7 +31,10 @@ struct DemoCard: View {
                     .background(vietnamese ? Color.brand : Color.gray, in: RoundedRectangle(cornerRadius: 5))
             }
             Text(plain.isEmpty ? AttributedString(" ") : Self.marked(plain, against: vikey, good: false)).font(.title3).foregroundStyle(.secondary).lineLimit(1)
-            Text("Vikey").font(.caption.weight(.semibold)).foregroundStyle(Color.brand).textCase(.uppercase)
+            HStack(spacing: 5) {   // the wordmark, like the website's demo
+                Image("Logo").resizable().frame(width: 15, height: 15).clipShape(RoundedRectangle(cornerRadius: 3.5, style: .continuous))
+                Wordmark(size: 13)
+            }
             Text(vikey.isEmpty ? AttributedString(" ") : Self.marked(vikey, against: plain, good: true)).font(.title2.weight(.semibold)).lineLimit(1)
         }
         .padding(18)
@@ -82,6 +85,3 @@ struct DemoCard: View {
     }
 }
 
-extension Color {
-    static let brand = Color(UIColor { $0.userInterfaceStyle == .dark ? UIColor(red: 0.55, green: 0.53, blue: 1, alpha: 1) : UIColor(red: 0.31, green: 0.27, blue: 0.90, alpha: 1) })
-}

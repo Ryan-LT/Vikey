@@ -97,22 +97,6 @@
         }
       }
     },
-    "Tự chuyển Anh/Việt khi gõ": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Switch English/Vietnamese as you type"
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tự chuyển Anh/Việt khi gõ"
-          }
-        }
-      }
-    },
     "Gõ một từ tiếng Anh khi đang ở tiếng Việt (hoặc ngược lại), Vikey tự sửa từ đó và chuyển chế độ. Bấm xoá ngay sau đó để hoàn tác.": {
       "localizations": {
         "en": {
@@ -129,22 +113,6 @@
         }
       }
     },
-    "Tạm dừng 5 giây sau khi chuyển tay": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pause 5 seconds after a manual switch"
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tạm dừng 5 giây sau khi chuyển tay"
-          }
-        }
-      }
-    },
     "Khi bạn tự bấm phím VI/EN, Vikey không tự chuyển trong 5 giây, để giữ đúng lựa chọn của bạn.": {
       "localizations": {
         "en": {
@@ -157,22 +125,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Khi bạn tự bấm phím VI/EN, Vikey không tự chuyển trong 5 giây, để giữ đúng lựa chọn của bạn."
-          }
-        }
-      }
-    },
-    "Ô địa chỉ web và email gõ tiếng Anh": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "English in web address and email fields"
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ô địa chỉ web và email gõ tiếng Anh"
           }
         }
       }
@@ -273,22 +225,6 @@
         }
       }
     },
-    "Từ không phải tiếng Việt thì giữ nguyên phím gõ": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Keep the keys typed for non-Vietnamese words"
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Từ không phải tiếng Việt thì giữ nguyên phím gõ"
-          }
-        }
-      }
-    },
     "Khi gõ xong một từ sai chính tả tiếng Việt, Vikey trả lại đúng các phím bạn đã gõ.": {
       "localizations": {
         "en": {
@@ -321,22 +257,6 @@
         }
       }
     },
-    "Tự viết hoa đầu câu": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Auto-capitalization"
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tự viết hoa đầu câu"
-          }
-        }
-      }
-    },
     "Chữ đầu tiên của câu được viết hoa, như bàn phím của iPhone.": {
       "localizations": {
         "en": {
@@ -349,22 +269,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Chữ đầu tiên của câu được viết hoa, như bàn phím của iPhone."
-          }
-        }
-      }
-    },
-    "Rung khi gõ phím": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Haptic feedback"
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Rung khi gõ phím"
           }
         }
       }
@@ -385,22 +289,6 @@
         }
       }
     },
-    "Chạm hai lần phím cách để thêm dấu chấm": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "“.” shortcut"
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Chạm hai lần phím cách để thêm dấu chấm"
-          }
-        }
-      }
-    },
     "Chạm nhanh hai lần phím cách để thêm dấu chấm và một khoảng trắng.": {
       "localizations": {
         "en": {
@@ -413,22 +301,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Chạm nhanh hai lần phím cách để thêm dấu chấm và một khoảng trắng."
-          }
-        }
-      }
-    },
-    "Gỡ lỗi bàn phím": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Keyboard diagnostics"
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Gỡ lỗi bàn phím"
           }
         }
       }
@@ -982,7 +854,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Auto-correct typos"
+            "value": "Auto-correct"
           }
         },
         "vi": {
@@ -1101,6 +973,134 @@
           "stringUnit": {
             "state": "translated",
             "value": "Chỉ dùng để đo và cải thiện độ chính xác, không có trong ứng dụng."
+          }
+        }
+      }
+    },
+    "Tự chuyển Anh/Việt": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auto-switch"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tự chuyển Anh/Việt"
+          }
+        }
+      }
+    },
+    "Tạm dừng 5 giây": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "5-second pause"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tạm dừng 5 giây"
+          }
+        }
+      }
+    },
+    "Trả lại phím khi sai": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore typed keys"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trả lại phím khi sai"
+          }
+        }
+      }
+    },
+    "Tự viết hoa": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auto-capitalization"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tự viết hoa"
+          }
+        }
+      }
+    },
+    "Rung khi gõ": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Haptic feedback"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rung khi gõ"
+          }
+        }
+      }
+    },
+    "Phím tắt dấu chấm": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“.” shortcut"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Phím tắt dấu chấm"
+          }
+        }
+      }
+    },
+    "Tiếng Anh cho web, email": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "English for web & email"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tiếng Anh cho web, email"
+          }
+        }
+      }
+    },
+    "Hiện thông số": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show timings"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hiện thông số"
           }
         }
       }
