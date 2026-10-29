@@ -75,7 +75,7 @@ PNAME = dict(macos="macOS", windows="Windows", linux="Linux", ios="iOS", android
 PREQ = {"vi": dict(macos="macOS 13 trở lên", windows="Windows 10 và 11", linux="Ubuntu, Debian, Fedora", ios="iPhone, iOS 17+", android="Điện thoại Android"),
         "en": dict(macos="macOS 13 or later", windows="Windows 10 and 11", linux="Ubuntu, Debian, Fedora", ios="iPhone, iOS 17+", android="Android phones")}
 PTXT = {"vi": dict(dl="Tải về", store="App Store", soon="Sắp có", notify="Báo tôi khi có", arm="Bản cho chip ARM"),
-        "en": dict(dl="Download", store="App Store", soon="Coming soon", notify="Notify me", arm="ARM64 build")}
+        "en": dict(dl="Download", store="App Store", soon="Soon", notify="Notify me", arm="ARM64 build")}
 
 def downloads(rel):
     """Where each platform's download lives, from release.json; None = no build yet ("pending" + notify form).
