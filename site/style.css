@@ -297,3 +297,6 @@ h1 span{white-space:nowrap}
 .nav a.lang{display:inline-flex;align-items:center;gap:6px}
 .nav a.lang .flag{width:20px;height:13px;border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.12);flex:none}
 .demo .brandlbl{font-weight:700}.demo .brandlbl b{color:var(--blue);font-weight:700}
+
+/* OS logos in download buttons */
+.btn .ic{width:20px;height:20px;flex:none;margin-top:-2px}.btn.big .ic{width:22px;height:22px}.btn.ghost .ic{opacity:.85}.one .sub a{color:var(--muted);text-decoration:underline}
