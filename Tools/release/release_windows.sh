@@ -8,6 +8,8 @@
 set -e
 VER=${1:?usage: release.sh --windows <version>}
 cd "$(dirname "$0")/../.."
+# the version must be the one main is at: the packages on the release were built from it, and the prune below keeps only $VER files
+PV=$(grep MARKETING_VERSION project.yml | grep -o '"[^"]*"' | tr -d '"'); [ "$PV" = "$VER" ] || { echo "project.yml is at $PV, not $VER"; exit 1; }
 BUILD=$(grep 'CURRENT_PROJECT_VERSION' project.yml | grep -o '[0-9]\+')
 REPO=tonyminibot/Vikey
 echo "==> waiting for the CI package job on v$VER"
