@@ -4,15 +4,15 @@
 <title>Vikey</title>
 <link>https://vikey.app</link>
 <item>
-<title>Vikey 1.0.23</title>
-<pubDate>Thu, 29 Oct 2026 11:27:54 +0000</pubDate>
-<sparkle:version>25</sparkle:version>
-<sparkle:shortVersionString>1.0.23</sparkle:shortVersionString>
+<title>Vikey 1.0.24</title>
+<pubDate>Thu, 29 Oct 2026 23:54:41 +0000</pubDate>
+<sparkle:version>26</sparkle:version>
+<sparkle:shortVersionString>1.0.24</sparkle:shortVersionString>
 <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
 <description><![CDATA[<ul>
-<li>Chữ viết tắt không còn đổi từ đứng trước: "bên ASL", "team bên US" giữ nguyên tiếng Việt.</li>
+<li>Bảng emoji: tìm bằng biểu tượng cảm xúc :D :) <3, kiểu Việt =)) :v hihi huhu và kiểu Nhật ^_^ T_T.</li>
 </ul>]]></description>
-<enclosure url="https://vikey.app/downloads/Vikey-1.0.23.dmg" type="application/octet-stream" sparkle:edSignature="U6M0vUVRtvNW0BMpL6rEoGLGqe6ztZj+n0SZ0UyzRuGFNNlTcRv48WPrH5c7w3ghVbI6yArQS9VufkFZlXdpDQ==" length="4525574"/>
+<enclosure url="https://vikey.app/downloads/Vikey-1.0.24.dmg" type="application/octet-stream" sparkle:edSignature="TTJEo+CxFZHj4C9UjtT1Oo5KlP5y1GArvWc0Yei4z1iAEiAJQEr7Zsw0J4qLQRd6pohgzYZMQOxrHFrlQ2mYCw==" length="4526871"/>
 </item>
 <item>
 <title>Vikey 1.0.15 for Windows (x64)</title>
