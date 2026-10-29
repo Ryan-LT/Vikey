@@ -129,6 +129,7 @@ void reloadSettings() {
     prefs::reload();
     int fileLang = prefs::getInt("InputMethod", 1) ? 1 : 0;
     bool byUser = prefs::getInt("LanguageByUser", 0) != 0, quiet = prefs::getInt("LanguageQuiet", 0) != 0;
+    if (pData && vTypingLogEnabled) TLWrite(std::string("\"e\":\"reload\",\"file\":\"") + TLLang(fileLang) + "\",\"cur\":\"" + TLLang(vLanguage) + "\",\"quiet\":" + (quiet ? "true" : "false"));
     if (pData && (fileLang != vLanguage || quiet)) {   // the settings app (or a test) set the language in the file
         if (byUser) { PauseAutoSwitchAfterManual(); _autoFixUndo.active = false; ResetEnglishWord(true); vLanguage = fileLang; TLManual("menu", vLanguage); VKLanguageChanged(true); startNewSession(); }
         else { _autoFixUndo.active = false; ResetEnglishWord(true); if (quiet) { _autoPauseUntil = 0; vAutoSwitchByTyping = prefs::getInt("AutoSwitchByTyping", 1); } vLanguage = fileLang; VKLanguageChanged(false); startNewSession(); }
@@ -272,7 +273,7 @@ bool keyDown(Uint16 key, bool shift, unsigned flags) {
     }
     return false;
 }
-void click() { _autoFixUndo.active = false; _tlSinceAuto = false; TLEndWord("click"); if (vLanguage == 0) ResetEnglishWord(true); else vKeyHandleEvent(vKeyEvent::Mouse, vKeyEventState::MouseDown, 0); }
+void click() { _autoFixUndo.active = false; _tlSinceAuto = false; TLEndWord("click"); if (vTypingLogEnabled) TLWrite("\"e\":\"reset\""); if (vLanguage == 0) ResetEnglishWord(true); else vKeyHandleEvent(vKeyEvent::Mouse, vKeyEventState::MouseDown, 0); }
 void init(Output out) {
     _out = out;
     pData = (vKeyHookState*)vKeyInit();
