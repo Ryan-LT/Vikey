@@ -13,7 +13,7 @@ struct MenuBarContent: View {
         Toggle(isOn: Binding(get: { state.language == 1 }, set: { state.setLanguage($0 ? 1 : 0) })) {
             Text("Tiếng Việt   \(Hotkey(raw: hotkeyRaw).display)")
         }
-        Toggle("Tự chuyển Anh/Việt khi gõ", isOn: Binding(get: { autoSwitch == 1 }, set: { autoSwitch = $0 ? 1 : 0; Preferences.apply() }))
+        Toggle("Tự chuyển Anh/Việt", isOn: Binding(get: { autoSwitch == 1 }, set: { autoSwitch = $0 ? 1 : 0; Preferences.apply() }))
         Divider()
         Button("Mở Vikey…") { Windows.main.show() }
             .keyboardShortcut(",")

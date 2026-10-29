@@ -33,17 +33,17 @@ struct MainView: View {
                 }
                 Section("Tự chuyển") {
                     Toggle(isOn: flag($autoSwitch)) {
-                        Tip("Tự chuyển Anh/Việt khi gõ", "Gõ một từ tiếng Anh khi đang ở tiếng Việt (hoặc ngược lại), Vikey tự sửa từ đó và chuyển chế độ. Bấm Xoá ngay sau đó để hoàn tác.")
+                        Tip("Tự chuyển Anh/Việt", "Gõ một từ tiếng Anh khi đang ở tiếng Việt (hoặc ngược lại), Vikey tự sửa từ đó và chuyển chế độ. Bấm Xoá ngay sau đó để hoàn tác.")
                     }
                     Toggle(isOn: flag($pauseAfterManual)) {
-                        Tip("Tạm dừng 5 giây sau khi chuyển tay", "Khi bạn tự bấm chuyển Anh/Việt, Vikey không tự chuyển trong 5 giây, để giữ đúng lựa chọn của bạn.")
+                        Tip("Tạm dừng 5 giây", "Khi bạn tự bấm chuyển Anh/Việt, Vikey không tự chuyển trong 5 giây, để giữ đúng lựa chọn của bạn.")
                     }
                     .disabled(autoSwitch == 0)
                     Toggle(isOn: flag($smartSwitch)) {
-                        Tip("Nhớ ngôn ngữ cho từng ứng dụng", "Vikey nhớ bạn dùng tiếng Anh hay tiếng Việt ở mỗi ứng dụng và tự chuyển lại khi bạn quay về ứng dụng đó.")
+                        Tip("Nhớ theo ứng dụng", "Vikey nhớ bạn dùng tiếng Anh hay tiếng Việt ở mỗi ứng dụng và tự chuyển lại khi bạn quay về ứng dụng đó.")
                     }
                     Toggle(isOn: Binding(get: { perSite }, set: { setPerSite($0) })) {
-                        Tip("Nhớ riêng cho từng trang web", "Trong Safari, Chrome, Edge, Brave, Arc, Vivaldi, Opera: nhớ tiếng Anh hay tiếng Việt cho từng trang web. Cần quyền đọc địa chỉ tab đang mở, chỉ dùng trên máy bạn.")
+                        Tip("Nhớ theo trang web", "Trong Safari, Chrome, Edge, Brave, Arc, Vivaldi, Opera: nhớ tiếng Anh hay tiếng Việt cho từng trang web. Cần quyền đọc địa chỉ tab đang mở, chỉ dùng trên máy bạn.")
                     }
                     .disabled(smartSwitch == 0)
                 }
@@ -58,7 +58,7 @@ struct MainView: View {
                         Tip("Kiểm tra chính tả", "Chỉ bỏ dấu khi từ đang gõ đúng quy tắc chính tả tiếng Việt.")
                     }
                     Toggle(isOn: flag($restore)) {
-                        Tip("Từ không phải tiếng Việt thì giữ nguyên phím gõ", "Khi gõ xong một từ sai chính tả tiếng Việt, Vikey trả lại đúng các phím bạn đã gõ.")
+                        Tip("Trả lại phím khi sai", "Khi gõ xong một từ sai chính tả tiếng Việt, Vikey trả lại đúng các phím bạn đã gõ.")
                     }
                     .disabled(spelling == 0)
                 }
