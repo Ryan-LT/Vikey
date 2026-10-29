@@ -156,6 +156,9 @@ int main(int argc, char** argv) {
     }
     GFile* dir = g_file_new_for_path(prefs::configDir().c_str()); g_mkdir_with_parents(prefs::configDir().c_str(), 0700);
     GFileMonitor* mon = g_file_monitor_directory(dir, G_FILE_MONITOR_WATCH_MOVES, nullptr, nullptr); if (mon) g_signal_connect(mon, "changed", G_CALLBACK(onSettingsChanged), nullptr);
+    GFile* sf = g_file_new_for_path(prefs::settingsPath().c_str());
+    GFileMonitor* fmon = g_file_monitor_file(sf, G_FILE_MONITOR_WATCH_MOVES, nullptr, nullptr); if (fmon) g_signal_connect(fmon, "changed", G_CALLBACK(onSettingsChanged), nullptr);
+    g_timeout_add(1000, [](gpointer) -> gboolean { core::pollSettingsFile(); return TRUE; }, nullptr);   // belt and braces: mtime poll
     g_timeout_add_seconds(10, onFlush, nullptr);
     ibus_main();
     core::shutdown();

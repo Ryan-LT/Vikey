@@ -125,10 +125,16 @@ static bool AutoSwitchPaused() { return nowMs() < _autoPauseUntil; }
 static void PauseAutoSwitchAfterManual() { if (prefs::has("PauseAutoAfterManual") && !prefs::getInt("PauseAutoAfterManual", 1)) return; _autoPauseUntil = nowMs() + 5000; vAutoSwitchByTyping = 0; }
 static void checkPauseExpired() { if (_autoPauseUntil && !AutoSwitchPaused()) { _autoPauseUntil = 0; vAutoSwitchByTyping = prefs::getInt("AutoSwitchByTyping", 1); StartEnglishWord(false); } }
 
+static time_t _settingsMtime = 0; static long _settingsMtimeNs = 0;
+void pollSettingsFile() {
+    struct stat st; if (stat(prefs::settingsPath().c_str(), &st) != 0) return;
+    if (st.st_mtime != _settingsMtime || st.st_mtim.tv_nsec != _settingsMtimeNs) { _settingsMtime = st.st_mtime; _settingsMtimeNs = st.st_mtim.tv_nsec; reloadSettings(); }
+}
 void reloadSettings() {
     prefs::reload();
     int fileLang = prefs::getInt("InputMethod", 1) ? 1 : 0;
     bool byUser = prefs::getInt("LanguageByUser", 0) != 0, quiet = prefs::getInt("LanguageQuiet", 0) != 0;
+    if (pData && prefs::getInt("TypingLogEnabled", 0)) TLWrite(std::string("\"e\":\"reload\",\"file\":\"") + TLLang(fileLang) + "\",\"cur\":\"" + TLLang(vLanguage) + "\",\"quiet\":" + (quiet ? "true" : "false"));
     if (pData && (fileLang != vLanguage || quiet)) {   // the settings app (or a test) set the language in the file
         if (byUser) { PauseAutoSwitchAfterManual(); _autoFixUndo.active = false; ResetEnglishWord(true); vLanguage = fileLang; TLManual("menu", vLanguage); VKLanguageChanged(true); startNewSession(); }
         else { _autoFixUndo.active = false; ResetEnglishWord(true); if (quiet) { _autoPauseUntil = 0; vAutoSwitchByTyping = prefs::getInt("AutoSwitchByTyping", 1); } vLanguage = fileLang; VKLanguageChanged(false); startNewSession(); }
