@@ -23,6 +23,24 @@ If every listed change is intended, accept them with `Tools/autoswitch/check.sh 
 
 ---
 
+## 38. Vikey for Linux
+
+**Status:** Shipped 2026-10-29 as part of 1.0.14 (branch `linux` → main), Phases 0–6 of `Linux/PLAN.md`.
+
+**User story.** As a Linux user, I want the same Vikey as on the Mac: same engine, same auto switch, same settings window.
+
+**Decided**
+
+- Vikey is an **IBus engine** (`ibus-engine-vikey`): the only way to type in every app on X11 and Wayland. No pre-edit; text is committed straight, as on Mac/Windows.
+- Same engine, same rule lock on Linux CI (x64 + ARM64). The platform core (`Linux/ibus/Core.cpp`) is the Windows/macOS state machine with an output sink.
+- `vikey-settings` (GTK4 + libadwaita) mirrors the Mac window row by row; the IBus panel menu mirrors the menu bar. Settings in `~/.config/vikey/settings.json`; the engine watches it. Language switches go through a one-shot command file.
+- Per-app memory from the X11 focus window (XWayland apps only under Wayland). Per-website memory is not available (would need a browser extension). Auto update is left to the package manager (apt/dnf repo later).
+- Packages: .deb (Ubuntu/Debian) and .rpm (Fedora) from CPack, x64 + ARM64, published with `release.sh --linux`.
+
+**Verified.** 14 live typing cases pass in an Ubuntu 24.04 VM (GNOME, Wayland session) from the installed .deb; per-app memory remembers the language per app.
+
+---
+
 ## 37. Capitalised names mid-sentence: tried, not shipped
 
 **Asked by Tony.** "do #2 too" (Max/Mã, Los Angeles, Bar, Docs).
