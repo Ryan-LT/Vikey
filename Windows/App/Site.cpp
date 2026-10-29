@@ -66,7 +66,19 @@ std::wstring currentHost() {
     return host;
 }
 
+/// The focused control is a password field (UIA IsPassword): the typing log must not record its keys.
+static bool _focusPassword = false;
+bool focusedIsPassword() { return _focusPassword; }
+static void pollPassword() {
+    if (!_uia && FAILED(CoCreateInstance(CLSID_CUIAutomation, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&_uia)))) return;
+    IUIAutomationElement* el = nullptr;
+    if (FAILED(_uia->GetFocusedElement(&el)) || !el) { _focusPassword = false; return; }
+    BOOL pw = FALSE; el->get_CurrentIsPassword(&pw); el->Release();
+    _focusPassword = pw != FALSE;
+}
+
 void poll() {
+    pollPassword();
     if (!prefs::getInt(L"SmartSwitchPerSite", 1)) { core::onSiteChanged(L""); return; }
     core::onSiteChanged(currentHost());
 }

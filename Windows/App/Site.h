@@ -7,4 +7,6 @@ bool isBrowser(const std::wstring& exe);
 std::wstring currentHost();
 /// Call every second while a browser is in front (and shortly after clicks / tab shortcuts).
 void poll();
+/// True while a password field has the focus (checked by poll()).
+bool focusedIsPassword();
 }}

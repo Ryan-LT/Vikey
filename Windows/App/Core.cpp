@@ -1,4 +1,5 @@
 #include "Core.h"
+#include "Site.h"
 #include "KeyMap.h"
 #include "Prefs.h"
 #include "Engine.h"
@@ -113,6 +114,7 @@ static bool TLKeysAllowed() {
         L"windowsterminal.exe", L"cmd.exe", L"powershell.exe", L"pwsh.exe", L"putty.exe", L"wezterm-gui.exe", L"alacritty.exe", L"conhost.exe", L"openconsole.exe", L"termius.exe" };
     std::wstring app = _tlApp; std::transform(app.begin(), app.end(), app.begin(), ::towlower);
     for (auto e : excluded) if (app == e) return false;
+    if (site::focusedIsPassword()) return false;   // like secure input on macOS: never the keys of a password field
     return vTypingLogKeys != 0;
 }
 static void TLWrite(std::string fields) {
