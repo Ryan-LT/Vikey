@@ -31,15 +31,18 @@ final class HostedWindow<Content: View> {
                 w.titleVisibility = .hidden
                 w.titlebarAppearsTransparent = true
             }
+            host.view.layoutSubtreeIfNeeded()   // the real SwiftUI size before centering (Tony: open in the middle of the screen)
             w.setContentSize(size ?? host.view.fittingSize)
-            w.center()
             window = w
+            Self.centerExactly(w)
         }
         WindowFocus.bringForward()
         window?.makeKeyAndOrderFront(nil)
     }
 
     func close() { window?.close() }
+
+    private static func centerExactly(_ w: NSWindow) { w.centerExactly() }
 }
 
 @MainActor
@@ -53,6 +56,15 @@ enum Windows {
     static let acknowledgements = HostedWindow(title: "Ghi nhận", size: nil, resizable: false) { AcknowledgementsView() }
 }
 
+extension NSWindow {
+    /// NSWindow.center() puts a window a third of the way down; this is the true middle of the screen it's on.
+    func centerExactly() {
+        guard let screen = screen ?? NSScreen.main else { center(); return }
+        let v = screen.visibleFrame, f = frame
+        setFrameOrigin(NSPoint(x: (v.midX - f.width / 2).rounded(), y: (v.midY - f.height / 2).rounded()))
+    }
+}
+
 /// A menu bar app has no Dock icon, so its windows can open behind others. While a window is
 /// open, Vikey becomes a regular app (Dock icon, ⌘Tab) and goes back to menu-bar-only when the last one closes.
 enum WindowFocus {
@@ -64,7 +76,10 @@ enum WindowFocus {
         if observer == nil {
             observer = NotificationCenter.default.addObserver(forName: NSWindow.willCloseNotification, object: nil, queue: .main) { note in
                 DispatchQueue.main.async {
-                    let open = NSApp.windows.contains { $0.isVisible && $0.canBecomeMain && $0 !== note.object as? NSWindow }
+                    //panels count too: the About panel can't become main, and closing the menu bar menu must not
+                    //turn Vikey back into a menu-bar-only app under it (it vanished right after opening)
+                    let open = NSApp.windows.contains { $0.isVisible && $0 !== note.object as? NSWindow &&
+                        ($0.canBecomeMain || ($0 is NSPanel && $0.styleMask.contains(.titled))) }
                     if !open { NSApp.setActivationPolicy(.accessory) }
                 }
             }
