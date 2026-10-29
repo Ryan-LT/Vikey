@@ -35,6 +35,7 @@ static std::wstring hostOf(std::wstring v) {
     size_t e = v.find_first_of(L"/?#:"); if (e != std::wstring::npos) v = v.substr(0, e);
     std::transform(v.begin(), v.end(), v.begin(), ::towlower);
     if (v.rfind(L"www.", 0) == 0) v = v.substr(4);
+    if (v.find(L'.') == std::wstring::npos && v != L"localhost") return L"";   // "C:/vk/x.html", "edge", a search: not a site
     return v;
 }
 
