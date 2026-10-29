@@ -1,6 +1,6 @@
 # Vikey
 
-Vietnamese typing for macOS that switches between Vietnamese and English for you.
+Vietnamese typing for macOS and Windows that switches between Vietnamese and English for you.
 
 Type Telex as usual. When you type an English word in Vietnamese mode, or a Vietnamese word in English mode, Vikey fixes the word and switches the language. No more pressing the switch key every few words.
 
