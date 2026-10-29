@@ -34,8 +34,10 @@ class App(Gtk.Application):
             name, start, keys, expected = line.rstrip('\n').split('\t')[:4]
             total += 1
             self.entry.set_text(''); self.entry.grab_focus()
-            xdo('key', '--clearmodifiers', 'Escape'); time.sleep(0.1)   # Esc ends whatever the previous case left...
-            set_lang(start == 'vi')                                      # ...then a fresh session, so the first word is a whole word
+            xdo('key', '--clearmodifiers', 'Escape'); time.sleep(0.15)
+            while GLib.MainContext.default().iteration(False): pass     # deliver the Esc to IBus now (the engine must see it before the language command)
+            time.sleep(0.3)
+            set_lang(start == 'vi')                                      # a fresh session, so the first word is a whole word
             # xdotool cannot type non-ASCII through IBus (its keymap trick is undone before the engine forwards the key): type the Telex keys instead
             keys = keys.replace('tô thí', 'too this')
             i = 0
