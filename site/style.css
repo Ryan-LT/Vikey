@@ -300,3 +300,12 @@ h1 span{white-space:nowrap}
 
 /* OS logos in download buttons */
 .btn .ic{width:20px;height:20px;flex:none;margin-top:-2px}.btn.big .ic{width:22px;height:22px}.btn.ghost .ic{opacity:.85}.one .sub a{color:var(--muted);text-decoration:underline}
+
+/* download page: one card per OS */
+.dlgrid{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:28px;text-align:left}
+.dlcard{background:#fff;border:1px solid var(--line);border-radius:18px;padding:26px 26px 18px;display:flex;flex-direction:column}
+.dlhead{display:flex;align-items:center;gap:14px;margin-bottom:18px}.dlhead .os{width:44px;height:44px;flex:none;color:var(--ink)}
+.dlhead h2{margin:0;font-size:24px}.dlhead p{margin:4px 0 0;color:var(--muted);font-size:14px}
+.dlcard .btn{margin:0 8px 8px 0}.dlcard .steps{margin:18px 0 10px;gap:12px}.dlcard .steps li{font-size:15px}
+.dlcard .small{font-size:13px;line-height:1.6;margin:10px 0 0}.dlcard code{font-size:11px;word-break:break-all}
+@media(max-width:900px){.dlgrid{grid-template-columns:1fr}.dlcard{padding:20px 18px 14px}}
