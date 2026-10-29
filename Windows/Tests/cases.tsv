@@ -8,8 +8,8 @@ auto_en_word_mid_sentence	vi	this makes sense 	this makes sense
 auto_double_key_err	vi	err 	err 
 auto_double_key_mix	vi	mixx 	mix 
 auto_en_to_vi	en	truowfng 	trường 
-auto_en_stays_en	en	theme rust been 	theme rust been 
+auto_en_stays_en	en	the theme of rust 	the theme of rust 
 auto_tie_vi_kept	vi	tô thí 	tô thí 
-undo_backspace	vi	more \b	mỏe 
+undo_backspace	vi	more \b	moẻ
 identifier_guard	en	obj.dir my_var 	obj.dir my_var 
 hotkey_switch	vi	{alt+z}tieng 	tieng 
