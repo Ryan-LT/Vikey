@@ -5,6 +5,8 @@
 #include <cstdlib>
 #include <sys/stat.h>
 #include <mutex>
+#include <cstring>
+#include <cstdio>
 namespace vikey { namespace prefs {
 static std::map<std::string, std::string> _v;   // raw JSON value text: "123" or "\"str\""
 static bool _loaded = false; static std::mutex _m;

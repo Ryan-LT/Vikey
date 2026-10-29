@@ -137,6 +137,9 @@ static int statSum(int days, const char* name) {
     return total;
 }
 static std::string jget(const std::string& j, const char* key) { std::string k = std::string("\"") + key + "\":"; size_t p = j.find(k); if (p == std::string::npos) return ""; p += k.size(); if (j[p] == '"') { size_t e = p + 1; std::string o; while (e < j.size() && j[e] != '"') { if (j[e] == '\\' && e + 1 < j.size()) { e++; } o += j[e]; e++; } return o; } size_t e = j.find_first_of(",}", p); return j.substr(p, e - p); }
+static void onOpenLog(GtkButton*, gpointer) { std::string d = tlDataDir(); gchar* argv[] = {(gchar*)"xdg-open", (gchar*)d.c_str(), nullptr}; g_spawn_async(nullptr, argv, nullptr, (GSpawnFlags)G_SPAWN_SEARCH_PATH, nullptr, nullptr, nullptr, nullptr); }
+static void onClearLog(GtkButton*, gpointer) { ::remove((tlDataDir() + "/typing-log.jsonl").c_str()); ::remove((tlDataDir() + "/typing-log.1.jsonl").c_str()); for (auto& k : prefs::keys()) if (k.rfind("TLStat_", 0) == 0) prefs::remove(k.c_str()); }
+static void onAboutClosed(AdwDialog*, gpointer w) { gtk_window_destroy(GTK_WINDOW(w)); }
 static void buildLog(GtkApplication* app) {
     GtkWidget* win = adw_application_window_new(app); gtk_window_set_title(GTK_WINDOW(win), "Nhật ký gõ"); gtk_window_set_default_size(GTK_WINDOW(win), 720, 560);
     GtkWidget* tv = adw_toolbar_view_new(); adw_toolbar_view_add_top_bar(ADW_TOOLBAR_VIEW(tv), adw_header_bar_new());
@@ -173,8 +176,8 @@ static void buildLog(GtkApplication* app) {
     }
     GtkWidget* sc = gtk_scrolled_window_new(); gtk_widget_set_vexpand(sc, TRUE); gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(sc), list); gtk_box_append(GTK_BOX(box), sc);
     GtkWidget* btns = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8); GtkWidget* open = gtk_button_new_with_label("Mở file log"); GtkWidget* clear = gtk_button_new_with_label("Xoá log…"); gtk_widget_add_css_class(clear, "destructive-action"); gtk_widget_set_hexpand(open, TRUE); gtk_widget_set_halign(open, GTK_ALIGN_START);
-    g_signal_connect(open, "clicked", G_CALLBACK(+[](GtkButton*, gpointer) { gchar* argv[] = {(gchar*)"xdg-open", (gchar*)tlDataDir().c_str(), nullptr}; g_spawn_async(nullptr, argv, nullptr, G_SPAWN_SEARCH_PATH, nullptr, nullptr, nullptr, nullptr); }), nullptr);
-    g_signal_connect(clear, "clicked", G_CALLBACK(+[](GtkButton*, gpointer) { ::remove((tlDataDir() + "/typing-log.jsonl").c_str()); ::remove((tlDataDir() + "/typing-log.1.jsonl").c_str()); for (auto& k : prefs::keys()) if (k.rfind("TLStat_", 0) == 0) prefs::remove(k.c_str()); }), nullptr);
+    g_signal_connect(open, "clicked", G_CALLBACK(onOpenLog), nullptr);
+    g_signal_connect(clear, "clicked", G_CALLBACK(onClearLog), nullptr);
     gtk_box_append(GTK_BOX(btns), open); gtk_box_append(GTK_BOX(btns), clear); gtk_box_append(GTK_BOX(box), btns);
     adw_toolbar_view_set_content(ADW_TOOLBAR_VIEW(tv), box); adw_application_window_set_content(ADW_APPLICATION_WINDOW(win), tv); gtk_window_present(GTK_WINDOW(win));
 }
@@ -184,7 +187,7 @@ static void buildAbout(GtkApplication* app) {
     adw_about_dialog_set_application_name(ADW_ABOUT_DIALOG(d), "Vikey"); adw_about_dialog_set_application_icon(ADW_ABOUT_DIALOG(d), "vikey"); adw_about_dialog_set_version(ADW_ABOUT_DIALOG(d), VIKEY_VERSION);
     adw_about_dialog_set_developer_name(ADW_ABOUT_DIALOG(d), "Tony Dinh"); adw_about_dialog_set_website(ADW_ABOUT_DIALOG(d), "https://vikey.app"); adw_about_dialog_set_license_type(ADW_ABOUT_DIALOG(d), GTK_LICENSE_GPL_3_0);
     adw_about_dialog_set_comments(ADW_ABOUT_DIALOG(d), "Gõ tiếng Việt, tự chuyển Anh/Việt cho bạn.\nDựa trên OpenKey của Tuyen Mai (GPL-3.0).");
-    g_signal_connect(d, "closed", G_CALLBACK(+[](AdwDialog*, gpointer w) { gtk_window_destroy(GTK_WINDOW(w)); }), win);
+    g_signal_connect(d, "closed", G_CALLBACK(onAboutClosed), win);
     gtk_window_present(GTK_WINDOW(win)); adw_dialog_present(d, win);
 }
 static const char* _mode = "";

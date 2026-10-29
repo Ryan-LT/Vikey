@@ -37,7 +37,7 @@ static void outBackspaces(int n) {
 }
 static void outText(const std::u32string& t) { if (!_active) return; std::string s = utf8(t); ibus_engine_commit_text(IBUS_ENGINE(_active), ibus_text_new_from_string(s.c_str())); }
 static void outControlKey(Uint16 key, bool shift) { if (!_active) return; guint ks = keysymOf(key); if (!ks) return; guint st = shift ? IBUS_SHIFT_MASK : 0; ibus_engine_forward_key_event(IBUS_ENGINE(_active), ks, 0, st); ibus_engine_forward_key_event(IBUS_ENGINE(_active), ks, 0, st | IBUS_RELEASE_MASK); }
-static void outBeep() { gchar* argv[] = {(gchar*)"canberra-gtk-play", (gchar*)"-i", (gchar*)"bell", nullptr}; g_spawn_async(nullptr, argv, nullptr, G_SPAWN_SEARCH_PATH | G_SPAWN_STDOUT_TO_DEV_NULL | G_SPAWN_STDERR_TO_DEV_NULL, nullptr, nullptr, nullptr, nullptr); }
+static void outBeep() { gchar* argv[] = {(gchar*)"canberra-gtk-play", (gchar*)"-i", (gchar*)"bell", nullptr}; g_spawn_async(nullptr, argv, nullptr, (GSpawnFlags)(G_SPAWN_SEARCH_PATH | G_SPAWN_STDOUT_TO_DEV_NULL | G_SPAWN_STDERR_TO_DEV_NULL), nullptr, nullptr, nullptr, nullptr); }
 
 // ---- the app in front (per-app memory): X11 / XWayland only -----------------------------------------
 static std::string frontAppX11() {
@@ -77,7 +77,7 @@ static void buildProps(VikeyEngine* e) {
     e->pAbout = ibus_property_new("about", PROP_TYPE_NORMAL, ibus_text_new_from_string("Giới thiệu Vikey"), nullptr, nullptr, TRUE, TRUE, PROP_STATE_UNCHECKED, nullptr);
     for (IBusProperty* p : {e->pLang, e->pAuto, e->pOpen, e->pLog, e->pAbout}) { g_object_ref_sink(p); ibus_prop_list_append(e->props, p); }
 }
-static void launchSettings(const char* arg) { gchar* argv[] = {(gchar*)"vikey-settings", (gchar*)arg, nullptr}; g_spawn_async(nullptr, argv, nullptr, G_SPAWN_SEARCH_PATH, nullptr, nullptr, nullptr, nullptr); }
+static void launchSettings(const char* arg) { gchar* argv[] = {(gchar*)"vikey-settings", (gchar*)arg, nullptr}; g_spawn_async(nullptr, argv, nullptr, (GSpawnFlags)G_SPAWN_SEARCH_PATH, nullptr, nullptr, nullptr, nullptr); }
 
 // ---- IBusEngine overrides --------------------------------------------------------------------------
 static unsigned flagsOf(guint state) { unsigned f = 0; if (state & IBUS_SHIFT_MASK) f |= core::F_SHIFT; if (state & IBUS_CONTROL_MASK) f |= core::F_CONTROL; if (state & IBUS_MOD1_MASK) f |= core::F_ALT; if (state & IBUS_SUPER_MASK) f |= core::F_WIN; if (state & IBUS_LOCK_MASK) f |= core::F_CAPS; return f; }
