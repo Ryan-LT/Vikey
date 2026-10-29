@@ -17,6 +17,8 @@ Only frequency counts and word-pair counts are built in.
 - [MADLAD-400](https://huggingface.co/datasets/allenai/MADLAD-400), Google (ODC-By 1.0)
 - [Reddit comments](https://huggingface.co/datasets/tensorshield/reddit_dataset_157), tensorshield/reddit_dataset_157 (MIT)
 - [Vietnamese forums and reader comments](https://vikey.app/acknowledgements), VnExpress, Tuổi Trẻ, Tinhte, Otofun, Dạy Nhau Học (word statistics)
+- [Emoji names and keywords (CLDR)](https://cldr.unicode.org), Unicode, Inc. (Unicode License v3)
+- [Emojibase](https://emojibase.dev), Miles Johnson (MIT)
 
 ## Test data (not in the app)
 

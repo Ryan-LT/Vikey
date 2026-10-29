@@ -13,6 +13,8 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
     var keyboardViewForTests: KeyboardView { keyboard }
     func setLanguageForTests(_ l: Int) { driver.language = l; driver.resetContext() }
     private var heightConstraint: NSLayoutConstraint?
+    private var emojiView: EmojiKeyboardView?
+    private var emojiQuery = ""
     /// Our own copy of the text before the cursor, kept up to date from our edits. Asking the app for it
     /// is a synchronous cross-process call, so it's only read when iOS says the text changed.
     private var lastContext: String?
@@ -64,6 +66,7 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
         heightConstraint = h
         let saved = UserDefaults.standard.object(forKey: languageKey) as? Int ?? 1
         driver.language = saved
+        DispatchQueue.global(qos: .utility).async { _ = EmojiIndex.shared }   // the emoji keyboard opens instantly
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -159,6 +162,8 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
         let (title, blue) = Self.returnTitle(proxy.returnKeyType ?? .default)
         keyboard.returnTitle = title
         keyboard.returnIsBlue = blue
+        emojiView?.dark = keyboard.dark
+        if emojiView?.searching == true { updateEmojiQuery() }   // VI/EN changes how the query reads
     }
 
     private static func returnTitle(_ t: UIReturnKeyType) -> (String, Bool) {
@@ -206,6 +211,7 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
     // MARK: keys
 
     func keyboard(_ view: KeyboardView, didTap kind: KeyKind) {
+        if emojiView?.searching == true, emojiSearchKey(kind) { return }
         if Diag.on {
             switch kind {
             case .char(let c): Diag.lastKind = c.first?.isLetter == true ? "letter" : "symbol"
@@ -263,6 +269,8 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
             refresh()
         case .globe:
             advanceToNextInputMode()
+        case .emoji:
+            showEmoji()
         }
     }
 
@@ -565,3 +573,101 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
         keyboard.shift = start ? .on : .off
     }
 }
+
+// MARK: emoji keyboard
+
+extension KeyboardViewController: EmojiKeyboardDelegate {
+    private var keyboardHeight: CGFloat { KeyboardView.keyboardHeight(compactHeight: traitCollection.verticalSizeClass == .compact) }
+
+    func showEmoji() {
+        clearWord()
+        driver.resetContext()
+        let ev = emojiView ?? {
+            let v = EmojiKeyboardView(frame: view.bounds)
+            v.delegate = self
+            v.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+            view.addSubview(v)
+            emojiView = v
+            return v
+        }()
+        ev.dark = keyboard.dark
+        ev.haptics = keyboard.haptics
+        ev.load()
+        browseEmoji()
+    }
+
+    private func browseEmoji() {
+        guard let ev = emojiView else { return }
+        KeyboardView.searchTop = nil
+        heightConstraint?.constant = keyboardHeight
+        keyboard.isHidden = true
+        ev.isHidden = false
+        ev.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        ev.frame = view.bounds
+        ev.setSearching(false)
+        keyboard.setNeedsLayout()
+    }
+
+    func emojiKeyboardClose(_ v: EmojiKeyboardView) {
+        KeyboardView.searchTop = nil
+        heightConstraint?.constant = keyboardHeight
+        v.isHidden = true
+        keyboard.isHidden = false
+        keyboard.layer_ = .letters
+        keyboard.setNeedsLayout()
+        updateAutoShift(lastContext ?? "")
+    }
+
+    func emojiKeyboardStartSearch(_ v: EmojiKeyboardView) {
+        KeyboardView.searchTop = EmojiKeyboardView.searchHeight
+        heightConstraint?.constant = keyboardHeight
+        keyboard.isHidden = false
+        keyboard.layer_ = .letters
+        keyboard.shift = .off
+        keyboard.setNeedsLayout()
+        v.autoresizingMask = [.flexibleWidth]
+        v.frame = CGRect(x: 0, y: 0, width: view.bounds.width, height: EmojiKeyboardView.searchHeight)
+        v.setSearching(true)
+        emojiQuery = ""
+        updateEmojiQuery()
+    }
+
+    func emojiKeyboard(_ v: EmojiKeyboardView, insert text: String) {
+        proxy.insertText(text)
+        driver.resetContext()
+        clearWord()
+        afterEdit(deleted: 0, inserted: text)
+    }
+
+    func emojiKeyboardDelete(_ v: EmojiKeyboardView) {
+        proxy.deleteBackward()
+        driver.resetContext()
+        clearWord()
+        afterEdit(deleted: 1, inserted: "")
+    }
+
+    /// Keys while searching go to the query, not the app. Returns false for keys that work as usual.
+    private func emojiSearchKey(_ kind: KeyKind) -> Bool {
+        switch kind {
+        case .char(let c): emojiQuery += c.lowercased()
+        case .space: if !emojiQuery.isEmpty && !emojiQuery.hasSuffix(" ") { emojiQuery += " " }
+        case .backspace: if !emojiQuery.isEmpty { emojiQuery.removeLast() }
+        case .returnKey, .emoji: browseEmoji(); return true
+        default: return false
+        }
+        if keyboard.shift == .on { keyboard.shift = .off }
+        updateEmojiQuery()
+        return true
+    }
+
+    /// The query reads as Telex in Vietnamese mode ("nguwaj" shows "ngựa"); search uses the raw keys too.
+    private func updateEmojiQuery() {
+        guard let ev = emojiView else { return }
+        let vi = driver.language == 1
+        let shown = vi ? Telex.convert(emojiQuery) : emojiQuery
+        let found = emojiQuery.trimmingCharacters(in: .whitespaces).isEmpty ? [] :
+            EmojiIndex.shared.search(emojiQuery, vietnamese: vi, limit: 80).filter { $0.version <= EmojiKeyboardView.maxVersion }
+        ev.setQuery(shown, results: found)
+    }
+}
+

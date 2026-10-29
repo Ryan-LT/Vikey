@@ -14,7 +14,7 @@ enum Diag {
 /// What a key does.
 enum KeyKind: Equatable {
     case char(String)      // inserts this (letters stored lowercase)
-    case shift, backspace, space, returnKey, globe, language
+    case shift, backspace, space, returnKey, globe, language, emoji
     case layer(KeyboardView.Layer)
 }
 
@@ -90,7 +90,10 @@ final class KeyboardView: UIView {
     static var barOn = false
     static let barH: CGFloat = 44
     static func diagH(compactHeight: Bool) -> CGFloat { Diag.on ? (compactHeight ? 30 : 40) : 0 }
+    /// Emoji search (EmojiKeyboardView): the search field and a row of results take the top instead of the strip.
+    static var searchTop: CGFloat?
     static func metrics(compactHeight: Bool) -> (top: CGFloat, keyH: CGFloat, pitch: CGFloat, bottom: CGFloat) {
+        if let t = searchTop { return compactHeight ? (top: t, keyH: 34, pitch: 40, bottom: 4) : (top: t, keyH: 43, pitch: 54, bottom: 3) }
         let extra = diagH(compactHeight: compactHeight) + (barOn ? barH : 0)
         if compactHeight { return (top: 8 + extra, keyH: 34, pitch: 40, bottom: 4) }
         return (top: 11 + extra - (barOn ? 3 : 0), keyH: 43, pitch: 54, bottom: 3)
@@ -115,7 +118,7 @@ final class KeyboardView: UIView {
 
     private func rowKinds() -> [[KeyKind]] {
         func chars(_ s: String) -> [KeyKind] { s.map { .char(String($0)) } }
-        var bottom: [KeyKind] = [layer_ == .letters ? .layer(.numbers) : .layer(.letters)]
+        var bottom: [KeyKind] = [layer_ == .letters ? .layer(.numbers) : .layer(.letters), .emoji]
         if showsGlobe { bottom.append(.globe) }
         bottom += [.language, .space, .returnKey]
         switch layer_ {
@@ -206,7 +209,7 @@ final class KeyboardView: UIView {
         }
         let dh = Self.diagH(compactHeight: compactHeight)
         diagLabel.frame = CGRect(x: 8, y: 2, width: W - 16, height: max(dh - 4, 20))
-        bar.isHidden = !Self.barOn
+        bar.isHidden = !Self.barOn || Self.searchTop != nil
         bar.frame = CGRect(x: side, y: dh + 2, width: W - 2 * side, height: Self.barH - 4)
         letterRects = []; letterCaps = [:]
         for i in keys.indices where i < frames.count {
@@ -232,6 +235,7 @@ final class KeyboardView: UIView {
         case .space: return (cursorMode ? "" : languageTitle, nil)
         case .returnKey: return returnTitle == "return" ? (nil, UIImage(systemName: "return", withConfiguration: sym)) : (returnTitle, nil)
         case .globe: return (nil, UIImage(systemName: "globe", withConfiguration: sym))
+        case .emoji: return (nil, UIImage(systemName: "face.smiling", withConfiguration: sym))
         case .language: return (languageShort, nil)
         case .layer(let l): return (l == .letters ? "ABC" : (l == .numbers ? "123" : "#+="), nil)
         }
