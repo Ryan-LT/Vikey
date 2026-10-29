@@ -3,6 +3,9 @@
 #include "Prefs.h"
 #include "Engine.h"
 #include <imm.h>
+#ifndef IMC_GETOPENSTATUS
+#define IMC_GETOPENSTATUS 0x0005   // lives in immdev.h in recent SDKs
+#endif
 #include <psapi.h>
 #include <vector>
 #include <string>
