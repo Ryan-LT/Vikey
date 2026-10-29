@@ -104,8 +104,8 @@ def build():
                  "WIN_X64_SHA": (win.get("x64") or {}).get("sha256"), "WIN_ARM64_SHA": (win.get("arm64") or {}).get("sha256")}
         # a page that mentions the Windows build before it is released keeps its placeholders hidden
         if not win: page = re.sub(r'<!-- windows -->.*?<!-- /windows -->', "", page, flags=re.S)
-        for k, v in subst.items():
-            if v: page = page.replace(k, v)
+        for k in sorted(subst, key=len, reverse=True):   # WIN_VERSION before VERSION
+            if subst[k]: page = page.replace(k, subst[k])
         # cache-bust assets: /assets/x.png -> /assets/x.png?v=<mtime>, so browsers never show a stale screenshot
         def bust(m):
             f = os.path.join(ROOT, m.group(1).lstrip("/"))
