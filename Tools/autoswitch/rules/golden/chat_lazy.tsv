@@ -703,7 +703,7 @@ We need to optimize the bundle size, currently over 150MB	We need to optimize th
 Lỡ upload version sai lên TestFlight, rollback được không?	Lỡ upload version sai lên TestFlight, rollback được không?
 Em vừa fix xong cái memory leak ở background process	Em vừa fix xong cái memory leak ở background process
 Thêm deep linking feature vào build này nhé	Thêm deep linking feature vào build này nhé
-Push notification test cos work không các bạn?	Push notification test có work không các bạn?
+Push notification test có work không các bạn?	Push notification test có work không các bạn?
 Cái analytics tracking cần set up lại cho chính xác	Cái analytics tracking cần set up lại cho chính xác
 Ai review security audit chưa? Bắt buộc trước khi submit	Ai review security audit chưa? Bắt buộc trước khi submit
 Have you tested the app on iPhone SE yet?	Have you tested the app on iPhone SE yet?
@@ -1509,7 +1509,7 @@ Tao xem cái stored procedure của department kia được không?	Tao xem cái
 Còn 2-3 cái nữa, đang check	Còn 2-3 cái nữa, đang check
 Alert notification có setup chưa?	Alert notification có setup chưa?
 Chưa, chờ dashboard stable trước	Chưa, chờ dashboard stable trước
-Data validation test cos pass không?	Data validation test có pass không?
+Data validation test có pass không?	Data validation test có pass không?
 Fail mấy case, đang fix	Fail mấy case, đang fix
 Mình merge code vào main được không?	Mình merge code vào main được không?
 Chưa, code review đã xong chưa?	Chưa, code review đã xong chưa?
@@ -1545,7 +1545,7 @@ em sẽ update theo yêu cầu của anh, hôm nay sẽ xong	em sẽ update theo
 actually, let me reconsider this approach, maybe we need to pivot	actually, let me reconsider this approach, maybe we need to pivot
 em đang test responsiveness trên các device khác nhau	em đang test responsiveness trên các device khác nhau
 anh có template nào mà em tham khảo không, hay em design from scratch?	anh có template nào mà em tham khảo không, hay em design from scratch?
-từng part của design em sex optimize performance-wise	từng part của design em sẽ optimize performance-wise
+từng part của design em sẽ optimize performance-wise	từng part của design em sẽ optimize performance-wise
 em đã integrate feedback của anh vào version 3 rồi	em đã integrate feedback của anh vào version 3 rồi
 The latest version is ready for review, I'll send the link shortly	The latest version is ready for review, I'll send the link shortly
 em còn cần clarify thêm về brand guidelines không anh?	em còn cần clarify thêm về brand guidelines không anh?
@@ -1556,11 +1556,11 @@ em có thể add extra features không, hay stick with scope hiện tại?	em c�
 anh check timeline có bị tight không, em có thể adjust nếu cần	anh check timeline có bị tight không, em có thể adjust nếu cần
 em đã refactor code một số chỗ để improve performance	em đã refactor code một số chỗ để improve performance
 ready to ship whenever you give the green light	ready to ship whenever you give the green light
-em sex prepare documentation cho deliverables	em sẽ prepare documentation cho deliverables
+em sẽ prepare documentation cho deliverables	em sẽ prepare documentation cho deliverables
 anh cần em brief team của anh không, or em just hand over files?	anh cần em brief team của anh không, or em just hand over files?
 em upload final assets to the repository already	em upload final assets to the repository already
 all files are organized in folders according to project structure	all files are organized in folders according to project structure
-em sex provide comprehensive handover notes	em sẽ provide comprehensive handover notes
+em sẽ provide comprehensive handover notes	em sẽ provide comprehensive handover notes
 bây giờ em chỉ chờ anh final sign-off để close project	bây giờ em chỉ chờ anh final sign-off để close project
 vâng, nếu có issue gì sau này em sẽ hỗ trợ cho anh	vâng, nếu có issue gì sau này em sẽ hỗ trợ cho anh
 em appreciate sự collaborate với anh trong project này	em appreciate sự collaborate với anh trong project này
@@ -1770,7 +1770,7 @@ app notification của mình nó bị delay, không biết order ready chưa	app
 bạn gọi chưa, mà gọi luôn cho tao nữa đi	bạn gọi chưa, mà gọi luôn cho tao nữa đi
 bánh tráng nướng bên quán Phương thì chuẩn lắm, recommend 100 	bánh tráng nướng bên quán Phương thì chuẩn lắm, recommend 100 
 shipping fee đắt quá, tao quyết định mua hàng trong siêu thị rồi	shipping fee đắt quá, tao quyết định mua hàng trong siêu thị rồi
-mấy ông thích ăn buffet hay af la carte hơn	mấy ông thích ăn buffet hay à la carte hơn
+mấy ông thích ăn buffet hay à la carte hơn	mấy ông thích ăn buffet hay à la carte hơn
 tớ order rồi, nó đang prep, khoảng 15 phút nữa là giao	tớ order rồi, nó đang prep, khoảng 15 phút nữa là giao
 the payment method is not working, can you try another card	the payment method is not working, can you try another card
 tao ăn phở đã 3 ngày liên tiếp rồi, muốn đổi một cái gì đó mới	tao ăn phở đã 3 ngày liên tiếp rồi, muốn đổi một cái gì đó mới

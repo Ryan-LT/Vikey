@@ -23,6 +23,17 @@ If every listed change is intended, accept them with `Tools/autoswitch/check.sh 
 
 ---
 
+## 34. Longer context for ties: word pairs beat D22; triples not worth it
+
+**Asked by Tony.** "longer context for ties (3-word phrases)".
+
+**Decided.**
+- Word triples (322k Vietnamese + 262k English, from the same 180M words) tried two words back before word pairs. No gain on the tuning set at any weight (0.124% either way): the remaining tie errors are not about missing context. Not shipped (would add ~5 MB); engine support stays, off unless loaded (`vAutoSwitchSetTrigrams`).
+- What the error list showed instead: D22 ("right after a clearly English word, a tie stays English") overruled word-pair evidence. Now a pair vote that is 10x sure of the Vietnamese reading wins: "test có work", "em sẽ optimize", "team bên US", "à la carte".
+- Tuning set: 0.124 -> 0.123% wrong, manual switches 0.159 -> 0.154. Locked test (once): 0.121 -> 0.118% wrong, manual 0.154 -> 0.147. Chat golden: manual switches 80 -> 66.
+
+**Status:** Built 2026-10-29, not in a release yet.
+
 ## 33. Words after digits
 
 **Asked by Tony.** "Cool, do that" (numbers glued to Vietnamese words in chat: 5trăm, 100tỷ, 4tuổi, 1cái).
