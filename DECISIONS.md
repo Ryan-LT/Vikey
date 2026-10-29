@@ -23,6 +23,18 @@ If every listed change is intended, accept them with `Tools/autoswitch/check.sh 
 
 ---
 
+## 40. "sê" is not a Vietnamese word
+
+**Status:** Shipped 2026-10-29.
+
+**Problem.** In Vietnamese mode "see you" came out as "sê you" (Tony). The Vietnamese word list had "sê" at 11 (from names and loan spellings: Sê San, sê-ri), and "you" also counts as Vietnamese text in web data, so nothing switched to English.
+
+**Fix.** "sê" drops to the lowest score (-120) in the built data; build_dict.py drops it on the next rebuild. A full rebuild today would change hundreds of other words (the source data moved since the last build), so only this word changed.
+
+**Result.** Locked test 0.117% → 0.116% wrong words (99.88%); chat sets one manual switch fewer each. Rule D40.
+
+**Also checked (Tony's report).** "we" → "ưe" happens only inside the 5 seconds after a manual switch, when auto-switch is paused on purpose. "ở DDaf" was the D39 bug (Shift held for both Ds).
+
 ## 39. DD counts as one capital (Đ)
 
 **Status:** Shipped 2026-10-29.

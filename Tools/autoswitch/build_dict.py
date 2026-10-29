@@ -110,6 +110,9 @@ if inf_total:
     vn = {k: max(-120, min(120, round(10 * math.log10(rate(k) * 1e6)))) for k in keys if vn.get(k, 0) + inf.get(k, 0) > 0}
 else:
     vn = {k: score(c, vi_total) for k, c in vn.items()}
+# Not Vietnamese words, only names and loan spellings (Sê San, sê-ri) that collide with common English (Tony: D40)
+for k in ('see',):
+    vn.pop(k, None)
 
 en_rows, en_total = load('en_50k.txt')
 # Keep only words the macOS English spell checker accepts (drops subtitle junk like "ys", "af", "carm").

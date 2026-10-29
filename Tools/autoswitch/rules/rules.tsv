@@ -113,3 +113,4 @@ D34	0	test cos work 	test có work 	0	a word pair that is clearly Vietnamese (10
 D35	1	vaof office its nhaats 	vào office ít nhất 	1	look-forward: a word put back to English flips to Vietnamese when the next word makes it clear (ít nhất)
 D39	1	ddi DDaf Nawngx 	đi Đà Nẵng 	1	DD is one letter (Đ): a word starting with it has one capital, not an acronym (DDR, DDoS keep two)
 D39	0	DDR4 DDoS 	DDR4 DDoS 	0	the D39 Đ rule keeps real acronyms
+D40	1	see you owr DDaf Nawngx 	see you ở Đà Nẵng 	1	"sê" is not a Vietnamese word (Tony): see stays English
