@@ -30,6 +30,19 @@
 <p class="muted small">Portable, no installer: <a href="WIN_X64_ZIP">x64 (zip)</a> · <a href="WIN_ARM64_ZIP">ARM64 (zip)</a><br>Installer SHA-256: <code>WIN_X64_SHA</code> (x64) · <code>WIN_ARM64_SHA</code> (ARM64)</p>
 </section>
 <!-- /windows -->
+<!-- linux -->
+<section class="dlcard">
+<div class="dlhead"><svg class="os" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2c-2.4 0-4 1.9-4 4.6 0 1.1.2 2 .1 2.8-.2 1.2-1.5 2.4-2.3 4.1-.6 1.3-.9 2.6-.6 3.6-.6.6-.9 1.3-.6 1.9.4.7 1.6.8 2.7 1.1 1 .3 1.8 1.1 2.9 1.1.9 0 1.4-.5 1.8-.9.4.4.9.9 1.8.9 1.1 0 1.9-.8 2.9-1.1 1.1-.3 2.3-.4 2.7-1.1.3-.6 0-1.3-.6-1.9.3-1 0-2.3-.6-3.6-.8-1.7-2.1-2.9-2.3-4.1-.1-.8.1-1.7.1-2.8C16 3.9 14.4 2 12 2zm-1.3 4.2c.5 0 .8.6.8 1.3s-.3 1.3-.8 1.3-.8-.6-.8-1.3.3-1.3.8-1.3zm2.6 0c.5 0 .8.6.8 1.3s-.3 1.3-.8 1.3-.8-.6-.8-1.3.3-1.3.8-1.3zM12 9.2c.9 0 2 .5 2 1 0 .6-1.3 1.4-2 1.4s-2-.8-2-1.4c0-.5 1.1-1 2-1zm-2.2 2.9c.6.5 1.4.9 2.2.9s1.6-.4 2.2-.9c1 1.3 1.9 3.3 1.9 4.6 0 2-1.7 3.1-4.1 3.1s-4.1-1.1-4.1-3.1c0-1.3.9-3.3 1.9-4.6z"/></svg><div><h2>Linux</h2><p>Ubuntu, Debian, Fedora · x64 and ARM64 · IBus engine</p></div></div>
+<p><a class="btn big dl-lin" href="LIN_DEB_X64" download><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2c-2.4 0-4 1.9-4 4.6 0 1.1.2 2 .1 2.8-.2 1.2-1.5 2.4-2.3 4.1-.6 1.3-.9 2.6-.6 3.6-.6.6-.9 1.3-.6 1.9.4.7 1.6.8 2.7 1.1 1 .3 1.8 1.1 2.9 1.1.9 0 1.4-.5 1.8-.9.4.4.9.9 1.8.9 1.1 0 1.9-.8 2.9-1.1 1.1-.3 2.3-.4 2.7-1.1.3-.6 0-1.3-.6-1.9.3-1 0-2.3-.6-3.6-.8-1.7-2.1-2.9-2.3-4.1-.1-.8.1-1.7.1-2.8C16 3.9 14.4 2 12 2zm-1.3 4.2c.5 0 .8.6.8 1.3s-.3 1.3-.8 1.3-.8-.6-.8-1.3.3-1.3.8-1.3zm2.6 0c.5 0 .8.6.8 1.3s-.3 1.3-.8 1.3-.8-.6-.8-1.3.3-1.3.8-1.3zM12 9.2c.9 0 2 .5 2 1 0 .6-1.3 1.4-2 1.4s-2-.8-2-1.4c0-.5 1.1-1 2-1zm-2.2 2.9c.6.5 1.4.9 2.2.9s1.6-.4 2.2-.9c1 1.3 1.9 3.3 1.9 4.6 0 2-1.7 3.1-4.1 3.1s-4.1-1.1-4.1-3.1c0-1.3.9-3.3 1.9-4.6z"/></svg>Download .deb (Ubuntu)</a></p>
+<p class="muted small" style="margin-top:-4px">Other: <a href="LIN_DEB_ARM64" download>.deb ARM64</a> · <a href="LIN_RPM_X64" download>.rpm (Fedora) x64</a> · <a href="LIN_RPM_ARM64" download>.rpm ARM64</a></p>
+<ol class="steps">
+<li>Install the package: <code>sudo apt install ./vikey_*.deb</code> (or <code>sudo dnf install ./vikey-*.rpm</code>), then log out and back in.</li>
+<li>Open Settings › Keyboard › Input Sources and add "Vietnamese (Vikey)".</li>
+<li>Switch to Vikey with the input-source key (Super+Space). Press Alt+Z to switch English/Vietnamese.</li>
+</ol>
+<p class="muted small">Per-website memory is not available on Linux yet; per-app memory works for X11 apps on Wayland.</p>
+</section>
+<!-- /linux -->
 </div>
 <p class="muted" style="margin-top:34px">The source code and every version are on <a href="https://github.com/tonyminibot/Vikey/releases">GitHub</a>. See what changed in each version in the <a href="/en/changelog">changelog</a>.</p>
 </main>

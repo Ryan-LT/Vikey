@@ -98,12 +98,16 @@ def build():
                            canonical=canonical, alternates=alternates, bodyclass=' class="one-page"' if one else "")
         page += nav(lang, pre, other) + body + ("" if one else footer(lang, pre)) + "</body></html>\n"
         win = rel.get("windows") or {}
-        subst = {"VERSION": rel.get("version"), "DOWNLOAD_URL": rel.get("download_url"), "SHA256": rel.get("sha256"),
+        lin = rel.get("linux") or {}
+        subst = {"VERSION": rel.get("version"), "LIN_VERSION": lin.get("version"),
+                 "LIN_DEB_X64": (lin.get("deb_x64") or {}).get("download_url"), "LIN_DEB_ARM64": (lin.get("deb_arm64") or {}).get("download_url"),
+                 "LIN_RPM_X64": (lin.get("rpm_x64") or {}).get("download_url"), "LIN_RPM_ARM64": (lin.get("rpm_arm64") or {}).get("download_url"), "DOWNLOAD_URL": rel.get("download_url"), "SHA256": rel.get("sha256"),
                  "WIN_VERSION": win.get("version"), "WIN_X64_URL": (win.get("x64") or {}).get("download_url"), "WIN_ARM64_URL": (win.get("arm64") or {}).get("download_url"),
                  "WIN_X64_ZIP": (win.get("x64") or {}).get("portable_url"), "WIN_ARM64_ZIP": (win.get("arm64") or {}).get("portable_url"),
                  "WIN_X64_SHA": (win.get("x64") or {}).get("sha256"), "WIN_ARM64_SHA": (win.get("arm64") or {}).get("sha256")}
         # a page that mentions the Windows build before it is released keeps its placeholders hidden
         if not win: page = re.sub(r'<!-- windows -->.*?<!-- /windows -->', "", page, flags=re.S)
+        if not lin: page = re.sub(r'<!-- linux -->.*?<!-- /linux -->', "", page, flags=re.S)
         for k in sorted(subst, key=len, reverse=True):   # WIN_VERSION before VERSION
             if subst[k]: page = page.replace(k, subst[k])
         # cache-bust assets: /assets/x.png -> /assets/x.png?v=<mtime>, so browsers never show a stale screenshot
