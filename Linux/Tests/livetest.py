@@ -17,8 +17,8 @@ class App(Gtk.Application):
     def do_activate(self):
         self.win = Gtk.ApplicationWindow(application=self, title='VikeyLiveTest'); self.win.set_default_size(600, 120)
         self.entry = Gtk.Entry(); self.win.set_child(self.entry); self.win.present()
-        GLib.timeout_add(800, self.run)
-    def run(self):
+        GLib.timeout_add(800, self.run_cases)
+    def run_cases(self):
         xdo('search', '--name', 'VikeyLiveTest', 'windowactivate', '--sync'); time.sleep(0.3)
         total = fails = 0
         for line in open(cases, encoding='utf-8'):
