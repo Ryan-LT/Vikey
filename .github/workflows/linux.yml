@@ -1,0 +1,29 @@
+name: linux
+on:
+  push:
+    branches: [linux, main]
+    tags: ['v*']
+    paths: [Engine/**, Tools/autoswitch/**, Linux/**, .github/workflows/linux.yml]
+  pull_request:
+    paths: [Engine/**, Tools/autoswitch/**, Linux/**, .github/workflows/linux.yml]
+  workflow_dispatch:
+jobs:
+  engine:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            arch: x64
+          - runner: ubuntu-24.04-arm
+            arch: arm64
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tools
+        run: sudo apt-get update -q && sudo apt-get install -y -q ninja-build cmake g++ python3 libibus-1.0-dev libgtk-4-dev libadwaita-1-dev
+      - name: Engine lock (rule cases, golden, Telex lock, driver parity, perf)
+        run: bash Linux/check.sh
+      - name: Build IBus engine (when present)
+        if: hashFiles('Linux/ibus/CMakeLists.txt') != ''
+        run: cmake -S Linux -B Linux/build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build Linux/build
