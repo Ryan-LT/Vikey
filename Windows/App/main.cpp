@@ -5,6 +5,7 @@
 #include "Core.h"
 #include "Prefs.h"
 #include "Site.h"
+#include "Settings.h"
 #include "resource.h"
 
 #pragma comment(lib, "user32.lib")
@@ -14,7 +15,7 @@
 
 static const UINT WM_TRAY = WM_APP + 1;
 static const UINT TIMER_FLUSH = 1, TIMER_SITE = 2;
-enum { ID_VIET = 100, ID_ENG, ID_AUTOSWITCH, ID_SMART, ID_SITE, ID_SPELL, ID_RESTORE, ID_MODERN, ID_LOGIN, ID_LOG, ID_ABOUT, ID_QUIT };
+enum { ID_VIET = 100, ID_ENG, ID_SETTINGS, ID_AUTOSWITCH, ID_SMART, ID_SITE, ID_SPELL, ID_RESTORE, ID_MODERN, ID_LOGIN, ID_LOG, ID_ABOUT, ID_QUIT };
 
 static HWND _hwnd; static NOTIFYICONDATAW _nid = {};
 static HICON _iconV, _iconE;
@@ -59,6 +60,8 @@ static void showMenu() {
     AppendMenuW(m, MF_STRING | (lang ? MF_CHECKED : 0), ID_VIET, L"Tiếng Việt");
     AppendMenuW(m, MF_STRING | (!lang ? MF_CHECKED : 0), ID_ENG, L"English");
     AppendMenuW(m, MF_SEPARATOR, 0, nullptr);
+    AppendMenuW(m, MF_STRING, ID_SETTINGS, L"Cài đặt…");
+    AppendMenuW(m, MF_SEPARATOR, 0, nullptr);
     AppendMenuW(m, MF_STRING | (prefs::getInt(L"AutoSwitchByTyping", 1) ? MF_CHECKED : 0), ID_AUTOSWITCH, L"Tự chuyển Anh/Việt khi gõ");
     AppendMenuW(m, MF_STRING | (prefs::getInt(L"UseSmartSwitchKey", 1) ? MF_CHECKED : 0), ID_SMART, L"Nhớ ngôn ngữ theo ứng dụng");
     AppendMenuW(m, MF_STRING | (prefs::getInt(L"SmartSwitchPerSite", 1) ? MF_CHECKED : 0), ID_SITE, L"Nhớ ngôn ngữ theo trang web");
@@ -67,7 +70,7 @@ static void showMenu() {
     AppendMenuW(m, MF_STRING | (prefs::getInt(L"ModernOrthography", 1) ? MF_CHECKED : 0), ID_MODERN, L"Bỏ dấu kiểu mới (oà, uý)");
     AppendMenuW(m, MF_SEPARATOR, 0, nullptr);
     AppendMenuW(m, MF_STRING | (prefs::launchAtLogin() ? MF_CHECKED : 0), ID_LOGIN, L"Khởi động cùng Windows");
-    AppendMenuW(m, MF_STRING | (prefs::getInt(L"TypingLogEnabled", 0) ? MF_CHECKED : 0), ID_LOG, L"Ghi nhật ký gõ (gỡ lỗi)");
+    AppendMenuW(m, MF_STRING, ID_LOG, L"Nhật ký gõ…");
     AppendMenuW(m, MF_SEPARATOR, 0, nullptr);
     AppendMenuW(m, MF_STRING, ID_ABOUT, L"Giới thiệu Vikey");
     AppendMenuW(m, MF_STRING, ID_QUIT, L"Thoát");
@@ -79,13 +82,14 @@ static LRESULT CALLBACK wndProc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
     using namespace vikey;
     switch (msg) {
     case WM_TRAY:
-        if (LOWORD(lp) == WM_LBUTTONUP) core::setLanguageByUser(!core::language());
+        if (LOWORD(lp) == WM_LBUTTONUP) ui::showSettings(GetModuleHandleW(nullptr), false);
         else if (LOWORD(lp) == WM_RBUTTONUP || LOWORD(lp) == WM_CONTEXTMENU) showMenu();
         return 0;
     case WM_COMMAND:
         switch (LOWORD(wp)) {
         case ID_VIET: core::setLanguageByUser(1); break;
         case ID_ENG: core::setLanguageByUser(0); break;
+        case ID_SETTINGS: ui::showSettings(GetModuleHandleW(nullptr), false); break;
         case ID_AUTOSWITCH: toggle(L"AutoSwitchByTyping", 1); break;
         case ID_SMART: toggle(L"UseSmartSwitchKey", 1); break;
         case ID_SITE: toggle(L"SmartSwitchPerSite", 1); break;
@@ -93,7 +97,7 @@ static LRESULT CALLBACK wndProc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
         case ID_RESTORE: toggle(L"RestoreIfInvalidWord", 1); break;
         case ID_MODERN: toggle(L"ModernOrthography", 1); break;
         case ID_LOGIN: prefs::setLaunchAtLogin(!prefs::launchAtLogin()); break;
-        case ID_LOG: toggle(L"TypingLogEnabled", 0); break;
+        case ID_LOG: ui::showTypingLog(GetModuleHandleW(nullptr)); break;
         case ID_ABOUT: MessageBoxW(h, L"Vikey " VIKEY_VERSION_W L"\nGõ tiếng Việt, tự chuyển Anh/Việt khi gõ.\n\nTác giả: Tony Dinh. Dựa trên OpenKey của Tuyen Mai (GPL-3.0).\nhttps://vikey.app", L"Vikey", MB_OK | MB_ICONINFORMATION); break;
         case ID_QUIT: DestroyWindow(h); break;
         }
@@ -117,9 +121,10 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE, PWSTR, int) {
     _nid.cbSize = sizeof(_nid); _nid.hWnd = _hwnd; _nid.uID = 1; _nid.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP; _nid.uCallbackMessage = WM_TRAY; _nid.hIcon = _iconV;
     wcscpy_s(_nid.szTip, L"Vikey");
     Shell_NotifyIconW(NIM_ADD, &_nid);
-    vikey::core::setLanguageObserver([](int lang) { updateTray(lang); });
+    vikey::core::setLanguageObserver([](int lang) { updateTray(lang); vikey::ui::languageChanged(lang); });
     if (!vikey::core::start()) { MessageBoxW(nullptr, L"Không cài được bộ bắt phím (SetWindowsHookEx).", L"Vikey", MB_ICONERROR); return 1; }
     updateTray(vikey::core::language());
+    if (!vikey::prefs::has(L"FirstRunDone")) vikey::ui::showSettings(inst, true);
     SetTimer(_hwnd, TIMER_FLUSH, 10000, nullptr);
     SetTimer(_hwnd, TIMER_SITE, 1000, nullptr);   // per-website memory: the active tab can change without any event we see
     MSG msg; while (GetMessageW(&msg, nullptr, 0, 0)) { TranslateMessage(&msg); DispatchMessageW(&msg); }
