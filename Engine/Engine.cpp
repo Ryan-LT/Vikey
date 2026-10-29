@@ -1400,6 +1400,26 @@ static int asBigramVote(const char* prevLetters, const bool& prevVietnamese, con
     return (int)lround(v * _asBigramWeight);
 }
 
+#ifndef AS_NEXT_PAIR
+#define AS_NEXT_PAIR 20   //how sure (tuned on val: 10 -> 0.122%, 20 -> 0.120%) (20 = 100x) the following word must be of the Vietnamese reading to flip a word kept English (D35)
+#endif
+/** Look-forward (D35): the word after a word kept English. > 0 when the Vietnamese reading of the earlier word
+ *  ("í", "cả") is followed by this word more often than the English one ("is", "car"); 0 without data. */
+static int asNextPairVote(const char* prevLetters, const char* nextLetters) {
+    if (_asBigramWeight <= 0) return 0;
+    std::string pv, nx;
+    if (!asSurface(prevLetters, true, pv) || !asSurface(nextLetters, true, nx)) return 0;
+    auto get = [&](const std::string& a) {
+        std::string key = a + "\t" + nx;
+        if (!_asBigrams) return asBuiltInPair(key);
+        auto it = _asBigrams->find(key); return it == _asBigrams->end() ? 0 : it->second; };
+    int cv = get(pv), ce = get(prevLetters);
+    if (cv + ce < _asBigramMin) return 0;
+    double v = 10 * log10((cv + 0.5) / (ce + 0.5));
+    if (v > 30) v = 30; if (v < -30) v = -30;
+    return (int)lround(v * _asBigramWeight);
+}
+
 static void asRememberWord() {
 #ifdef AS_NO_LOOKBACK
     _asPrevCount = 0; return;
@@ -1617,7 +1637,15 @@ static bool asHyphenRestore() {
 
 /** Puts the raw keys back (like "restore if wrong spelling") and asks for English.
  *  Ambiguous words just before it (look-back) are put back to their keys too. */
+bool vAutoSwitchPrevRestored = false;        //previous[0] of the next English-word check is a word auto switch put back to English
+Uint32 vAutoSwitchRestoredKeys[MAX_BUFF];   //the keys of the word just put back to English (D35: a later word can look back on it)
+int vAutoSwitchRestoredCount = 0;
 static void asRestoreToEnglish(const int& handleCode) {
+    vAutoSwitchRestoredCount = 0;
+    if (_stateIndex > 0 && _stateIndex < MAX_BUFF) {
+        memcpy(vAutoSwitchRestoredKeys, KeyStates, _stateIndex * sizeof(Uint32));
+        vAutoSwitchRestoredCount = _stateIndex;
+    }
     //how many earlier words follow the switch: consecutive, ambiguous, and fitting in the output buffer
     int back = 0, newCount = _stateIndex, deleteCount = _index;
     while (back < _asPrevCount && _asPrev[back].lookbackOk &&
@@ -1789,7 +1817,7 @@ bool vAutoSwitchCheckEnglishWord(const Uint32* keys, const int& count,
 #ifndef AS_PAIR_OVERRIDES_D22
 #define AS_PAIR_OVERRIDES_D22 10   //word pairs this sure of the Vietnamese reading (10x) beat D22: "team bên US" (D34)
 #endif
-    if (en != AS_MISSING && previousN >= 1 && previousCounts[0] >= 1 && pairVote < AS_PAIR_OVERRIDES_D22) {
+    if (en != AS_MISSING && previousN >= 1 && previousCounts[0] >= 1 && pairVote < AS_PAIR_OVERRIDES_D22 && !vAutoSwitchPrevRestored) {
         char praw[AS_KEY_LEN];
         Uint32 tmp[MAX_BUFF]; int tmpCount;
         if (asRawWord(previous[0], previousCounts[0], praw)) {
@@ -1818,8 +1846,11 @@ bool vAutoSwitchCheckEnglishWord(const Uint32* keys, const int& count,
             if (pen != AS_MISSING || asVietnameseScore(praw) == AS_MISSING) break;
             earlierCount[back] = pc;
             for (int x = 0; x < pc; x++) earlier[back][x] = pk[x];
-        } else if (pen == AS_MISSING || pvn == AS_MISSING || pvn < pen - AS_LOOKBACK_MARGIN) {
-            break;                //only ambiguous words that were kept English follow the switch
+        } else if (pen == AS_MISSING || pvn == AS_MISSING ||
+                   (back == 0 && vAutoSwitchPrevRestored ? asNextPairVote(praw, raw) < AS_NEXT_PAIR :   //switched on purpose: only strong evidence
+                    (pvn < pen - AS_LOOKBACK_MARGIN && !(back == 0 && asNextPairVote(praw, raw) >= AS_NEXT_PAIR)))) {
+            break;                //only ambiguous words that were kept English follow the switch (or, D35, ones the
+                                  //word after them clearly reads as Vietnamese: "em í ạ", "hết cả mood")
         }
         if (resultCount + n + earlierCount[back] + 1 >= MAX_BUFF || deleteCount + pc + 1 >= MAX_BUFF) break;
         n += earlierCount[back] + 1;

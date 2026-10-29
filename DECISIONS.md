@@ -23,7 +23,7 @@ If every listed change is intended, accept them with `Tools/autoswitch/check.sh 
 
 ---
 
-## 35. Vikey for Windows
+## 36. Vikey for Windows
 
 **Status:** Agreed 2026-10-29, built on branch `windows` (Phases 0–5 of `Windows/PLAN.md` done); ships after the code-signing certificate arrives.
 
@@ -41,6 +41,18 @@ If every listed change is intended, accept them with `Tools/autoswitch/check.sh 
 **Verified.** 14 live typing cases pass in a Windows 11 VM on ARM64 and on the x64 build under emulation; update from a local appcast installs and relaunches.
 
 ---
+## 35. Look forward: the next word can flip a word put back to English
+
+**Asked by Tony.** "go" on fix #1 for the top tie errors (Vietnamese words right after English stayed English: "em í ạ", "office ít nhất", "lát nữa").
+
+**Decided.**
+- A word auto switch put back to English is now the previous word for the next English-mode check. When the next word turns Vietnamese, the earlier word flips back too if word pairs say it reads Vietnamese before that next word at least 100x more often ("its nhất" -> "ít nhất", "last nữa" -> "lát nữa"). Mac, iOS driver, simulator and test harness.
+- D22 ("after a clearly English word, a tie stays English") doesn't apply when that word was only put back to English by auto switch.
+- Word-pair table now also holds tie word + the word after it (seen 20+ times): 160k pairs, ~2.4 MB of data.
+- Tuning set: wrong words 0.123 -> 0.121%, manual switches 0.154 -> 0.158 (tech/mixed +0.01). All-caps typing 2.60 -> 1.77%. Locked test below.
+
+**Status:** Built 2026-10-29, not in a release yet.
+
 ## 34. Longer context for ties: word pairs beat D22; triples not worth it
 
 **Asked by Tony.** "longer context for ties (3-word phrases)".

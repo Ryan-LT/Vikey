@@ -26,6 +26,7 @@ struct Platform {                    // everything VikeyCore.mm keeps outside th
     bool undoActive = false; int undoRemove = 0; U undoText;
     int autoSwitches = 0, undos = 0;
     int runSide = -1, runCount = 0, earlySwitches = 0;   // Early Switch (D28)
+    bool prevRestored = false;                           // prevKeys[0] was put back to English by auto switch (D35)
 };
 static Platform P;
 static int earlyN() { static int n = getenv("SIM_EARLY") ? atoi(getenv("SIM_EARLY")) : 0; return n; }
@@ -109,6 +110,9 @@ static void press(Uint16 key, bool shift) {
                 if (atBreak) rememberFix(corrected, key, shift);
                 switchTo(0);
                 P.enCount = 0; P.enValid = atBreak && isWhitespace(key); P.prevN = 0;
+                // D35: the word just put back to English is the previous word for look-back
+                if (key == KEY_SPACE && vAutoSwitchRestoredCount > 0 && getenv("SIM_NO_RESTORED_PREV") == nullptr) {
+                    memcpy(P.prevKeys[0], vAutoSwitchRestoredKeys, vAutoSwitchRestoredCount * sizeof(Uint32)); P.prevCounts[0] = vAutoSwitchRestoredCount; P.prevN = 1; P.prevRestored = true; }
                 P.enAfterDouble = !atBreak;
             }
         }
@@ -138,10 +142,12 @@ static void press(Uint16 key, bool shift) {
     }
     P.enCount = 0; P.enValid = isWhitespace(key) || (key == KEY_9 && shift) || key == KEY_LEFT_BRACKET || key == KEY_QUOTE;
     const Uint32* prev[2] = {P.prevKeys[0], P.prevKeys[1]};
+    vAutoSwitchPrevRestored = P.prevRestored && P.prevN >= 1;
     bool converted = wordEnd && valid && count >= 2 &&
         (getenv("SIM_NO_LOOKBACK") ? vAutoSwitchCheckEnglishWord(P.enKeys, count) : vAutoSwitchCheckEnglishWord(P.enKeys, count, prev, P.prevCounts, P.prevN));
     if (!converted && wordEnd && valid && count >= 2) earlyWord(vAutoSwitchWordSide(P.enKeys, count));
     if (!converted && key == KEY_SPACE && valid && count >= 1) {
+        P.prevRestored = false;
         memcpy(P.prevKeys[1], P.prevKeys[0], sizeof(P.prevKeys[0])); P.prevCounts[1] = P.prevCounts[0];
         memcpy(P.prevKeys[0], P.enKeys, count * sizeof(Uint32)); P.prevCounts[0] = count; if (P.prevN < 2) P.prevN++;
     } else P.prevN = 0;

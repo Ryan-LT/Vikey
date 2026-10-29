@@ -115,6 +115,11 @@ VKEdit VikeyDriver::press(Uint16 key, bool shift, double now) {
                 switchTo(0);
                 e.languageChanged = true;
                 enCount = 0; enValid = atBreak && isWhitespace(key); prevN = 0;
+                //D35: the word just put back to English is the previous word for look-back
+                if (key == KEY_SPACE && vAutoSwitchRestoredCount > 0) {
+                    memcpy(prevKeys[0], vAutoSwitchRestoredKeys, vAutoSwitchRestoredCount * sizeof(Uint32));
+                    prevCounts[0] = vAutoSwitchRestoredCount; prevN = 1; prevRestored = true;
+                }
                 enAfterDouble = !atBreak;
             }
         }
@@ -152,10 +157,12 @@ VKEdit VikeyDriver::press(Uint16 key, bool shift, double now) {
     }
     enCount = 0; enValid = isWordStart(key, shift);
     const Uint32* prev[2] = {prevKeys[0], prevKeys[1]};
+    vAutoSwitchPrevRestored = prevRestored && prevN >= 1;
     bool same = undoneCount > 0 && count == undoneCount && !memcmp(enKeys, undoneKeys, count * sizeof(Uint32));
     if (wordEnd) undoneCount = 0;
     bool converted = wordEnd && valid && count >= 2 && !same && vAutoSwitchCheckEnglishWord(enKeys, count, prev, prevCounts, prevN);
     if (!converted && key == KEY_SPACE && valid && count >= 1) {
+        prevRestored = false;
         memcpy(prevKeys[1], prevKeys[0], sizeof(prevKeys[0])); prevCounts[1] = prevCounts[0];
         memcpy(prevKeys[0], enKeys, count * sizeof(Uint32)); prevCounts[0] = count; if (prevN < 2) prevN++;
     } else prevN = 0;

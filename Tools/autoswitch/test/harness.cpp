@@ -13,7 +13,7 @@ int vLanguage = 1, vSwitchKeyStatus = 0, vCheckSpelling = 1, vUseModernOrthograp
 static vKeyHookState* H;
 static std::u16string screen;
 static Uint32 enKeys[MAX_BUFF]; static int enCount = 0; static bool enValid = true;
-static Uint32 prevKeys[2][MAX_BUFF]; static int prevCounts[2]; static int prevN = 0;
+static Uint32 prevKeys[2][MAX_BUFF]; static int prevCounts[2]; static int prevN = 0; static bool prevRestored = false;
 int switches = 0;
 
 static Uint16 keyOf(char c) {
@@ -58,6 +58,8 @@ static void press(char c) {
         } else applyOutput(key, caps);
         if (vAutoSwitchRequest == 0) {
             vAutoSwitchRequest = -1; vLanguage = 0; startNewSession(); vAutoSwitchForget(); prevN = 0; switches++;
+            if (key == KEY_SPACE && vAutoSwitchRestoredCount > 0) {   // D35, like the apps
+                memcpy(prevKeys[0], vAutoSwitchRestoredKeys, vAutoSwitchRestoredCount * sizeof(Uint32)); prevCounts[0] = vAutoSwitchRestoredCount; prevN = 1; prevRestored = true; }
             enCount = 0; enValid = (key == KEY_SPACE || key == KEY_RETURN);
             enAfterDouble = isLetter(lc);
         }
@@ -79,8 +81,10 @@ static void press(char c) {
         prevN = 0; applyOutput(key, caps); return;
     }
     const Uint32* prev[2] = {prevKeys[0], prevKeys[1]};
+    vAutoSwitchPrevRestored = prevRestored && prevN >= 1;
     bool converted = wordEnd && valid && count >= 2 && vAutoSwitchCheckEnglishWord(enKeys, count, prev, prevCounts, prevN);
     if (!converted && key == KEY_SPACE && valid && count >= 1) {
+        prevRestored = false;
         memcpy(prevKeys[1], prevKeys[0], sizeof(prevKeys[0])); prevCounts[1] = prevCounts[0];
         memcpy(prevKeys[0], enKeys, count * sizeof(Uint32)); prevCounts[0] = count; if (prevN < 2) prevN++;
     } else prevN = 0;

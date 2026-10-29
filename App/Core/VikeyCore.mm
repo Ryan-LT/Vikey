@@ -137,6 +137,7 @@ extern "C" {
     static Uint32 _enPrevKeys[2][MAX_BUFF];
     static int _enPrevCounts[2];
     static int _enPrevN = 0;
+    static bool _enPrevRestored = false;   // _enPrevKeys[0] was put back to English by auto switch (D35)
 
     /// Starts a new English-mode word; the previous words stay for look-back.
     static void StartEnglishWord(bool valid) {
@@ -888,6 +889,13 @@ extern "C" {
         if (atWordBreak) RememberAutoFix(correctedCount); else _autoFixUndo.active = false;
         AutoSwitchTo(0, atWordBreak ? @"vi_word_to_en" : @"double_key");
         ResetEnglishWord(atWordBreak && IsWhitespaceKey(_keycode)); // mid-word: the rest of this word is not a whole word
+        //D35: the word just put back to English is the previous word for look-back ("em is" + "ạ" -> "em í ạ")
+        if (atWordBreak && _keycode == KEY_SPACE && vAutoSwitchRestoredCount > 0) {
+            memcpy(_enPrevKeys[0], vAutoSwitchRestoredKeys, vAutoSwitchRestoredCount * sizeof(Uint32));
+            _enPrevCounts[0] = vAutoSwitchRestoredCount;
+            _enPrevN = 1;
+            _enPrevRestored = true;
+        }
         _enAfterDouble = !atWordBreak;   // at its end, "mixx" may become "mix"
     }
 
@@ -946,9 +954,11 @@ extern "C" {
             if (wordEnd) _undoneCount = 0;
         }
         const Uint32* previous[2] = {_enPrevKeys[0], _enPrevKeys[1]};
+        vAutoSwitchPrevRestored = _enPrevRestored && _enPrevN >= 1;
         bool converted = checked && vAutoSwitchCheckEnglishWord(_enKeys, count, previous, _enPrevCounts, _enPrevN);
         // remember this word for look-back only if it was followed by a single space
         if (!converted && _keycode == KEY_SPACE && valid && count >= 1) {
+            _enPrevRestored = false;
             memcpy(_enPrevKeys[1], _enPrevKeys[0], sizeof(_enPrevKeys[0]));
             _enPrevCounts[1] = _enPrevCounts[0];
             memcpy(_enPrevKeys[0], _enKeys, count * sizeof(Uint32));
