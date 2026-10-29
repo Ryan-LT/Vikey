@@ -14,6 +14,9 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
     func setLanguageForTests(_ l: Int) { driver.language = l; driver.resetContext() }
     private var heightConstraint: NSLayoutConstraint?
     private var emojiView: EmojiKeyboardView?
+    /// The user's Text Replacements (Settings › General › Keyboard), like the system keyboard: "omw" → "On my way!"
+    private var textReplacements: [String: String] = [:]
+    func setTextReplacementsForTests(_ r: [String: String]) { textReplacements = r }
     private var emojiQuery = ""
     /// Our own copy of the text before the cursor, kept up to date from our edits. Asking the app for it
     /// is a synchronous cross-process call, so it's only read when iOS says the text changed.
@@ -71,6 +74,14 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
         let saved = UserDefaults.standard.object(forKey: languageKey) as? Int ?? 1
         driver.language = saved
         DispatchQueue.global(qos: .utility).async { _ = EmojiIndex.shared }   // the emoji keyboard opens instantly
+        requestSupplementaryLexicon { [weak self] lex in
+            var r: [String: String] = [:]
+            for e in lex.entries where e.userInput.lowercased() != e.documentText.lowercased()   // (contact names list themselves)
+                && e.userInput.allSatisfy({ $0.isLetter && $0.isASCII }) {
+                r[e.userInput.lowercased()] = e.documentText
+            }
+            DispatchQueue.main.async { self?.textReplacements = r }
+        }
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -241,6 +252,11 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
         }
         switch kind {
         case .char(let c):
+            if snapsBack(c) { backspace() }   // "this ." → "this." like the system keyboard (Tony)
+            if c == "-", (lastContext ?? "").hasSuffix("-"), !(lastContext ?? "").hasSuffix("--"),
+               (proxy.smartDashesType ?? .default) != .no {   // smart dashes: "--" → "—"
+                backspace(); clearWord(); type("—"); break
+            }
             lastCorrection = nil
             if [".", ",", "?", "!"].contains(c), !wordPrefix.isEmpty, autoCorrectAtBreak(c) {   // "dont?" → "don't?"
                 if c != "," { updateAutoShift(lastContext ?? "") }
@@ -490,6 +506,9 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
            driver.language == 0 || typed.withCString({ VKWordScore(1, $0) }) < 10 {   // a common Vietnamese word stays ("im"); a rare one ("thát") doesn't block "that's"
             pendingFix = (c, false); willCorrect = true
         }
+        if autoCorrectOn, keepWord != typed, let r = textReplacements[typed] {   // the user's own shortcuts win
+            pendingFix = (r, driver.language == 1); willCorrect = true
+        }
         var comp = [VKCandidate](repeating: VKCandidate(), count: 6)
         let m = suggestionsOn ? typed.withCString { VKCompletions($0, vi, &comp, 6) } : 0
         let shown = shownWord
@@ -579,6 +598,18 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
     private func saveLanguage() { UserDefaults.standard.set(driver.language, forKey: languageKey) }
 
     /// Capital letter at the start of a sentence, like the system keyboard.
+    /// Punctuation typed right after a space goes back onto the word: "this ." → "this.", "hello "" → "hello"".
+    /// Quotes and brackets only when they close one that is open in this paragraph.
+    private func snapsBack(_ c: String) -> Bool {
+        guard ".,?!:;)\"".contains(c), let before = lastContext, before.hasSuffix(" ") else { return false }
+        let prev = before.dropLast().last
+        guard let p = prev, p != " ", p != "\n" else { return false }
+        let para = before.split(separator: "\n", omittingEmptySubsequences: false).last ?? ""
+        if c == ")" { return para.filter { $0 == "(" }.count > para.filter { $0 == ")" }.count }
+        if c == "\"" { return para.filter { $0 == "\"" }.count % 2 == 1 }
+        return true
+    }
+
     private func updateAutoShift(_ before: String) {
         guard keyboard.layer_ == .letters, keyboard.shift != .locked else { return }
         guard autoCapitalize, (proxy.autocapitalizationType ?? .sentences) != .none else {
@@ -587,7 +618,9 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
         }
         let trimmed = before.replacingOccurrences(of: " ", with: "")
         var start = before.isEmpty || before.hasSuffix("\n")
-        if !start, before.hasSuffix(" "), let last = trimmed.last { start = ".?!".contains(last) }
+        // a sentence ends at . ? ! … , also with closing quotes or brackets after it: go." Then, (wow.) Next
+        let core = trimmed.reversed().drop { "\"”’')]".contains($0) }
+        if !start, before.hasSuffix(" "), let last = core.first { start = ".?!…".contains(last) }
         if proxy.autocapitalizationType == .allCharacters { keyboard.shift = .on; return }
         if proxy.autocapitalizationType == .words && (before.isEmpty || before.hasSuffix(" ")) { start = true }
         keyboard.shift = start ? .on : .off

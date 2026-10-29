@@ -2,7 +2,7 @@ import Foundation
 
 /// English contractions typed without the apostrophe ("dont" → "don't", "Ill" → "I'll"), fixed at the
 /// end of the word like the system keyboard. Only words that are not English words themselves
-/// ("wont", "were", "well", "its", "lets" stay), and the caller skips valid Vietnamese ("im").
+/// ("were", "well", "its" stay; "lets" only with a capital), and the caller skips valid Vietnamese ("im").
 enum Contractions {
     static let table: [String: String] = [
         "dont": "don't", "cant": "can't", "isnt": "isn't", "arent": "aren't", "wasnt": "wasn't", "werent": "weren't",
@@ -13,10 +13,11 @@ enum Contractions {
         "theyre": "they're", "theyve": "they've", "theyll": "they'll", "theyd": "they'd",
         "weve": "we've", "itll": "it'll", "thatll": "that'll", "shes": "she's", "thats": "that's", "whats": "what's",
         "wheres": "where's", "theres": "there's", "heres": "here's", "hows": "how's", "whos": "who's", "whove": "who've",
-        "lets": "let's", "yall": "y'all", "i": "I",
+        "lets": "let's", "yall": "y'all", "i": "I", "wont": "won't",
     ]
     /// Real English words that only become contractions with a capital I ("Ill" → "I'll", "ill" stays).
-    static let capitalOnly: [String: String] = ["ill": "I'll", "id": "I'd"]
+    /// "Lets" (the start of a sentence) is "Let's" like the system keyboard; "she lets" stays (Tony).
+    static let capitalOnly: [String: String] = ["ill": "I'll", "id": "I'd", "lets": "Let's"]
     static let notFixed: Set<String> = ["lets"]   // "lets" is a word too: leave it
 
     /// The fixed word, or nil. `typed` is the word as it shows; keeps its capitals (Dont → Don't, DONT → DON'T).
