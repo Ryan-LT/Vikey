@@ -4,15 +4,15 @@
 <title>Vikey</title>
 <link>https://vikey.app</link>
 <item>
-<title>Vikey 1.0.19</title>
-<pubDate>Thu, 29 Oct 2026 09:28:28 +0000</pubDate>
-<sparkle:version>21</sparkle:version>
-<sparkle:shortVersionString>1.0.19</sparkle:shortVersionString>
+<title>Vikey 1.0.20</title>
+<pubDate>Thu, 29 Oct 2026 09:33:55 +0000</pubDate>
+<sparkle:version>22</sparkle:version>
+<sparkle:shortVersionString>1.0.20</sparkle:shortVersionString>
 <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
 <description><![CDATA[<ul>
-<li>Hướng dẫn: ô gõ thử không còn bị xê dịch khi bấm vào.</li>
+<li>Gõ chữ hoa toàn bộ khi đang ở tiếng Anh: THOONG, VIEETJ ra THÔNG, VIỆT ngay từ từ đầu tiên.</li>
 </ul>]]></description>
-<enclosure url="https://vikey.app/downloads/Vikey-1.0.19.dmg" type="application/octet-stream" sparkle:edSignature="z9iTkJ4gnmdxP4A2EBZ9rGF3Gztia9Y9NwsseMK6VAy47l6TXsmjITNNvJNWhRKG/g/OGuKggN4XxXuMB5clCQ==" length="4523672"/>
+<enclosure url="https://vikey.app/downloads/Vikey-1.0.20.dmg" type="application/octet-stream" sparkle:edSignature="7DKD7xCZ4J7HVMGF+ajdxLVlDm1HPaNck7J+DGUkTIbWgI9fcczFOX0m5+hhZqwdv6suoNbes/3iFzy5VV8IAg==" length="4524192"/>
 </item>
 <item>
 <title>Vikey 1.0.15 for Windows (x64)</title>
