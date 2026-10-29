@@ -127,7 +127,15 @@ static void checkPauseExpired() { if (_autoPauseUntil && !AutoSwitchPaused()) { 
 
 void reloadSettings() {
     prefs::reload();
-    vLanguage = prefs::getInt("InputMethod", 1) ? 1 : 0;
+    int fileLang = prefs::getInt("InputMethod", 1) ? 1 : 0;
+    if (pData && fileLang != vLanguage) {   // the settings app (or a test) changed the language in the file
+        bool byUser = prefs::getInt("LanguageByUser", 0) != 0, quiet = prefs::getInt("LanguageQuiet", 0) != 0;
+        if (byUser) { PauseAutoSwitchAfterManual(); _autoFixUndo.active = false; ResetEnglishWord(true); vLanguage = fileLang; TLManual("menu", vLanguage); VKLanguageChanged(true); startNewSession(); }
+        else { _autoFixUndo.active = false; ResetEnglishWord(true); if (quiet) { _autoPauseUntil = 0; } vLanguage = fileLang; VKLanguageChanged(false); startNewSession(); }
+    }
+    if (prefs::has("LanguageByUser")) prefs::remove("LanguageByUser");
+    if (prefs::has("LanguageQuiet")) prefs::remove("LanguageQuiet");
+    vLanguage = fileLang;
     vCheckSpelling = prefs::getInt("Spelling", 1); vSetCheckSpelling();
     vRestoreIfWrongSpelling = prefs::getInt("RestoreIfInvalidWord", 1);
     vUseModernOrthography = prefs::getInt("ModernOrthography", 1);
