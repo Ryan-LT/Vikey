@@ -325,7 +325,7 @@ h1 span{white-space:nowrap}
 .pcard .pshot{display:block;width:calc(100% + 32px);max-width:none;margin:-30px -16px 14px;aspect-ratio:4/3;object-fit:cover;border-radius:17px 17px 0 0;border-bottom:1px solid var(--line)}
 .pcard.pending .pshot{filter:saturate(.35);opacity:.75}
 .pcard .pshot.zoom{cursor:zoom-in}
-.pcard .btn.soon{flex-direction:column;gap:0;line-height:1.15;color:var(--muted)!important;cursor:default}.pcard .btn.soon small{font-size:11px;font-weight:500}.pcard .btn.soon:hover{background:#fff}
+.pcard .btn.soon{flex-direction:column;gap:0;line-height:1.15;color:var(--muted)!important;cursor:default;font-size:13px;white-space:nowrap;padding:8px 4px}.pcard .btn.soon small{font-size:11px;font-weight:500}.pcard .btn.soon:hover{background:#fff}
 .dlpage h1 b{color:var(--blue)}
 .pcard .picon{width:46px;height:46px;fill:var(--ink);margin-bottom:8px}
 .pcard.pending .picon{fill:#9aa3b2}
