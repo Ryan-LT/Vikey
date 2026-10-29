@@ -20,30 +20,34 @@
 <enclosure url="https://vikey.app/downloads/Vikey-1.0.15.dmg" type="application/octet-stream" sparkle:edSignature="cpWh9QP2ilf0fQnr+OxHtgXF2X/1JvRCjH24odA8LDu+GRh64dXv9RWVb/JtjUHSERjXNWJZJut2bL2C9zg2CA==" length="4123632"/>
 </item>
 <item>
-<title>Vikey 1.0.14 for Windows (x64)</title>
-<pubDate>Thu, 29 Oct 2026 04:37:18 +0000</pubDate>
-<sparkle:version>16</sparkle:version>
-<sparkle:shortVersionString>1.0.14</sparkle:shortVersionString>
+<title>Vikey 1.0.15 for Windows (x64)</title>
+<pubDate>Thu, 29 Oct 2026 06:11:28 +0000</pubDate>
+<sparkle:version>17</sparkle:version>
+<sparkle:shortVersionString>1.0.15</sparkle:shortVersionString>
 <description><![CDATA[<ul>
-<li>Tự chuyển thông minh hơn với những từ vừa là tiếng Anh vừa là tiếng Việt: Vikey nhìn cả từ đứng trước ("cho con bú" nhưng "đi xe bus", "ở bên" nhưng "it's been").</li>
-<li>Học thêm từ hơn 180 triệu chữ tiếng Việt và tiếng Anh, gõ sai ít hơn và phải chuyển tay ít hơn.</li>
-<li>"ạ" ngay sau một từ tiếng Anh không còn thành "aj".</li>
-<li>Vikey cho Windows: bản đầu tiên, cùng bộ máy gõ và tự chuyển như bản Mac (x64 và ARM64).</li>
+<li>Gõ tiếp sau khi bấm Xoá để hoàn tác: "vaay" → Xoá → thêm "j" ra "vậy".</li>
+<li>Số dính liền chữ: "5trawm" ra "5trăm", "mua 1casi" ra "1cái"; "100W" vẫn là W.</li>
+<li>Nhìn cả từ đứng sau: "vào office ít nhất", "lát nữa"; gõ chữ hoa toàn bộ tiếng Việt chính xác hơn.</li>
+<li>Ít phải chuyển tay hơn khi xen tiếng Anh: "test có work", "em sẽ optimize".</li>
+<li>Âm báo khi chuyển mới: lên giọng sang tiếng Việt, xuống giọng sang tiếng Anh.</li>
+<li>Tên các tuỳ chọn gọn hơn; thêm mục Ghi nhận.</li>
 </ul>]]></description>
-<enclosure url="https://vikey.app/downloads/Vikey-1.0.14-x64-Setup.exe" sparkle:os="windows" vikey:arch="x64" type="application/octet-stream" sparkle:edSignature="Uc9HnPMAv21tPP8i1RkagdJHYIitMWu0lM+kvGqhbbB4cL3NdLzB49RHgQRT13Lv0D4U51mfa/lJ0YTk3ZnEAQ==" length="3017458"/>
+<enclosure url="https://vikey.app/downloads/Vikey-1.0.15-x64-Setup.exe" sparkle:os="windows" vikey:arch="x64" type="application/octet-stream" sparkle:edSignature="FcM2Xzo8QoSA+1gSsfIIysm2XWSaT2CQ7711ylnmxyn4CC2c5QRPO5P+GBsL91g6l0lmBEjQFAc9ojn83WyrCw==" length="3016761"/>
 </item>
 <item>
-<title>Vikey 1.0.14 for Windows (arm64)</title>
-<pubDate>Thu, 29 Oct 2026 04:37:18 +0000</pubDate>
-<sparkle:version>16</sparkle:version>
-<sparkle:shortVersionString>1.0.14</sparkle:shortVersionString>
+<title>Vikey 1.0.15 for Windows (arm64)</title>
+<pubDate>Thu, 29 Oct 2026 06:11:28 +0000</pubDate>
+<sparkle:version>17</sparkle:version>
+<sparkle:shortVersionString>1.0.15</sparkle:shortVersionString>
 <description><![CDATA[<ul>
-<li>Tự chuyển thông minh hơn với những từ vừa là tiếng Anh vừa là tiếng Việt: Vikey nhìn cả từ đứng trước ("cho con bú" nhưng "đi xe bus", "ở bên" nhưng "it's been").</li>
-<li>Học thêm từ hơn 180 triệu chữ tiếng Việt và tiếng Anh, gõ sai ít hơn và phải chuyển tay ít hơn.</li>
-<li>"ạ" ngay sau một từ tiếng Anh không còn thành "aj".</li>
-<li>Vikey cho Windows: bản đầu tiên, cùng bộ máy gõ và tự chuyển như bản Mac (x64 và ARM64).</li>
+<li>Gõ tiếp sau khi bấm Xoá để hoàn tác: "vaay" → Xoá → thêm "j" ra "vậy".</li>
+<li>Số dính liền chữ: "5trawm" ra "5trăm", "mua 1casi" ra "1cái"; "100W" vẫn là W.</li>
+<li>Nhìn cả từ đứng sau: "vào office ít nhất", "lát nữa"; gõ chữ hoa toàn bộ tiếng Việt chính xác hơn.</li>
+<li>Ít phải chuyển tay hơn khi xen tiếng Anh: "test có work", "em sẽ optimize".</li>
+<li>Âm báo khi chuyển mới: lên giọng sang tiếng Việt, xuống giọng sang tiếng Anh.</li>
+<li>Tên các tuỳ chọn gọn hơn; thêm mục Ghi nhận.</li>
 </ul>]]></description>
-<enclosure url="https://vikey.app/downloads/Vikey-1.0.14-arm64-Setup.exe" sparkle:os="windows" vikey:arch="arm64" type="application/octet-stream" sparkle:edSignature="XsrNTE16lOyR3wxXmP9ki08J6xjMDaIpYfgwwfAEp1GKTIKlk6RafIysF4f2VqR1jAsk5sOmq2dWpMMyuVcgCw==" length="3004901"/>
+<enclosure url="https://vikey.app/downloads/Vikey-1.0.15-arm64-Setup.exe" sparkle:os="windows" vikey:arch="arm64" type="application/octet-stream" sparkle:edSignature="898SR5ujDvHPhfziKFgaDJB3C2N2jK6TvIm7z12pI2fK5HikbjkHUl0PjDkvGIKvw/MXVw9OxmzReJGXDsJoDA==" length="3004354"/>
 </item>
 </channel>
 </rss>

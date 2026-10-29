@@ -20,5 +20,18 @@
 "download_url": "/downloads/vikey_1.0.15_arm64.deb",
 "sha256": "3c513e1cfa553e7f0ca3b2d801e4f9abff5dbfdf336ce7d5e803e4e738e4c4a7"
 }
+},
+"windows": {
+"x64": {
+"download_url": "/downloads/Vikey-1.0.15-x64-Setup.exe",
+"portable_url": "/downloads/Vikey-1.0.15-x64-portable.zip",
+"sha256": "807b0ebc3c4dcd23b845f876184d380bfa82f7b5e3d95f6553c384cf66b6b0e3"
+},
+"arm64": {
+"download_url": "/downloads/Vikey-1.0.15-arm64-Setup.exe",
+"portable_url": "/downloads/Vikey-1.0.15-arm64-portable.zip",
+"sha256": "b7711086875d1b7f40363ee5b142694398de4fef356ffb20a7f5c554cb15b684"
+},
+"version": "1.0.15"
 }
 }
