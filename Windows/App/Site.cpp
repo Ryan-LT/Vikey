@@ -1,7 +1,10 @@
 #include "Site.h"
 #include "Core.h"
 #include "Prefs.h"
+#undef WIN32_LEAN_AND_MEAN   // UIAutomation needs the OLE/RPC types windows.h leaves out
 #include <windows.h>
+#include <objbase.h>
+#include <oleauto.h>
 #include <uiautomation.h>
 #include <algorithm>
 #pragma comment(lib, "ole32.lib")
