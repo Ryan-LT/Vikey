@@ -969,6 +969,7 @@ void reverseLastStandaloneChar(const Uint32& keyCode, const bool& isCaps) {
     hData[0] = GET(TypingWord[_index - 1]);
 }
 
+static bool _afterDigit = false;   //the word started right after a digit: a lone w is a unit (100W), not ư (D33)
 void checkForStandaloneChar(const Uint16& data, const bool& isCaps, const Uint32& keyWillReverse) {
     if (CHR(_index - 1) == keyWillReverse && TypingWord[_index - 1] & TONEW_MASK) {
         hCode = vWillProcess;
@@ -987,6 +988,7 @@ void checkForStandaloneChar(const Uint16& data, const bool& isCaps, const Uint32
         return;
     }
     
+    if (_index == 0 && _afterDigit && data == KEY_W) { insertKey(data, isCaps); return; }
     if (_index == 0) { //zero char
         insertKey(data, isCaps, false);
         reverseLastStandaloneChar(keyWillReverse, isCaps);
@@ -1820,7 +1822,7 @@ void vKeyHandleEvent(const vKeyEvent& event,
     _isCaps = (capsStatus == 1 || //shift
                capsStatus == 2); //caps lock
     if ((IS_NUMBER_KEY(data) && capsStatus == 1)
-        || otherControlKey || isWordBreak(event, state, data) || (_index == 0 && IS_NUMBER_KEY(data))) {
+        || otherControlKey || isWordBreak(event, state, data) || (IS_NUMBER_KEY(data) && (_index == 0 || _spaceCount > 0))) {   //a digit after a space starts a new word: "mua 1casi" -> "1cái" (D33); glued to letters (abc1def) it stays part of them
         hCode = vDoNothing;
         hBPC = 0;
         hNCC = 0;
@@ -1863,9 +1865,11 @@ void vKeyHandleEvent(const vKeyEvent& event,
         _asPrevCount = 0;
         //the next word is a whole word only after whitespace, a click, a shortcut or an opening ( [ { " ',
         //not after . _ - / etc.
+        _afterDigit = IS_NUMBER_KEY(data) && capsStatus != 1;
         _asWordStartOk = event == vKeyEvent::Mouse || otherControlKey || data == KEY_ENTER || data == KEY_RETURN || data == KEY_TAB ||
                          (data == KEY_9 && capsStatus == 1) || data == KEY_LEFT_BRACKET || data == KEY_QUOTE;
     } else if (data == KEY_SPACE) {
+        _afterDigit = false;
         if (!tempDisableKey && vCheckSpelling) {
             checkSpelling(true); //force check spelling
         }

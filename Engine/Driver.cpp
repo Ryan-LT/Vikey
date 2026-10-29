@@ -134,8 +134,8 @@ VKEdit VikeyDriver::press(Uint16 key, bool shift, double now) {
     }
     bool digit = false;
     for (Uint16 d : {KEY_0, KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9}) if (key == d) digit = true;
-    if (digit && !shift) {
-        enValid = false; enAfterDouble = false;
+    if (digit && !shift) {   // digits after a space start a word of their own ("5trawm" -> "5trăm", D33); glued to letters, a code
+        enValid = enCount == 0 && enValid; enCount = 0; prevN = 0; enAfterDouble = false;
         e.text.push_back(typedChar(key, shift));
         return e;
     }

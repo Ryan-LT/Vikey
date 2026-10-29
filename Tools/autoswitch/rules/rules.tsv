@@ -106,3 +106,6 @@ D30	0	the bus 	the bus 	0	"the bus" stays English
 D30	1	owr been 	ở bên 	1	"ở bên" (Vietnamese), not "been"
 D30	1	sang mix 	sang mĩ 	1	"sang mĩ" (to the US)
 D30	1	cachs mix ddoof 	cách mix đồ 	1	"cách mix" (how to mix outfits): English word inside Vietnamese
+D33	1	mua 1casi 	mua 1cái 	1	digits after a space start a new word: Telex works on the letters after them
+D33	1	abc1def 	abc1def 	1	digits glued to letters: a code, left alone
+D33	1	sacj 2w 	sạc 2w 	1	a lone w right after a digit is a unit (W), not ư

@@ -23,6 +23,39 @@ If every listed change is intended, accept them with `Tools/autoswitch/check.sh 
 
 ---
 
+## 33. Words after digits
+
+**Asked by Tony.** "Cool, do that" (numbers glued to Vietnamese words in chat: 5trăm, 100tỷ, 4tuổi, 1cái).
+
+**Decided.**
+- Digits after a space (or at the start) begin a new word: Telex and auto-switch work on the letters after them ("mua 1casi" -> "1cái", "5trawm" -> "5trăm") in both modes. Digits glued to letters ("abc1def", "md5sum") keep the whole thing a code, as before.
+- A lone w right after a digit stays w: units like 100W, 65w (was "100Ư").
+- Tuning set: 0.126 -> 0.124% wrong words (social 0.23 -> 0.22%). Smaller than the ~0.02-point estimate: most digit-glued errors were units (W) and codes, not Vietnamese words.
+
+**Status:** Built 2026-10-29, not in a release yet.
+
+## 32. Backspace undo, then typing on
+
+**Asked by Tony.** "bộ source vaay " -> "vây" -> Backspace -> "vaay" -> "j" + space should give "vậy".
+
+**Decided.**
+- After Backspace undoes a fix and returns to English, the restored keys are the current word again, so typing on checks the whole word ("vaayj" -> "vậy"). Finishing the same word unchanged keeps it as typed (no redo of the fix just undone). Mac, iOS driver; `driver/undo_test` in check.sh.
+- iOS driver undo now matches the Mac: Backspace takes the break key too, the cursor stays at the end of the restored word.
+- Not done (Tony: not useful): the reverse case, a Vietnamese word fixed to English, undone, then continued.
+
+**Status:** Built 2026-10-29, not in a release yet.
+
+## 31. Website in English; brand guideline
+
+**Asked by Tony.** English version of the website (Vietnamese stays the default, easy switch, flag); a brand guideline used everywhere.
+
+**Decided.**
+- English pages at /en/ (same file names in `site/pages_en/`), a VI/EN pill with the target language's flag that keeps the page, hreflang + sitemap. The release script needs both changelogs.
+- `design/BRAND.md`: name, wordmark ("Vi" ink + "key" indigo, bold), one accent color #4F46E5 (#8C87FF dark), system font, icon rules. `App/Model/Brand.swift` shared by Mac and iOS.
+- Footer without the OpenKey line (credited in the FAQ and Acknowledgements). Settings labels shortened to one line on iOS and Mac. Mac switch sound "sparkle" (rising into Vietnamese, falling into English).
+
+**Status:** Website live 2026-10-29; app parts not in a release yet.
+
 ## 30. Word pairs decide ties
 
 **Asked by Tony.** "yes, try 4" (context beyond one word, for true ties like bus/bú, been/bên, mix/mĩ).
