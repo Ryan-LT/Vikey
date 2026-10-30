@@ -541,6 +541,7 @@ final class KeyboardView: UIView {
                 if wasSlide, case .char = k { delegate?.keyboard(self, didTap: .layer(.letters)) }
             }
         }
+        release(c)   // again: the tap may have changed its colour (VI ⇄ EN tints the pill), skipped while it was down
         reset()
     }
 
