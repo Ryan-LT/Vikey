@@ -51,6 +51,7 @@ Everything not listed here is the same (same rules, same numbers in dp).
 | Onboarding | 4 steps (4 = Full Access) | 3 steps (Open Settings lands on the keyboard list; no Full Access); titles shrink so a written line never wraps |
 | Demo card | dotted red underline | same, drawn under the text (Compose has no dotted underline) |
 | Acknowledgements | NavigationLink | same list; system Back returns |
+| Send feedback row (build 25), emoticon search `:D` `=))` `^_^` `hihi` (build 24) | | same (`platform=android`) |
 
 Not possible on Android: Full Access (no such permission; haptics and the log just work), join/route/continue/SOS
 return titles (no IME actions for them).

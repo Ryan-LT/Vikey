@@ -51,6 +51,7 @@
     <string name="app_language">App language</string>
     <string name="review_onboarding">Show the intro again</string>
     <string name="acknowledgements">Acknowledgements</string>
+    <string name="send_feedback">Send feedback</string>
     <string name="version">Version</string>
     <string name="footer">Vikey is designed and built by Tony Dinh, based on the open-source OpenKey project by Tuyen Mai. Open source under the GPL-3.0 license.</string>
 

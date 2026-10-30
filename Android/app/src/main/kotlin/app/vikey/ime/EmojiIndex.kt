@@ -36,6 +36,8 @@ class EmojiIndex private constructor(val all: List<Emoji>) {
                 val terms = ArrayList<Term>()
                 for (s in listOf(en, vi)) if (s.isNotEmpty()) terms.add(Term(s, 3))
                 for (k in (r.optString(5) + " | " + r.optString(6)).split(" | ")) if (k.isNotEmpty()) terms.add(Term(k, 2))
+                // emoticons (":D", "=))", "^_^") rank like names: typing one exactly puts its emoji first (Tony)
+                if (r.length() > 9) for (t in r.optString(9).split(" ")) if (t.isNotEmpty()) terms.add(Term(t, 3))
                 val skins = ArrayList<String>(); r.optJSONArray(7)?.let { a -> for (j in 0 until a.length()) skins.add(a.optString(j)) }
                 out.add(Emoji(ch, r.optInt(1), r.optDouble(2, 0.0), en, vi, skins, if (r.length() > 8) r.optInt(8) else 0, terms))
             }

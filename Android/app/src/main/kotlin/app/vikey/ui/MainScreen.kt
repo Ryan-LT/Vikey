@@ -162,6 +162,10 @@ fun MainScreen(onReviewOnboarding: () -> Unit, onAcknowledgements: () -> Unit) {
                 }
                 LinkRow(stringResource(R.string.review_onboarding), onClick = onReviewOnboarding)
                 LinkRow(stringResource(R.string.acknowledgements), onClick = onAcknowledgements)
+                LinkRow(stringResource(R.string.send_feedback)) {   // vikey.app/feedback (English page when the app is in English), like iOS
+                    val en = ctx.getString(R.string.lang_code) != "vi"
+                    ctx.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://vikey.app${if (en) "/en" else ""}/feedback?platform=android&v=${BuildConfig.VERSION_NAME}")))
+                }
                 LinkRow("vikey.app") { ctx.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://vikey.app"))) }
                 Row(Modifier.fillMaxWidth().padding(16.dp)) { Text(stringResource(R.string.version), Modifier.weight(1f)); Text(BuildConfig.VERSION_NAME, color = MaterialTheme.colorScheme.onSurfaceVariant) }
             }
