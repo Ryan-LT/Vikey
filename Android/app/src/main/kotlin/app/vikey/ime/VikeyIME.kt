@@ -6,7 +6,9 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
+import android.provider.UserDictionary
 import android.text.InputType
+import android.view.Choreographer
 import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputConnection
@@ -25,6 +27,9 @@ class VikeyIME : InputMethodService(), KeyboardView.Listener, EmojiKeyboardView.
     private lateinit var root: FrameLayout
     private lateinit var keyboard: KeyboardView
     private var emojiView: EmojiKeyboardView? = null
+    /** The user's personal-dictionary shortcuts (Settings › Languages & input › Personal dictionary), like the
+     *  system keyboard and iOS Text Replacements: "omw" → "On my way!". Only the current keyboard may read them. */
+    private var textReplacements: Map<String, String> = emptyMap()
     private var emojiQuery = ""
     /** Our own copy of the text before the cursor, kept up to date from our edits (asking the app is an IPC). */
     private var lastContext: String? = null
@@ -54,15 +59,42 @@ class VikeyIME : InputMethodService(), KeyboardView.Listener, EmojiKeyboardView.
         if (BuildConfig.DEBUG) registerReceiver(debugReceiver, android.content.IntentFilter("app.vikey.DEBUG"), RECEIVER_EXPORTED)
         driver.language = Settings.prefs(this).getInt(Settings.LANGUAGE, 1)
         Thread { EmojiIndex.get(this) }.start()   // the emoji keyboard opens instantly
+        loadTextReplacements()
     }
     override fun onDestroy() { if (BuildConfig.DEBUG) unregisterReceiver(debugReceiver); driver.close(); super.onDestroy() }
+
+    override fun onTrimMemory(level: Int) {
+        super.onTrimMemory(level)
+        if (Diag.on && level >= TRIM_MEMORY_RUNNING_LOW) { KBLog.add("memory warning (level $level)"); KBLog.flush() }
+    }
+
+    /** Reads the personal dictionary off the main thread; shortcuts of ASCII letters only, like iOS. */
+    private fun loadTextReplacements() {
+        Thread {
+            val r = HashMap<String, String>()
+            try {
+                contentResolver.query(UserDictionary.Words.CONTENT_URI, arrayOf(UserDictionary.Words.SHORTCUT, UserDictionary.Words.WORD),
+                    "${UserDictionary.Words.SHORTCUT} IS NOT NULL AND ${UserDictionary.Words.SHORTCUT} != ''", null, null)?.use { c ->
+                    while (c.moveToNext()) {
+                        val short = c.getString(0) ?: continue; val word = c.getString(1) ?: continue
+                        if (short.isNotEmpty() && short.all { it.isLetter() && it.code < 128 } && !short.equals(word, ignoreCase = true)) r[short.lowercase()] = word
+                    }
+                }
+            } catch (_: Exception) {}   // no dictionary provider (some OEMs): no shortcuts
+            handler.post { textReplacements = r }
+        }.start()
+    }
 
     /** Debug builds only: the live test (Android/Tests/livetest.py) sets the language quietly and toggles settings.
      *  adb shell am broadcast -a app.vikey.DEBUG -p app.vikey --ei lang 1 --ez autocap false */
     private val debugReceiver = object : android.content.BroadcastReceiver() {
         override fun onReceive(c: android.content.Context, i: android.content.Intent) {
             if (i.hasExtra("lang")) { driver.language = i.getIntExtra("lang", 1); driver.resetContext(); clearWord(); if (::keyboard.isInitialized) refresh() }
-            if (i.hasExtra("autocap")) { Settings.prefs(c).edit().putBoolean(Settings.AUTO_CAPITALIZE, i.getBooleanExtra("autocap", true)).apply(); if (::keyboard.isInitialized) loadSettings() }
+            if (i.getBooleanExtra("letters", false) && ::keyboard.isInitialized) { keyboard.layer = KeyboardView.Layer.LETTERS; updateAutoShift(lastContext ?: "") }
+            if (i.hasExtra("replace")) {   // "omw=On my way!;brb=Be right back" (tests)
+                textReplacements = i.getStringExtra("replace")!!.split(";").filter { "=" in it }.associate { val (k, v) = it.split("=", limit = 2); k.lowercase() to v }
+            }
+            if (i.hasExtra("autocap")) { Settings.prefs(c).edit().putBoolean(Settings.AUTO_CAPITALIZE, i.getBooleanExtra("autocap", true)).commit(); if (::keyboard.isInitialized) { loadSettings(); updateAutoShift(lastContext ?: "") } }
         }
     }
 
@@ -98,10 +130,27 @@ class VikeyIME : InputMethodService(), KeyboardView.Listener, EmojiKeyboardView.
         loadSettings()
         startField(info)
         refresh()
+        if (!restarting) loadTextReplacements()   // the user may have edited the personal dictionary
+        if (Diag.on) startStallWatch()
         if (Diag.on) KBLog.add("open: haptics=${keyboard.haptics} inputType=${info.inputType} ime=${info.imeOptions} width=${resources.configuration.screenWidthDp}")
     }
 
-    override fun onFinishInputView(finishingInput: Boolean) { KBLog.flush(); super.onFinishInputView(finishingInput) }
+    override fun onFinishInputView(finishingInput: Boolean) { stopStallWatch(); KBLog.flush(); super.onFinishInputView(finishingInput) }
+
+    /** Debug log only: any main-thread freeze over 50 ms, and the key it followed (port of the iOS CADisplayLink watch). */
+    private var stallWatching = false
+    private var lastFrame = 0L
+    private val frameTick = object : Choreographer.FrameCallback {
+        override fun doFrame(t: Long) {
+            if (!stallWatching) return
+            val gap = if (lastFrame == 0L) 0.0 else (t - lastFrame) / 1e6
+            lastFrame = t
+            if (gap > 50) KBLog.add("stall ${Diag.time(gap)} after key=${Diag.lastKind}")
+            Choreographer.getInstance().postFrameCallback(this)
+        }
+    }
+    private fun startStallWatch() { if (stallWatching) return; stallWatching = true; lastFrame = 0; Choreographer.getInstance().postFrameCallback(frameTick) }
+    private fun stopStallWatch() { stallWatching = false; Choreographer.getInstance().removeFrameCallback(frameTick) }
 
     override fun onConfigurationChanged(c: Configuration) {
         super.onConfigurationChanged(c)
@@ -221,6 +270,11 @@ class VikeyIME : InputMethodService(), KeyboardView.Listener, EmojiKeyboardView.
         when (kind) {
             is KeyKind.Char -> {
                 val c = kind.c
+                if (snapsBack(c)) backspace()   // "this ." → "this." like the system keyboard (Tony)
+                val before = lastContext ?: ""
+                if (c == "-" && before.endsWith("-") && !before.endsWith("--") && smartDashesHere) {   // smart dashes: "--" → "—"
+                    backspace(); clearWord(); type("—"); return
+                }
                 lastCorrection = null
                 if (c in listOf(".", ",", "?", "!") && wordPrefix.isNotEmpty() && autoCorrectAtBreak(c)) {   // "dont?" → "don't?"
                     if (c != ",") updateAutoShift(lastContext ?: "")
@@ -356,7 +410,7 @@ class VikeyIME : InputMethodService(), KeyboardView.Listener, EmojiKeyboardView.
         if (deletes > 0) c?.deleteSurroundingText(deletes, 0)
         if (insert.isNotEmpty()) c?.commitText(insert, 1)
         c?.endBatchEdit()
-        Diag.edits += (if (deletes > 0) 1 else 0) + (if (insert.isEmpty()) 0 else 1)
+        Diag.edits += deletes + (if (insert.isEmpty()) 0 else 1)
         if (e.languageChanged) { saveLanguage(); refresh() }
         afterEdit(deletes, insert)
     }
@@ -426,6 +480,9 @@ class VikeyIME : InputMethodService(), KeyboardView.Listener, EmojiKeyboardView.
         if (autoCorrectOn && keepWord != typed) Contractions.fix(typedCased)?.let { c ->
             if (driver.language == 0 || Driver.wordScore(true, typed) < 10) { pendingFix = c to false; willCorrect = true }
         }
+        if (autoCorrectOn && keepWord != typed) textReplacements[typed]?.let { r ->   // the user's own shortcuts win
+            pendingFix = r to (driver.language == 1); willCorrect = true
+        }
         val comp = if (suggestionsOn) Driver.completions(typed, vi, 6) else emptyList()
         val shown = shownWord
         val cells = arrayListOf(Suggestion(shown, quoted = true))
@@ -459,7 +516,7 @@ class VikeyIME : InputMethodService(), KeyboardView.Listener, EmojiKeyboardView.
         val insert = word + end
         val c = ic
         c?.beginBatchEdit(); if (old.isNotEmpty()) c?.deleteSurroundingText(old.length, 0); c?.commitText(insert, 1); c?.endBatchEdit()
-        Diag.edits += 2
+        Diag.edits += old.length + 1
         driver.resetContext()
         if ((driver.language == 1) != vietnamese && driver.autoSwitch) { driver.language = if (vietnamese) 1 else 0; saveLanguage(); refresh() }
         lastCorrection = if (recordUndo) old to insert else null
@@ -501,6 +558,23 @@ class VikeyIME : InputMethodService(), KeyboardView.Listener, EmojiKeyboardView.
 
     private fun saveLanguage() { Settings.prefs(this).edit().putInt(Settings.LANGUAGE, driver.language).apply() }
 
+    /** iOS turns smart dashes off for web, email and password fields; Android has no field flag, so the same rule. */
+    private val smartDashesHere: Boolean get() = correctsHere
+
+    /** Punctuation typed right after a space goes back onto the word: "this ." → "this.", "hello "" → "hello"".
+     *  Quotes and brackets only when they close one that is open in this paragraph. */
+    private fun snapsBack(c: String): Boolean {
+        if (c.length != 1 || c[0] !in ".,?!:;)\"") return false
+        val before = lastContext ?: return false
+        if (!before.endsWith(" ") || before.length < 2) return false
+        val p = before[before.length - 2]
+        if (p == ' ' || p == '\n') return false
+        val para = before.substringAfterLast('\n')
+        if (c == ")") return para.count { it == '(' } > para.count { it == ')' }
+        if (c == "\"") return para.count { it == '"' } % 2 == 1
+        return true
+    }
+
     /** Capital letter at the start of a sentence, like the system keyboard. */
     private fun updateAutoShift(before: String) {
         if (keyboard.layer != KeyboardView.Layer.LETTERS || keyboard.shift == KeyboardView.Shift.LOCKED) return
@@ -510,7 +584,9 @@ class VikeyIME : InputMethodService(), KeyboardView.Listener, EmojiKeyboardView.
         if (!autoCapitalize || !(capAll || capWords || capSentences)) { if (keyboard.shift == KeyboardView.Shift.ON) keyboard.shift = KeyboardView.Shift.OFF; return }
         val trimmed = before.replace(" ", "")
         var start = before.isEmpty() || before.endsWith("\n")
-        if (!start && before.endsWith(" ") && trimmed.isNotEmpty()) start = trimmed.last() in ".?!"
+        // a sentence ends at . ? ! … , also with closing quotes or brackets after it: go." Then, (wow.) Next
+        val core = trimmed.trimEnd('"', '”', '’', '\'', ')', ']')
+        if (!start && before.endsWith(" ") && core.isNotEmpty()) start = core.last() in ".?!…"
         if (capAll) { keyboard.shift = KeyboardView.Shift.ON; return }
         if (capWords && (before.isEmpty() || before.endsWith(" "))) start = true
         keyboard.shift = if (start) KeyboardView.Shift.ON else KeyboardView.Shift.OFF

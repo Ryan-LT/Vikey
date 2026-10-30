@@ -11,8 +11,9 @@ FIELD_Y = None
 
 def field_text():
     sh("uiautomator dump /sdcard/ui.xml >/dev/null"); x = sh("cat /sdcard/ui.xml")
-    m = re.search(r'class="android.widget.EditText"[^>]*text="([^"]*)"', x) or re.search(r'text="([^"]*)"[^>]*class="android.widget.EditText"', x)
-    return html.unescape(m.group(1)) if m else None
+    # uiautomator quotes an attribute with ' when the text contains "
+    m = re.search(r'<node[^>]*?text=(?:"([^"]*)"|\'([^\']*)\')[^>]*class="android.widget.EditText"', x)
+    return html.unescape(m.group(1) if m.group(1) is not None else m.group(2)) if m else None
 
 def find_field():
     sh("uiautomator dump /sdcard/ui.xml >/dev/null"); x = sh("cat /sdcard/ui.xml")

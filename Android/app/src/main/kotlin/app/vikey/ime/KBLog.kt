@@ -17,7 +17,14 @@ object KBLog {
         val f = file ?: return
         val lines: List<String>
         synchronized(buffer) { if (buffer.isEmpty()) return; lines = ArrayList(buffer); buffer.clear() }
-        Thread { try { f.appendText(lines.joinToString("\n") + "\n") } catch (_: Exception) {} }.start()
+        Thread {
+            try {
+                f.appendText(lines.joinToString("\n") + "\n")
+                if (f.length() > 400_000) {   // keep the last ~200 KB, like iOS
+                    val b = f.readBytes(); f.writeBytes(b.copyOfRange(b.size - 200_000, b.size))
+                }
+            } catch (_: Exception) {}
+        }.start()
     }
     fun read(c: Context): String = try { File(c.filesDir, "keyboard-log.txt").readText() } catch (_: Exception) { "" }
     fun clear(c: Context) { File(c.filesDir, "keyboard-log.txt").delete() }
