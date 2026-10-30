@@ -165,7 +165,8 @@ final class EmojiKeyboardView: UIView, UICollectionViewDataSource, UICollectionV
         func lerp(_ at402: CGFloat, _ at440: CGFloat) -> CGFloat { at402 + (W - 402) * (at440 - at402) / 38 }
         let fieldH: CGFloat = 40
         field.frame = CGRect(x: 10, y: 9.33, width: W - 20, height: fieldH)   // 10 from the sides, 9.33 from the top edge
-        field.layer.cornerRadius = 12                                         // a rounded rectangle, like the system's
+        field.layer.cornerRadius = KeyboardView.hostCorner - 10              // concentric with the keyboard's corner
+        field.layer.cornerCurve = .continuous
         let inner: CGFloat = 12                             // magnifier inset inside the field
         fieldIcon.frame = CGRect(x: inner, y: (fieldH - 18) / 2, width: 18, height: 18)
         let textX = inner + 18 + 6

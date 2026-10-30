@@ -1,6 +1,182 @@
 {
  "sourceLanguage": "vi",
  "strings": {
+  "Sửa lỗi" : {
+   "localizations" : {
+    "en" : {
+     "stringUnit" : {
+      "state" : "translated",
+      "value" : "Proofread"
+     }
+    },
+    "vi" : {
+     "stringUnit" : {
+      "state" : "translated",
+      "value" : "Sửa lỗi"
+     }
+    }
+   }
+  },
+  "Đang sửa…" : {
+   "localizations" : {
+    "en" : {
+     "stringUnit" : {
+      "state" : "translated",
+      "value" : "Fixing…"
+     }
+    },
+    "vi" : {
+     "stringUnit" : {
+      "state" : "translated",
+      "value" : "Đang sửa…"
+     }
+    }
+   }
+  },
+  "Không có lỗi ✓" : {
+   "localizations" : {
+    "en" : {
+     "stringUnit" : {
+      "state" : "translated",
+      "value" : "No mistakes ✓"
+     }
+    },
+    "vi" : {
+     "stringUnit" : {
+      "state" : "translated",
+      "value" : "Không có lỗi ✓"
+     }
+    }
+   }
+  },
+  "Không sửa được" : {
+   "localizations" : {
+    "en" : {
+     "stringUnit" : {
+      "state" : "translated",
+      "value" : "Couldn't fix"
+     }
+    },
+    "vi" : {
+     "stringUnit" : {
+      "state" : "translated",
+      "value" : "Không sửa được"
+     }
+    }
+   }
+  },
+  "Hoàn tác" : {
+   "localizations" : {
+    "en" : {
+     "stringUnit" : {
+      "state" : "translated",
+      "value" : "Undo"
+     }
+    },
+    "vi" : {
+     "stringUnit" : {
+      "state" : "translated",
+      "value" : "Hoàn tác"
+     }
+    }
+   }
+  },
+  "Đang tìm từ…" : {
+   "localizations" : {
+    "en" : {
+     "stringUnit" : {
+      "state" : "translated",
+      "value" : "Finding words…"
+     }
+    },
+    "vi" : {
+     "stringUnit" : {
+      "state" : "translated",
+      "value" : "Đang tìm từ…"
+     }
+    }
+   }
+  },
+  "Không có gợi ý" : {
+   "localizations" : {
+    "en" : {
+     "stringUnit" : {
+      "state" : "translated",
+      "value" : "No ideas"
+     }
+    },
+    "vi" : {
+     "stringUnit" : {
+      "state" : "translated",
+      "value" : "Không có gợi ý"
+     }
+    }
+   }
+  },
+  "Bản đã sửa" : {
+   "localizations" : {
+    "en" : {
+     "stringUnit" : {
+      "state" : "translated",
+      "value" : "Corrected"
+     }
+    },
+    "vi" : {
+     "stringUnit" : {
+      "state" : "translated",
+      "value" : "Bản đã sửa"
+     }
+    }
+   }
+  },
+  "Huỷ" : {
+   "localizations" : {
+    "en" : {
+     "stringUnit" : {
+      "state" : "translated",
+      "value" : "Cancel"
+     }
+    },
+    "vi" : {
+     "stringUnit" : {
+      "state" : "translated",
+      "value" : "Huỷ"
+     }
+    }
+   }
+  },
+  "Áp dụng" : {
+   "localizations" : {
+    "en" : {
+     "stringUnit" : {
+      "state" : "translated",
+      "value" : "Apply"
+     }
+    },
+    "vi" : {
+     "stringUnit" : {
+      "state" : "translated",
+      "value" : "Áp dụng"
+     }
+    }
+   }
+  },
+  "Hãy chọn lại đoạn văn" : {
+   "localizations" : {
+    "en" : {
+     "stringUnit" : {
+      "state" : "translated",
+      "value" : "Select the text again"
+     }
+    },
+    "vi" : {
+     "stringUnit" : {
+      "state" : "translated",
+      "value" : "Hãy chọn lại đoạn văn"
+     }
+    }
+   }
+  },
   "Đi": {
    "localizations": {
     "en": {

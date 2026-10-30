@@ -3,7 +3,7 @@ import XCTest
 import FoundationModels
 
 @available(iOS 26.0, *)
-@Generable struct NextWords {
+@Generable struct ProbeNextWords {
     @Guide(description: "The three most likely next single words, most likely first. Lowercase unless it must be capitalized.", .count(3))
     var words: [String]
 }
@@ -23,7 +23,7 @@ final class AppleIntelligenceProbeTests: XCTestCase {
         for ctx in ["Hôm nay mình đi", "see you", "Cảm ơn", "Em đang ở công ty, chút nữa", "I'll call you", "meeting lúc 3 giờ", "Anh ơi, tối nay"] {
             let s = LanguageModelSession(instructions: instructions)
             let t0 = Date()
-            let r = try await s.respond(to: ctx, generating: NextWords.self, options: GenerationOptions(sampling: .greedy))
+            let r = try await s.respond(to: ctx, generating: ProbeNextWords.self, options: GenerationOptions(sampling: .greedy))
             print(String(format: "PROBE %.0f ms | %@ -> %@", Date().timeIntervalSince(t0) * 1000, ctx, r.content.words.joined(separator: ", ")))
         }
         #endif

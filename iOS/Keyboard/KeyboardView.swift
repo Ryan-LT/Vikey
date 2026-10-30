@@ -101,9 +101,15 @@ final class KeyboardView: UIView {
     /// Where the VI/EN key sits: 0 = bottom row (today); 1-3 = design proposals for the top-left corner of the
     /// suggestion strip (Tony): 1 a "VI" pill, 2 a "VI | EN" switch, 3 a "VI ⇄" chip. Only renders use 1-3 for now.
     static var langStyle = 1   // Tony picked the pill (A); the bottom row is the fallback when the strip is off
-    private var langTop: Bool { Self.langStyle > 0 && Self.barOn && Self.searchTop == nil && layer_ != .numpad }
-    private var langTopWidth: CGFloat { [0, 46, 92, 66][min(Self.langStyle, 3)] }
+    /// The proofread preview covers the strip: the VI/EN pill stays put under it, so no key moves.
+    static var panelOpen = false
+    private var langTop: Bool { Self.langStyle > 0 && Self.barOn && (Self.searchTop == nil || Self.panelOpen) && layer_ != .numpad }
+    private var langTopWidth: CGFloat { [0, 50, 96, 70][min(Self.langStyle, 3)] }
+    static let pillH: CGFloat = 38
     static let barH: CGFloat = 44
+    /// The corner of the glass iOS puts the keyboard in (measured, iOS 26.5: 80 px at 3x). Anything in a corner
+    /// is concentric with it: its radius = this − its inset (Tony).
+    static let hostCorner: CGFloat = 26.67
     static func diagH(compactHeight: Bool) -> CGFloat { Diag.on ? (compactHeight ? 30 : 40) : 0 }
     /// Emoji search (EmojiKeyboardView): the search field and a row of results take the top instead of the strip.
     static var searchTop: CGFloat?
@@ -258,8 +264,9 @@ final class KeyboardView: UIView {
                     case .returnKey:
                         frames.append(rect(W - side - ret, ret))
                     case .language where langTop:   // up in the strip's corner: the bottom row gets its room
-                        let dh = Self.diagH(compactHeight: compactHeight), h: CGFloat = 32
-                        frames.append(CGRect(x: side, y: dh + 2 + (Self.barH - 4 - h) / 2, width: langTopWidth, height: h))
+                        // inset the side margin from the top and the left, so it's concentric with the corner
+                        let dh = Self.diagH(compactHeight: compactHeight)
+                        frames.append(CGRect(x: side, y: dh + side, width: langTopWidth, height: Self.pillH))
                     case .char:
                         frames.append(rect(x, charW)); x += charW + gap
                     default:
@@ -274,7 +281,9 @@ final class KeyboardView: UIView {
         bar.isHidden = !Self.barOn || Self.searchTop != nil || layer_ == .numpad
         diagLabel.isHidden = diagnostics == nil || Self.searchTop != nil   // the emoji search field sits there
         let barX = side + (langTop ? langTopWidth + 8 : 0)
-        bar.frame = CGRect(x: barX, y: dh + 2, width: W - side - barX, height: Self.barH - 4)
+        let barY = langTop ? dh + side + Self.pillH / 2 - (Self.barH - 4) / 2 : dh + 2   // centred on the pill
+        bar.frame = CGRect(x: barX, y: barY, width: W - side - barX, height: Self.barH - 4)
+        keys.first { $0.def.kind == .language }?.view.isHidden = langTop && Self.panelOpen   // under the preview
         letterRects = []; letterCaps = [:]
         for i in keys.indices where i < frames.count {
             keys[i].def.frame = frames[i]
@@ -350,7 +359,8 @@ final class KeyboardView: UIView {
     /// The proposals for a VI/EN key in the strip's corner.
     private func styleTopLanguage(_ v: KeyCap) {
         let brand = dark ? UIColor(red: 0.62, green: 0.60, blue: 1, alpha: 1) : UIColor(red: 0.31, green: 0.27, blue: 0.90, alpha: 1)
-        v.layer.cornerRadius = 16
+        v.layer.cornerRadius = Self.pillH / 2   // = hostCorner − the inset, give or take a point
+        v.layer.cornerCurve = .continuous
         v.icon.image = nil
         switch Self.langStyle {
         case 2:   // both, the current one highlighted: what a tap does is obvious
@@ -732,9 +742,11 @@ final class AlternatesView: UIView {
 
 /// One cell of the suggestion strip.
 struct Suggestion: Equatable {
+    enum Kind: Equatable { case word, next, proofread, alternative, undo, busy }
     var text: String
     var quoted = false        // the word as typed, when something else is offered
     var highlighted = false   // what the space bar will put in (auto-correct)
+    var kind: Kind = .word    // next word, ✨ proofread, another word for a selection, undo, or a "working…" note
 }
 
 /// The strip above the keys: up to three words, like the system keyboard's.
@@ -764,16 +776,25 @@ final class SuggestionBar: UIView {
 
     @objc private func tap(_ b: UIButton) { if b.tag < items.count { onPick?(b.tag) } }
 
-    func show(_ s: [Suggestion]) { items = s; restyle() }
+    func show(_ s: [Suggestion]) { items = s; restyle(); setNeedsLayout() }
 
     private func restyle() {
         let fg: UIColor = dark ? .white : .black
         for (i, b) in cells.enumerated() {
             let it = i < items.count ? items[i] : nil
-            b.setTitle(it.map { $0.quoted ? "\u{201C}\($0.text)\u{201D}" : $0.text }, for: .normal)
-            b.setTitleColor(fg, for: .normal)
+            let title: String? = it.map {
+                switch $0.kind {
+                case .proofread: return "✨ " + $0.text
+                case .undo: return "↩︎ " + $0.text
+                default: return $0.quoted ? "\u{201C}\($0.text)\u{201D}" : $0.text
+                }
+            }
+            b.setTitle(title, for: .normal)
+            let brand: UIColor = dark ? UIColor(red: 0.62, green: 0.60, blue: 1, alpha: 1) : UIColor(red: 0.31, green: 0.27, blue: 0.90, alpha: 1)
+            b.setTitleColor(it?.kind == .busy ? fg.withAlphaComponent(0.45) : it?.kind == .proofread || it?.kind == .undo ? brand : fg, for: .normal)
+            b.titleLabel?.font = .systemFont(ofSize: 17, weight: it?.kind == .proofread ? .semibold : .regular)
             b.backgroundColor = it?.highlighted == true ? (dark ? UIColor(white: 0.42, alpha: 1) : .white) : .clear
-            b.isEnabled = it != nil
+            b.isEnabled = it != nil && it?.kind != .busy
         }
         for (i, l) in lines.enumerated() {
             l.backgroundColor = fg.withAlphaComponent(0.18)
@@ -784,6 +805,13 @@ final class SuggestionBar: UIView {
 
     override func layoutSubviews() {
         super.layoutSubviews()
+        // one wide cell for a single action (✨ Proofread, ↩︎ Undo, "working…"); three otherwise
+        if items.count == 1, items[0].kind != .word, items[0].kind != .next {
+            cells[0].frame = bounds.insetBy(dx: 2, dy: 2)
+            for b in cells.dropFirst() { b.frame = .zero }
+            lines.forEach { $0.isHidden = true }
+            return
+        }
         let w = bounds.width / 3
         for (i, b) in cells.enumerated() { b.frame = CGRect(x: CGFloat(i) * w + 2, y: 2, width: w - 4, height: bounds.height - 4) }
         for (i, l) in lines.enumerated() { l.frame = CGRect(x: CGFloat(i + 1) * w - 0.5, y: bounds.height * 0.28, width: 1, height: bounds.height * 0.44) }

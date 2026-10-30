@@ -4,19 +4,21 @@ import UIKit
 /// A text field with a cursor: what the keyboard sees before and after it, and taps that move it.
 final class CursorProxy: NSObject, UITextDocumentProxy {
     var text = "", cursor = 0
+    var selection = 0   // characters selected after the cursor (proofread / other-words tests)
     @objc var keyboardType: UIKeyboardType = .default
     private var chars: [Character] { Array(text) }
     var documentContextBeforeInput: String? { String(chars[..<cursor]) }
-    var documentContextAfterInput: String? { String(chars[cursor...]) }
-    var selectedText: String? { nil }
+    var documentContextAfterInput: String? { String(chars[(cursor + selection)...]) }
+    var selectedText: String? { selection > 0 ? String(chars[cursor..<cursor + selection]) : nil }
     var documentInputMode: UITextInputMode? { nil }
     var documentIdentifier: UUID { UUID() }
     var hasText: Bool { !text.isEmpty }
-    func adjustTextPosition(byCharacterOffset offset: Int) { cursor = min(max(0, cursor + offset), chars.count) }
+    func adjustTextPosition(byCharacterOffset offset: Int) { selection = 0; cursor = min(max(0, cursor + offset), chars.count) }
     func setMarkedText(_ markedText: String, selectedRange: NSRange) {}
     func unmarkText() {}
-    func insertText(_ t: String) { var c = chars; c.insert(contentsOf: Array(t), at: cursor); text = String(c); cursor += t.count }
-    func deleteBackward() { guard cursor > 0 else { return }; var c = chars; c.remove(at: cursor - 1); text = String(c); cursor -= 1 }
+    private func dropSelection() { guard selection > 0 else { return }; var c = chars; c.removeSubrange(cursor..<cursor + selection); text = String(c); selection = 0 }
+    func insertText(_ t: String) { dropSelection(); var c = chars; c.insert(contentsOf: Array(t), at: cursor); text = String(c); cursor += t.count }
+    func deleteBackward() { if selection > 0 { dropSelection(); return }; guard cursor > 0 else { return }; var c = chars; c.remove(at: cursor - 1); text = String(c); cursor -= 1 }
 }
 
 /// Moving the cursor with a tap while typing (Tony): the keyboard must start over where the cursor is,
