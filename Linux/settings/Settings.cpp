@@ -365,7 +365,7 @@ void checkUpdate(GtkApplication* app, bool quiet) {
     std::string latest = fetchRelease();
     if (quiet) {   // the engine's daily check: a notification only when there is a newer version
         if (latest.empty() || !newer(latest, VIKEY_VERSION)) return;
-        std::string title = "Vikey " + latest + " đã có", body = std::string("Bạn đang dùng Vikey ") + VIKEY_VERSION + ". Bấm Tải về để tải bản mới trên vikey.app.";
+        std::string title = "Vikey " + latest + " đã có", body = std::string("Bạn đang dùng bản ") + VIKEY_VERSION + ".";
         gchar* argv[] = {(gchar*)"notify-send", (gchar*)"-a", (gchar*)"Vikey", (gchar*)"-i", (gchar*)"vikey", (gchar*)"-A", (gchar*)"open=Tải về", (gchar*)title.c_str(), (gchar*)body.c_str(), nullptr};
         gchar* out = nullptr;
         if (g_spawn_sync(nullptr, argv, nullptr, (GSpawnFlags)(G_SPAWN_SEARCH_PATH | G_SPAWN_STDERR_TO_DEV_NULL), nullptr, nullptr, &out, nullptr, nullptr, nullptr) && out && g_str_has_prefix(out, "open")) openUri(kDownload);
@@ -373,8 +373,8 @@ void checkUpdate(GtkApplication* app, bool quiet) {
     }
     AdwDialog* d;
     if (latest.empty()) d = adw_alert_dialog_new("Không kiểm tra được cập nhật", "Hãy kiểm tra kết nối mạng rồi thử lại.");
-    else if (newer(latest, VIKEY_VERSION)) d = adw_alert_dialog_new(("Vikey " + latest + " đã có").c_str(), (std::string("Bạn đang dùng Vikey ") + VIKEY_VERSION + ". Tải bản mới trên vikey.app.").c_str());
-    else d = adw_alert_dialog_new("Vikey đã là bản mới nhất", (std::string("Bạn đang dùng Vikey ") + VIKEY_VERSION + ".").c_str());
+    else if (newer(latest, VIKEY_VERSION)) d = adw_alert_dialog_new(("Vikey " + latest + " đã có").c_str(), (std::string("Bạn đang dùng bản ") + VIKEY_VERSION + ".").c_str());
+    else d = adw_alert_dialog_new("Đã là bản mới nhất", (std::string("Vikey ") + VIKEY_VERSION + ".").c_str());
     if (!latest.empty() && newer(latest, VIKEY_VERSION)) {
         adw_alert_dialog_add_responses(ADW_ALERT_DIALOG(d), "later", "Để sau", "download", "Tải về", nullptr);
         adw_alert_dialog_set_response_appearance(ADW_ALERT_DIALOG(d), "download", ADW_RESPONSE_SUGGESTED); adw_alert_dialog_set_default_response(ADW_ALERT_DIALOG(d), "download");
