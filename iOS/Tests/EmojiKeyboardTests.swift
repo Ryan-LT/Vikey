@@ -119,6 +119,16 @@ final class EmojiKeyboardTests: XCTestCase {
         render(vc, "search_empty")
     }
 
+    func testRenderFillOptions() {
+        for f in [0.74, 0.84, 0.92] as [CGFloat] {
+            EmojiKeyboardView.fill = f
+            let (vc, _) = make(width: 440)
+            vc.keyboard(sender, didTap: .emoji)
+            render(vc, "fill_\(Int(f * 100))")
+        }
+        EmojiKeyboardView.fill = 0.74
+    }
+
     func testRenderWidths() {
         for w in [375, 393, 402, 430, 440] as [CGFloat] {
             let (vc, _) = make(width: w)

@@ -198,7 +198,9 @@ final class EmojiKeyboardView: UIView, UICollectionViewDataSource, UICollectionV
         flow.invalidateLayout()
     }
 
-    private static func fontSize(_ cell: CGFloat) -> CGFloat { floor(cell * 0.74) }
+    /// How much of a cell the emoji fills (Tony: bigger, not crowded). Renders compare values.
+    static var fill: CGFloat = 0.74
+    private static func fontSize(_ cell: CGFloat) -> CGFloat { floor(cell * fill) }
     /// How wide an emoji draws at the grid's font size (cells are wider than the glyph).
     private static func glyphWidth(_ cell: CGFloat) -> CGFloat {
         ceil(("😀" as NSString).size(withAttributes: [.font: UIFont.systemFont(ofSize: fontSize(cell))]).width)
