@@ -339,6 +339,7 @@ void draw(GtkDrawingArea*, cairo_t* cr, int w, int, gpointer) {
     GdkRGBA fg; gtk_widget_get_color(P.area, &fg);
     bool dark = adw_style_manager_get_dark(adw_style_manager_get_default());
     double v = gtk_adjustment_get_value(vadj()), page = gtk_adjustment_get_page_size(vadj());
+    if (getenv("VIKEY_DEBUG")) fprintf(stderr, "draw w=%d items=%zu v=%.0f page=%.0f contentH=%d visible=%zu\n", w, P.items.size(), v, page, P.contentH, P.visible.size());
     PangoLayout* l = gtk_widget_create_pango_layout(P.area, nullptr);
     PangoFontDescription* ef = pango_font_description_new(); pango_font_description_set_absolute_size(ef, 28 * PANGO_SCALE);
     PangoFontDescription* hf = pango_font_description_copy(pango_context_get_font_description(gtk_widget_get_pango_context(P.area)));
