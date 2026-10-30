@@ -131,6 +131,8 @@ static void loadIndex() {
             for (auto& s : {e.nameEN, e.nameVI}) if (!s.empty()) e.terms.push_back(makeTerm(s, 3));
             std::wstring kw = row.a[5].s + L" | " + row.a[6].s; size_t p = 0;
             while (p <= kw.size()) { size_t q = kw.find(L" | ", p); std::wstring k = kw.substr(p, q == std::wstring::npos ? std::wstring::npos : q - p); if (!k.empty()) e.terms.push_back(makeTerm(k, 2)); if (q == std::wstring::npos) break; p = q + 3; }
+            // emoticons (":D", "=))", "^_^") rank like names: typing one exactly puts its emoji first (Tony)
+            if (row.a.size() > 9 && row.a[9].t == JV::Str) for (auto& t : splitWords(row.a[9].s)) e.terms.push_back(makeTerm(t, 3));
             if (row.a[7].t == JV::Arr) for (auto& s : row.a[7].a) e.skins.push_back(s.s);
             e.popularity = row.a.size() > 8 ? (int)row.a[8].n : 0;
             _all.push_back(std::move(e));

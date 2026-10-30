@@ -38,7 +38,7 @@ static HFONT fBody, fBodyBold, fSmall, fWordmark, fTitle, fMono, fTitle2, fCallo
 static const COLORREF BG = RGB(246, 246, 246), GROUP = RGB(255, 255, 255), BORDER = RGB(226, 226, 226), SEP = RGB(236, 236, 236);
 static const COLORREF TEXT = RGB(0, 0, 0), SECONDARY = RGB(110, 110, 115), TERTIARY = RGB(170, 170, 175), ACCENT = RGB(10, 124, 255), GREEN = RGB(52, 199, 89), TOGGLE_OFF = RGB(233, 233, 235);
 static const COLORREF BRAND = RGB(79, 70, 229);   // design/BRAND.md #4F46E5
-static const int W = 460, MARGIN = 20, ROW = 36, GAP = 14, RADIUS = 10;   // fits a 1366x768 screen with every row shown
+static const int W = 460, MARGIN = 20, ROW = 34, GAP = 12, RADIUS = 10;   // fits a 1366x768 screen with every row shown
 static ULONG_PTR gdipToken = 0;
 static HINSTANCE _inst;
 static void initLook() {
@@ -303,7 +303,7 @@ static void startRecording(HWND c) { if (Recorder* r = rec(c)) { SetFocus(c); r-
 static void destroyChildren(HWND h) { std::vector<HWND> kids; for (HWND c = GetWindow(h, GW_CHILD); c; c = GetWindow(c, GW_HWNDNEXT)) kids.push_back(c); for (HWND c : kids) DestroyWindow(c); }
 
 // ---- main window -----------------------------------------------------------------------------
-enum { C_SEG = 200, C_HOTKEY, C_BEEP, C_AUTO, C_PAUSE, C_SMART, C_SITE, C_MARK, C_SPELL, C_RESTORE, C_LOGIN, C_UPDATE, C_LOGKEYS, C_EMOJI, C_EMOJIKEY,
+enum { C_SEG = 200, C_HOTKEY, C_BEEP, C_AUTO, C_PAUSE, C_SMART, C_SITE, C_MARK, C_SPELL, C_RESTORE, C_LOGIN, C_UPDATE, C_LOGKEYS, C_EMOJI, C_EMOJIKEY, C_FEEDBACK,
        L_REFRESH = 300, L_OPEN, L_CLEAR, A_LINK = 400, O_BACK = 500, O_NEXT, O_REC, O_BEEP, O_EMOJI, O_EMOJIKEY, O_EDIT = 520 };
 static const UINT WM_REBUILD = WM_APP + 20;
 static HWND _win, _seg, _hint, _logWin, _logList, _logSummary, _logGrid, _aboutWin, _onbWin, _ackWin, _tooltip;
@@ -318,7 +318,7 @@ static void addTip(HWND tip, const wchar_t* text) {
 }
 /// One form row: label (+ tip) on the left, a control on the right. Returns the control.
 static int _y; static int _groupTop = -1;
-static void beginGroup(const wchar_t* title) { if (title) { _titles.push_back({_y, title}); _y += 28; } _groupTop = _y; }
+static void beginGroup(const wchar_t* title) { if (title) { _titles.push_back({_y, title}); _y += 26; } _groupTop = _y; }
 static void endGroup() { _groups.push_back({_groupTop, _y}); _y += GAP; }
 static void rowLabel(const wchar_t* label, const wchar_t* tip) {
     if (_y != _groupTop) _seps.push_back(_y);
@@ -335,7 +335,7 @@ static HWND row(const wchar_t* label, const wchar_t* tip, const wchar_t* cls, in
 static HWND toggleRow(const wchar_t* label, const wchar_t* tip, int id, bool on) { HWND c = row(label, tip, L"VikeyToggle", id, 40, 23); setToggle(c, on); return c; }
 static HWND recorderRow(const wchar_t* label, const wchar_t* tip, const wchar_t* pref, bool modsOnly, int value, int id) {
     rowLabel(label, tip);
-    HWND c = makeRecorder(_win, pref, modsOnly, value, W - MARGIN - 16 - 134, _y + (ROW - 30) / 2, 134, 30, id, GROUP);
+    HWND c = makeRecorder(_win, pref, modsOnly, value, W - MARGIN - 16 - 134, _y + (ROW - 28) / 2, 134, 28, id, GROUP);
     _ctl[id] = c; _y += ROW; return c;
 }
 
@@ -368,7 +368,7 @@ static void buildMain() {
     // header
     _hint = child(L"STATIC", L"", SS_LEFT, MARGIN + 56, 40, 220, 20, 0, fSmall); setHint();
     _seg = child(L"VikeySegmented", L"", 0, W - MARGIN - 164, 22, 164, 30, C_SEG); languageChanged(core::language());
-    _y = 74;
+    _y = 70;
     int hk = currentHotkey();
     beginGroup(nullptr);
     recorderRow(L"Phím chuyển Anh/Việt", L"Bấm tổ hợp phím này để chuyển giữa tiếng Việt và tiếng Anh. Bấm vào ô để đặt phím khác.", L"SwitchKeyStatus", true, hk, C_HOTKEY);
@@ -383,7 +383,7 @@ static void buildMain() {
     beginGroup(L"Gõ tiếng Việt");
     HWND mark = row(L"Đặt dấu", L"Vị trí dấu thanh với oa, oe, uy: kiểu mới (hoà, thuý) hoặc kiểu cũ (hòa, thúy).", L"COMBOBOX", C_MARK, 130, 200, CBS_DROPDOWNLIST | WS_TABSTOP);
     SendMessageW(mark, CB_ADDSTRING, 0, (LPARAM)L"hoà, thuý"); SendMessageW(mark, CB_ADDSTRING, 0, (LPARAM)L"hòa, thúy"); SendMessageW(mark, CB_SETCURSEL, prefs::getInt(L"ModernOrthography", 1) ? 0 : 1, 0);
-    SetWindowPos(mark, nullptr, W - MARGIN - 16 - 130, _y - ROW + 5, 130, 200, SWP_NOZORDER);
+    SetWindowPos(mark, nullptr, W - MARGIN - 16 - 130, _y - ROW + 4, 130, 200, SWP_NOZORDER);
     toggleRow(L"Kiểm tra chính tả", L"Chỉ bỏ dấu khi từ đang gõ đúng quy tắc chính tả tiếng Việt.", C_SPELL, prefs::getInt(L"Spelling", 1) != 0);
     toggleRow(L"Trả lại phím khi sai", L"Khi gõ xong một từ sai chính tả tiếng Việt, Vikey trả lại đúng các phím bạn đã gõ.", C_RESTORE, prefs::getInt(L"RestoreIfInvalidWord", 1) != 0);
     endGroup();
@@ -396,9 +396,10 @@ static void buildMain() {
     beginGroup(nullptr);
     toggleRow(L"Mở Vikey khi đăng nhập", L"Tự mở Vikey mỗi khi bạn đăng nhập vào Windows.", C_LOGIN, prefs::launchAtLogin());
     toggleRow(L"Tự động cập nhật", L"Mỗi ngày Vikey kiểm tra bản mới trên vikey.app, tự tải về và cài khi bạn thoát Vikey hoặc tắt máy.", C_UPDATE, prefs::getInt(L"AutoUpdate", 1) != 0);
+    HWND fb = row(L"Góp ý", L"Báo lỗi hoặc góp ý cho Vikey: mở trang vikey.app/feedback trong trình duyệt.", L"VikeyButton", C_FEEDBACK, 120, 26, WS_TABSTOP);
+    SetWindowTextW(fb, L"Gửi góp ý…"); setBg(fb, GROUP);
     endGroup();
     refreshEnabled();
-    _y += 4;   // the last group's gap is the bottom margin
     RECT wr = {0, 0, W, _y}; AdjustWindowRectEx(&wr, WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX, FALSE, 0);
     SetWindowPos(_win, nullptr, 0, 0, wr.right - wr.left, wr.bottom - wr.top, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
     RedrawWindow(_win, nullptr, nullptr, RDW_INVALIDATE | RDW_ERASE | RDW_ALLCHILDREN | RDW_UPDATENOW);   // a rebuilt combo box kept stale pixels
@@ -426,6 +427,7 @@ static LRESULT CALLBACK mainProc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
         case C_EMOJI: prefs::setInt(L"EmojiPicker", toggleOn(c)); core::reloadSettings(); emoji::settingsChanged(); afterHotkeyChange(); break;
         case C_LOGIN: prefs::setLaunchAtLogin(toggleOn(c)); setToggle(c, prefs::launchAtLogin()); break;
         case C_UPDATE: prefs::setInt(L"AutoUpdate", toggleOn(c)); break;
+        case C_FEEDBACK: ShellExecuteW(nullptr, L"open", L"https://vikey.app/feedback?platform=windows&v=" VIKEY_VERSION_W, nullptr, nullptr, SW_SHOWNORMAL); break;
         }
         return 0; }
     case WM_REBUILD: buildMain(); return 0;
