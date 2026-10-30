@@ -122,7 +122,7 @@ static void buildProps(VikeyEngine* e) {
 static void launchSettings(const char* arg, const char* arg2) {
     gchar* argv[] = {(gchar*)"vikey-settings", (gchar*)arg, (gchar*)arg2, nullptr};
     // the picker must not type through IBus (it reads raw keys for its search), the other windows must (the guide's practice fields)
-    gchar** env = g_get_environ(); if (!strcmp(arg, "--emoji")) env = g_environ_setenv(env, "GTK_IM_MODULE", "gtk-im-context-simple", TRUE);
+    gchar** env = g_get_environ(); if (!strcmp(arg, "--emoji")) { env = g_environ_setenv(env, "GTK_IM_MODULE", "gtk-im-context-simple", TRUE); env = g_environ_setenv(env, "GDK_BACKEND", "x11", TRUE); }   // X11: the picker centres itself
     g_spawn_async(nullptr, argv, env, (GSpawnFlags)G_SPAWN_SEARCH_PATH, nullptr, nullptr, nullptr, nullptr); g_strfreev(env);
 }
 
