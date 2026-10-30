@@ -7,6 +7,7 @@
 #include <mutex>
 #include <cstring>
 #include <cstdio>
+#include <unistd.h>
 namespace vikey { namespace prefs {
 static std::map<std::string, std::string> _v;   // settings.json: raw JSON value text: "123" or "\"str\""
 static std::map<std::string, std::string> _st;  // stats.json (TLStat_* counters): written only by the engine
@@ -43,9 +44,9 @@ static void loadInto(std::map<std::string, std::string>& _v, const std::string& 
     }
 }
 static void saveMap(const std::map<std::string, std::string>& m, const std::string& path) {
-    std::string tmp = path + ".tmp";
-    { std::ofstream f(tmp); f << "{\n"; bool first = true; for (auto& kv : m) { f << (first ? "" : ",\n") << jstr(kv.first) << ": " << kv.second; first = false; } f << "\n}\n"; }
-    rename(tmp.c_str(), path.c_str());
+    std::string tmp = path + ".tmp" + std::to_string(getpid());   // the engine and vikey-settings both save: one temp file each
+    std::ofstream f(tmp); f << "{\n"; bool first = true; for (auto& kv : m) { f << (first ? "" : ",\n") << jstr(kv.first) << ": " << kv.second; first = false; } f << "\n}\n"; f.close();
+    if (f) rename(tmp.c_str(), path.c_str()); else ::remove(tmp.c_str());   // a failed write (disk full) keeps the good file
 }
 static time_t _ownSec = 0; static long _ownNs = 0;
 static void noteOwnWrite() { struct stat st; if (stat(settingsPath().c_str(), &st) == 0) { _ownSec = st.st_mtime; _ownNs = st.st_mtim.tv_nsec; } }
