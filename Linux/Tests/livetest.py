@@ -48,6 +48,9 @@ class App(Gtk.Application):
                 c = keys[i]
                 if c == '\\' and i + 1 < len(keys): d = keys[i+1]; xdo('key', {'b': 'BackSpace', 'n': 'Return', 't': 'Tab'}.get(d, d)); i += 2; continue
                 if keys.startswith('{cmd:', i):   # a command to the engine (e.g. the emoji picker's choice)
+                    time.sleep(0.4)
+                    while GLib.MainContext.default().iteration(False): pass   # the keys typed so far reach the engine first
+                    time.sleep(0.3)
                     e = keys.index('}', i); open(CMD + '.tmp', 'w').write(keys[i+5:e] + '\n'); os.replace(CMD + '.tmp', CMD); time.sleep(0.6); i = e + 1; continue
                 if c == '{': e = keys.index('}', i); cmd = keys[i+1:e]; xdo('key', '--clearmodifiers', cmd.replace('alt+z', 'alt+z')); time.sleep(0.3); i = e + 1; continue
                 if c == ' ': xdo('key', 'space')
