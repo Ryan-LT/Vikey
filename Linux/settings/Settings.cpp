@@ -9,6 +9,7 @@
 #include <fstream>
 #include <cstring>
 #include <ctime>
+#include <algorithm>
 using namespace vikey;
 
 // ---- shared helpers (Common.h) ------------------------------------------------------------------------------
@@ -156,7 +157,9 @@ static void refreshSetup() { int in = vikeyInInputSources(); gtk_widget_set_visi
 static void onSettingsFile(GFileMonitor*, GFile*, GFile*, GFileMonitorEvent, gpointer) { prefs::reload(); syncSeg(); setHint(); }
 
 void buildMain(GtkApplication* app) {
-    GtkWidget* win = adw_application_window_new(app); gtk_window_set_title(GTK_WINDOW(win), "Vikey"); gtk_window_set_default_size(GTK_WINDOW(win), 480, 860);
+    GtkWidget* win = adw_application_window_new(app); gtk_window_set_title(GTK_WINDOW(win), "Vikey"); int h = 860;   // every row without scrolling when the screen is tall enough (the Mac window doesn't scroll)
+    if (GListModel* mons = gdk_display_get_monitors(gdk_display_get_default())) if (GdkMonitor* m = (GdkMonitor*)g_list_model_get_item(mons, 0)) { GdkRectangle r; gdk_monitor_get_geometry(m, &r); h = std::min(h, r.height - 110); g_object_unref(m); }
+    gtk_window_set_default_size(GTK_WINDOW(win), 480, h);
     GtkWidget* tv = adw_toolbar_view_new(); GtkWidget* hb = adw_header_bar_new(); adw_header_bar_set_show_title(ADW_HEADER_BAR(hb), FALSE); adw_toolbar_view_add_top_bar(ADW_TOOLBAR_VIEW(tv), hb);
     GtkWidget* page = adw_preferences_page_new();
     // header: icon, wordmark + hint (or the IBus setup link), segmented Tiếng Việt / English
