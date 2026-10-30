@@ -15,6 +15,10 @@
 | macOS feature (DECISIONS) | Windows counterpart | Notes |
 |---|---|---|
 | **Status 2026-10-29** | Phases 0–5 done; live suite 14/14 on ARM64 and x64 (emulated); update flow verified; code signing: Certum OSS cloud cert ordered (Tony pays), signing step added when it lands | |
+| **Status 2026-10-30 (parity pass, D44)** | Platform core caught up with the Mac (D32 undo-then-continue, D33 digits, D35 look-forward; D39/D41/D42 come from the shared engine); sparkle switch sound; emoji picker; onboarding v2; tray "Hướng dẫn…" / "Gửi góp ý…"; About links + Acknowledgements; windows centred on the mouse's screen. Live suite 23/23 (ARM64 VM) | |
+| Switch sound "sparkle" (D31) | SwitchToVietnamese/English.caf → WAV (afconvert LEI16), embedded RCDATA, `PlaySound(SND_MEMORY\|SND_ASYNC)` | `Windows/App/Sounds/` |
+| Emoji picker (EmojiPicker.swift, EmojiSearch.swift) | `Windows/App/Emoji.cpp`: borderless WS_EX_NOACTIVATE popup drawn with Direct2D + DirectWrite (colour Segoe UI Emoji), keys reach it through the keyboard hook (the app in front keeps its caret), click outside closes, Enter types via SendInput KEYEVENTF_UNICODE; Emoji.json embedded; Telex reader + scoring ported 1:1; prefs EmojiPicker / EmojiHotkey / EmojiSkinTone / EmojiUsage | country flags and tag-sequence flags are left out (Segoe UI Emoji draws them as letters) |
+| Onboarding (OnboardingView.swift) | 4 steps (no Accessibility step on Windows): Telex table, practice fields, hotkey + sound, emoji (optional); tray "Hướng dẫn…" | |
 | Telex, modern/classic tone, spell check, restore-if-invalid | same engine, unchanged | compiled into the app; `check.sh` lock runs on Windows CI too |
 | Auto switch EN/VI (D5–D29), doubled key, look-back, Backspace undo, pause after manual | `Engine/Driver` already does all of it | the Windows layer just feeds keys and applies `VKEdit` |
 | Switch hotkey (key+modifiers or modifiers alone, beep) | LL hook sees modifier-only chords | default ⌥Z → Alt+Z |

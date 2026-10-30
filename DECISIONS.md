@@ -23,6 +23,23 @@ If every listed change is intended, accept them with `Tools/autoswitch/check.sh 
 
 ---
 
+## 44. Windows catches up with the Mac (parity pass)
+
+**Status:** Built 2026-10-30 on branch `windows`, not in a release yet.
+
+**Asked by Tony.** "Use the iOS and macOS app as the baseline. Port all the features to Windows/Linux/Android. Try to reach 100% feature parity."
+
+**Decided (Windows)**
+
+- The platform core (`Windows/App/Core.cpp`) has every VikeyCore.mm change since 1.0.14: Backspace undo then typing on (D32), digits start a word (D33), look forward (D35), the emoji hotkey, and the "sparkle" switch sound (the Mac's two .caf files as WAV resources). D39, D41 and D42 come with the shared engine. Live test: 23 cases (9 new, one per rule), all pass in the ARM64 VM.
+- Emoji picker: same search (English, Vietnamese, Telex keys, emoticons), same layout (Frequently Used first, sections, 9 columns), same keys. A popup that never takes the focus; the keyboard hook hands it the keys, so the app in front keeps its caret. Drawn with Direct2D/DirectWrite: GDI+ can't draw colour emoji. Country flags are left out: Windows' emoji font draws them as two letters.
+- Onboarding: the Mac's steps minus Accessibility (welcome with the Telex table, practice, hotkey + sound, emoji). Tray menu and About match the Mac (Hướng dẫn…, Gửi góp ý…, vikey.app · GitHub · Ghi nhận); Ghi nhận opens an Acknowledgements window (TweetNaCl and Inno Setup instead of Sparkle).
+- Windows open in the middle of the screen with the mouse. Settings rows are 34 px so the window, with the emoji rows, fits a 1366×768 screen.
+- No UI Automation polling while a Vikey window is in front: it stalled Vikey's UI thread for seconds.
+
+**Details:** `Windows/PLAN.md`.
+
+---
 ## 43. Vikey for Android
 
 **Status:** Built 2026-10-29 on branch `android` (release build signed, live test 14/14 on the emulator). Publishing waits for a try on Tony's phone.
