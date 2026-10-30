@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """Live typing test on Linux: types each case into a GTK text entry (X11/XWayland) with xdotool while the
-Vikey IBus engine is active, reads the text back, compares. Same cases as Windows/Tests/cases.tsv.
-usage: GDK_BACKEND=x11 python3 Linux/Tests/livetest.py [cases.tsv]
+Vikey IBus engine is active, reads the text back, compares. Cases: Windows/Tests/cases.tsv (shared with Windows)
+then Linux/Tests/cases-linux.tsv (the Mac core's later decisions and the emoji command).
+usage: GDK_BACKEND=x11 python3 Linux/Tests/livetest.py [cases.tsv ...]
 needs: xdotool, ibus running with vikey as the current engine (ibus engine vikey), python3-gi."""
 import gi, sys, os, subprocess, time, json
 gi.require_version('Gtk', '4.0'); from gi.repository import Gtk, GLib
-cases = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(__file__), '..', '..', 'Windows', 'Tests', 'cases.tsv')
+HERE = os.path.dirname(os.path.abspath(__file__))
+cases = sys.argv[1:] or [os.path.join(HERE, '..', '..', 'Windows', 'Tests', 'cases.tsv'), os.path.join(HERE, 'cases-linux.tsv')]
 SET = os.path.expanduser('~/.config/vikey/settings.json')
 CMD = os.path.expanduser('~/.config/vikey/command')
 def set_lang(vi):
@@ -30,7 +32,7 @@ class App(Gtk.Application):
         while GLib.MainContext.default().iteration(False): pass
         print('smoke: entry has', repr(self.entry.get_text()), 'focus', self.entry.has_focus(), flush=True)
         total = fails = 0
-        for line in open(cases, encoding='utf-8'):
+        for line in (l for c in cases for l in open(c, encoding='utf-8')):
             if not line.strip() or line.startswith('#'): continue
             name, start, keys, expected = line.rstrip('\n').split('\t')[:4]
             total += 1
@@ -45,6 +47,11 @@ class App(Gtk.Application):
             while i < len(keys):
                 c = keys[i]
                 if c == '\\' and i + 1 < len(keys): d = keys[i+1]; xdo('key', {'b': 'BackSpace', 'n': 'Return', 't': 'Tab'}.get(d, d)); i += 2; continue
+                if keys.startswith('{cmd:', i):   # a command to the engine (e.g. the emoji picker's choice)
+                    time.sleep(0.4)
+                    while GLib.MainContext.default().iteration(False): pass   # the keys typed so far reach the engine first
+                    time.sleep(0.3)
+                    e = keys.index('}', i); open(CMD + '.tmp', 'w').write(keys[i+5:e] + '\n'); os.replace(CMD + '.tmp', CMD); time.sleep(0.6); i = e + 1; continue
                 if c == '{': e = keys.index('}', i); cmd = keys[i+1:e]; xdo('key', '--clearmodifiers', cmd.replace('alt+z', 'alt+z')); time.sleep(0.3); i = e + 1; continue
                 if c == ' ': xdo('key', 'space')
                 else: xdo('type', '--delay', '25', c)

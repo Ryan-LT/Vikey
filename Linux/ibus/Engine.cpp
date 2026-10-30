@@ -4,10 +4,12 @@
 #include <ibus.h>
 #include <glib.h>
 #include <glib-unix.h>
+#include <gst/gst.h>
 #include <string>
 #include <cstring>
 #include <cstdlib>
 #include <unistd.h>
+#include <ctime>
 #include <glob.h>
 #include "Core.h"
 #include "Prefs.h"
@@ -22,7 +24,7 @@
 #endif
 using namespace vikey;
 
-typedef struct { IBusEngine parent; guint caps; gboolean enabled; IBusPropList* props; IBusProperty *pLang, *pAuto, *pOpen, *pLog, *pAbout; } VikeyEngine;
+typedef struct { IBusEngine parent; guint caps; gboolean enabled; IBusPropList* props; IBusProperty *pLang, *pAuto, *pOpen, *pLog, *pGuide, *pUpdate, *pAbout; } VikeyEngine;
 typedef struct { IBusEngineClass parent; } VikeyEngineClass;
 static GType vikey_engine_get_type();
 #define VIKEY_TYPE_ENGINE (vikey_engine_get_type())
@@ -41,7 +43,33 @@ static void outBackspaces(int n) {
 }
 static void outText(const std::u32string& t) { if (!_active) return; std::string s = utf8(t); ibus_engine_commit_text(IBUS_ENGINE(_active), ibus_text_new_from_string(s.c_str())); }
 static void outControlKey(Uint16 key, bool shift) { if (!_active) return; guint ks = keysymOf(key); if (!ks) return; guint st = shift ? IBUS_SHIFT_MASK : 0; ibus_engine_forward_key_event(IBUS_ENGINE(_active), ks, 0, st); ibus_engine_forward_key_event(IBUS_ENGINE(_active), ks, 0, st | IBUS_RELEASE_MASK); }
-static void outBeep() { gchar* argv[] = {(gchar*)"canberra-gtk-play", (gchar*)"-i", (gchar*)"bell", nullptr}; g_spawn_async(nullptr, argv, nullptr, (GSpawnFlags)(G_SPAWN_SEARCH_PATH | G_SPAWN_STDOUT_TO_DEV_NULL | G_SPAWN_STDERR_TO_DEV_NULL), nullptr, nullptr, nullptr, nullptr); }
+// The switch sound (Tony picked "sparkle"): two tiny notes, rising into Vietnamese, falling into English. The same
+// files as the Mac app (App/Resources/Sounds/*.caf → Linux/sounds/*.wav), played in-process with GStreamer so the
+// sound follows the key with no process start; a system bell when GStreamer can't play them.
+static GstElement* _player = nullptr;
+static void outSwitchSound(int language) {
+    std::string file = std::string(VIKEY_DATADIR) + "/sounds/" + (language == 1 ? "SwitchToVietnamese.wav" : "SwitchToEnglish.wav");
+    if (!_player) _player = gst_element_factory_make("playbin", "vikey-sound");
+    if (_player && g_file_test(file.c_str(), G_FILE_TEST_EXISTS)) {
+        gst_element_set_state(_player, GST_STATE_NULL);
+        gchar* uri = g_filename_to_uri(file.c_str(), nullptr, nullptr); g_object_set(_player, "uri", uri, nullptr); g_free(uri);
+        if (gst_element_set_state(_player, GST_STATE_PLAYING) != GST_STATE_CHANGE_FAILURE) return;
+    }
+    gchar* argv[] = {(gchar*)"canberra-gtk-play", (gchar*)"-i", (gchar*)"bell", nullptr};
+    g_spawn_async(nullptr, argv, nullptr, (GSpawnFlags)(G_SPAWN_SEARCH_PATH | G_SPAWN_STDOUT_TO_DEV_NULL | G_SPAWN_STDERR_TO_DEV_NULL), nullptr, nullptr, nullptr, nullptr);
+}
+static void launchSettings(const char* arg, const char* arg2 = nullptr);
+// The emoji picker is a window of vikey-settings (--emoji). It takes the keyboard focus, so the engine sees a
+// focus_out; its choice comes back through the command file ("emoji 🐴") and is committed to the app once the
+// focus is back there. The picker uses GTK's simple input method (not IBus), so its own typing never reaches us.
+static std::string _pendingEmoji;
+static void outOpenEmoji() { launchSettings("--emoji", nullptr); }
+static void commitPendingEmoji() {
+    if (_pendingEmoji.empty() || !_active) return;
+    core::resetTyping();
+    ibus_engine_commit_text(IBUS_ENGINE(_active), ibus_text_new_from_string(_pendingEmoji.c_str()));
+    _pendingEmoji.clear(); _lastOutputUs = g_get_monotonic_time();
+}
 
 // ---- the app in front (per-app memory): X11 / XWayland only -----------------------------------------
 static std::string frontAppX11() {
@@ -69,14 +97,23 @@ static std::string frontAppX11() {
 #endif
 }
 
-// ---- panel properties (the "menu bar") --------------------------------------------------------------
+// ---- panel properties (the "menu bar")
+static std::string hotkeyLabel() {   // "Alt+Z" (same names as vikey-settings)
+    int hk = prefs::getInt("SwitchKeyStatus", 0); if (!hk) hk = 0x7A000206;
+    static const struct { int k; const char* n; } N[] = {{0,"A"},{11,"B"},{8,"C"},{2,"D"},{14,"E"},{3,"F"},{5,"G"},{4,"H"},{34,"I"},{38,"J"},{40,"K"},{37,"L"},{46,"M"},{45,"N"},{31,"O"},{35,"P"},{12,"Q"},{15,"R"},{1,"S"},{17,"T"},{32,"U"},{9,"V"},{13,"W"},{7,"X"},{16,"Y"},{6,"Z"},
+        {18,"1"},{19,"2"},{20,"3"},{21,"4"},{23,"5"},{22,"6"},{26,"7"},{28,"8"},{25,"9"},{29,"0"},{49,"Space"},{36,"Enter"},{48,"Tab"},{50,"`"},{27,"-"},{24,"="},{33,"["},{30,"]"},{42,"\\"},{41,";"},{39,"'"},{43,","},{47,"."},{44,"/"}};
+    std::string s; if (hk & 0x100) s += "Ctrl+"; if (hk & 0x200) s += "Alt+"; if (hk & 0x800) s += "Shift+"; if (hk & 0x400) s += "Super+";
+    int k = hk & 0xFF; if (k != 0xFE) { for (auto& e : N) if (e.k == k) s += e.n; } else if (!s.empty()) s.pop_back();
+    return s;
+}
 static void updateLangProp(VikeyEngine* e) {
     if (!e || !e->pLang) return;
     int vi = core::language();
-    ibus_property_set_label(e->pLang, ibus_text_new_from_string(vi ? "Tiếng Việt" : "English"));
+    ibus_property_set_label(e->pLang, ibus_text_new_from_string(("Tiếng Việt   " + hotkeyLabel()).c_str()));   // the Mac's "Tiếng Việt  ⌥Z", a switch on in Vietnamese
     ibus_property_set_symbol(e->pLang, ibus_text_new_from_string(vi ? "V" : "E"));
     ibus_property_set_state(e->pLang, vi ? PROP_STATE_CHECKED : PROP_STATE_UNCHECKED);
     ibus_engine_update_property(IBUS_ENGINE(e), e->pLang);
+    if (e->pLog && (bool)ibus_property_get_visible(e->pLog) != (prefs::getInt("TypingLogEnabled", 0) != 0)) { ibus_property_set_visible(e->pLog, !ibus_property_get_visible(e->pLog)); ibus_engine_update_property(IBUS_ENGINE(e), e->pLog); }
     if (e->pAuto) { ibus_property_set_state(e->pAuto, prefs::getInt("AutoSwitchByTyping", 1) ? PROP_STATE_CHECKED : PROP_STATE_UNCHECKED); ibus_engine_update_property(IBUS_ENGINE(e), e->pAuto); }
 }
 static void buildProps(VikeyEngine* e) {
@@ -86,10 +123,19 @@ static void buildProps(VikeyEngine* e) {
     e->pAuto = ibus_property_new("auto", PROP_TYPE_TOGGLE, ibus_text_new_from_string("Tự chuyển Anh/Việt"), nullptr, nullptr, TRUE, TRUE, PROP_STATE_CHECKED, nullptr);
     e->pOpen = ibus_property_new("open", PROP_TYPE_NORMAL, ibus_text_new_from_string("Mở Vikey…"), nullptr, nullptr, TRUE, TRUE, PROP_STATE_UNCHECKED, nullptr);
     e->pLog = ibus_property_new("log", PROP_TYPE_NORMAL, ibus_text_new_from_string("Xem nhật ký gõ…"), nullptr, nullptr, TRUE, TRUE, PROP_STATE_UNCHECKED, nullptr);
+    e->pGuide = ibus_property_new("guide", PROP_TYPE_NORMAL, ibus_text_new_from_string("Hướng dẫn…"), nullptr, nullptr, TRUE, TRUE, PROP_STATE_UNCHECKED, nullptr);
+    e->pUpdate = ibus_property_new("update", PROP_TYPE_NORMAL, ibus_text_new_from_string("Kiểm tra cập nhật…"), nullptr, nullptr, TRUE, TRUE, PROP_STATE_UNCHECKED, nullptr);
     e->pAbout = ibus_property_new("about", PROP_TYPE_NORMAL, ibus_text_new_from_string("Giới thiệu Vikey"), nullptr, nullptr, TRUE, TRUE, PROP_STATE_UNCHECKED, nullptr);
-    for (IBusProperty* p : {e->pLang, e->pAuto, e->pOpen, e->pLog, e->pAbout}) { g_object_ref_sink(p); ibus_prop_list_append(e->props, p); }
+    // the Mac menu bar's order; the typing log is a debug item there (Gỡ lỗi), shown only while logging is on
+    ibus_property_set_visible(e->pLog, prefs::getInt("TypingLogEnabled", 0) != 0);
+    for (IBusProperty* p : {e->pLang, e->pAuto, e->pOpen, e->pGuide, e->pUpdate, e->pAbout, e->pLog}) { g_object_ref_sink(p); ibus_prop_list_append(e->props, p); }
 }
-static void launchSettings(const char* arg) { gchar* argv[] = {(gchar*)"vikey-settings", (gchar*)arg, nullptr}; g_spawn_async(nullptr, argv, nullptr, (GSpawnFlags)G_SPAWN_SEARCH_PATH, nullptr, nullptr, nullptr, nullptr); }
+static void launchSettings(const char* arg, const char* arg2) {
+    gchar* argv[] = {(gchar*)"vikey-settings", (gchar*)arg, (gchar*)arg2, nullptr};
+    // the picker must not type through IBus (it reads raw keys for its search), the other windows must (the guide's practice fields)
+    gchar** env = g_get_environ(); if (!strcmp(arg, "--emoji")) { env = g_environ_setenv(env, "GTK_IM_MODULE", "gtk-im-context-simple", TRUE); env = g_environ_setenv(env, "GDK_BACKEND", "x11", TRUE); }   // X11: the picker centres itself
+    g_spawn_async(nullptr, argv, env, (GSpawnFlags)G_SPAWN_SEARCH_PATH, nullptr, nullptr, nullptr, nullptr); g_strfreev(env);
+}
 
 // ---- IBusEngine overrides --------------------------------------------------------------------------
 static unsigned flagsOf(guint state) { unsigned f = 0; if (state & IBUS_SHIFT_MASK) f |= core::F_SHIFT; if (state & IBUS_CONTROL_MASK) f |= core::F_CONTROL; if (state & IBUS_MOD1_MASK) f |= core::F_ALT; if (state & IBUS_SUPER_MASK) f |= core::F_WIN; if (state & IBUS_LOCK_MASK) f |= core::F_CAPS; return f; }
@@ -120,6 +166,7 @@ static void vikey_focus_in(IBusEngine* engine) {
     core::focusChanged(app);
     _appPending = true;
     updateLangProp(e);
+    commitPendingEmoji();
 }
 static void vikey_focus_out(IBusEngine* engine) { core::click(); if (_active == (VikeyEngine*)engine) _active = nullptr; }
 static void vikey_reset(IBusEngine* engine) { if (g_get_monotonic_time() - _lastOutputUs < 300000) return; core::click(); }   // a reset caused by our own key/commit is not a click
@@ -132,6 +179,8 @@ static void vikey_property_activate(IBusEngine* engine, const gchar* name, guint
     else if (!strcmp(name, "auto")) { prefs::setInt("AutoSwitchByTyping", state == PROP_STATE_CHECKED ? 1 : 0); core::reloadSettings(); }
     else if (!strcmp(name, "open")) launchSettings("");
     else if (!strcmp(name, "log")) launchSettings("--log");
+    else if (!strcmp(name, "guide")) launchSettings("--guide");
+    else if (!strcmp(name, "update")) launchSettings("--check-update");
     else if (!strcmp(name, "about")) launchSettings("--about");
     updateLangProp(e);
 }
@@ -151,8 +200,18 @@ static GType vikey_engine_get_type() {
 // Reload only when a write is done (not on every CHANGED: the file may be half-written).
 static void readCommand() {
     std::string path = prefs::commandPath(); FILE* f = fopen(path.c_str(), "r"); if (!f) return;
-    char line[256] = {0}; if (fgets(line, sizeof line, f)) { std::string l = line; while (!l.empty() && (l.back() == '\n' || l.back() == '\r')) l.pop_back(); core::command(l); }
+    char line[256] = {0}; if (fgets(line, sizeof line, f)) { std::string l = line; while (!l.empty() && (l.back() == '\n' || l.back() == '\r')) l.pop_back();
+        if (l.rfind("emoji ", 0) == 0) { _pendingEmoji = l.substr(6); commitPendingEmoji(); }   // committed now if the app already has the focus back, else at its focus_in
+        else core::command(l); }
     fclose(f); unlink(path.c_str()); updateLangProp(_active);
+}
+// Auto update (Tự động cập nhật): once a day ask vikey-settings to compare vikey.app/release.json with this version
+// and show a notification when there is a newer one (the package manager does the install).
+static gboolean onUpdateTick(gpointer) {
+    if (!prefs::getInt("AutoUpdate", 1)) return TRUE;
+    long now = (long)time(nullptr); long last = prefs::getInt("LastUpdateCheck", 0);
+    if (now - last < 86400) return TRUE;
+    prefs::setInt("LastUpdateCheck", (int)now); launchSettings("--check-update", "--quiet"); return TRUE;
 }
 static void onSettingsChanged(GFileMonitor*, GFile* file, GFile*, GFileMonitorEvent ev, gpointer) {
     if (file) { char* b = g_file_get_basename(file); bool isCmd = b && !strcmp(b, "command"); g_free(b); if (isCmd) { if (ev == G_FILE_MONITOR_EVENT_CHANGES_DONE_HINT || ev == G_FILE_MONITOR_EVENT_MOVED_IN || ev == G_FILE_MONITOR_EVENT_RENAMED || ev == G_FILE_MONITOR_EVENT_CREATED) readCommand(); return; } } if (ev == G_FILE_MONITOR_EVENT_CHANGES_DONE_HINT || ev == G_FILE_MONITOR_EVENT_MOVED_IN || ev == G_FILE_MONITOR_EVENT_RENAMED || ev == G_FILE_MONITOR_EVENT_CREATED) { if (prefs::changedByOthers()) core::reloadSettings(); updateLangProp(_active); } }
@@ -161,8 +220,8 @@ static void onBusDisconnected(IBusBus*, gpointer) { core::shutdown(); ibus_quit(
 
 int main(int argc, char** argv) {
     bool ibusMode = false; for (int i = 1; i < argc; i++) if (!strcmp(argv[i], "--ibus")) ibusMode = true;
-    ibus_init();
-    core::init(core::Output{outBackspaces, outText, outControlKey, outBeep});
+    ibus_init(); gst_init(nullptr, nullptr);
+    core::init(core::Output{outBackspaces, outText, outControlKey, outSwitchSound, outOpenEmoji});
     _bus = ibus_bus_new();
     if (!ibus_bus_is_connected(_bus)) { fprintf(stderr, "vikey: cannot connect to the IBus daemon\n"); return 1; }
     g_signal_connect(_bus, "disconnected", G_CALLBACK(onBusDisconnected), nullptr);
@@ -180,6 +239,7 @@ int main(int argc, char** argv) {
     GFileMonitor* fmon = g_file_monitor_file(sf, G_FILE_MONITOR_WATCH_MOVES, nullptr, nullptr); if (fmon) g_signal_connect(fmon, "changed", G_CALLBACK(onSettingsChanged), nullptr);
     g_timeout_add(1000, [](gpointer) -> gboolean { core::pollSettingsFile(); readCommand(); return TRUE; }, nullptr);   // belt and braces: mtime poll + command file
     g_timeout_add_seconds(10, onFlush, nullptr);
+    g_timeout_add_seconds(90, [](gpointer) -> gboolean { onUpdateTick(nullptr); g_timeout_add_seconds(3600, onUpdateTick, nullptr); return FALSE; }, nullptr);
     ibus_main();
     core::shutdown();
     return 0;
