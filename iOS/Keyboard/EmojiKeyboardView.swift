@@ -18,6 +18,8 @@ final class EmojiKeyboardView: UIView, UICollectionViewDataSource, UICollectionV
     var dark = false { didSet { if dark != oldValue { applyColors() } } }
     private(set) var searching = false
     static let searchHeight: CGFloat = 98     // field + one row of results, above the letter keys
+    /// The emoji grid gets taller than the letters, like the system emoji keyboard (Tony: too small)
+    static let extraHeight: CGFloat = 44
 
     private struct Category { let title: String; let symbol: String; var items: [Emoji] }
     private var categories: [Category] = []

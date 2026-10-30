@@ -116,7 +116,9 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
 
     override func traitCollectionDidChange(_ previous: UITraitCollection?) {
         super.traitCollectionDidChange(previous)
+        let browsingEmoji = emojiView.map { !$0.isHidden && !$0.searching } ?? false
         heightConstraint?.constant = KeyboardView.keyboardHeight(compactHeight: traitCollection.verticalSizeClass == .compact)
+            + (browsingEmoji ? EmojiKeyboardView.extraHeight : 0)
         keyboard?.setNeedsLayout()
         if previous?.userInterfaceStyle != traitCollection.userInterfaceStyle { refresh() }
     }
@@ -147,7 +149,9 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
         KeyboardView.barOn = suggestionsOn || autoCorrectOn
         Diag.on = d.bool(forKey: VKSettings.Key.diagnostics)
         keyboard?.diagnostics = Diag.on ? String(localized: "Gõ để xem thông số") : nil
+        let browsingEmoji = emojiView.map { !$0.isHidden && !$0.searching } ?? false
         heightConstraint?.constant = KeyboardView.keyboardHeight(compactHeight: traitCollection.verticalSizeClass == .compact)
+            + (browsingEmoji ? EmojiKeyboardView.extraHeight : 0)
         keyboard?.setNeedsLayout()
         keyboard?.haptics = haptics && hasFullAccess   // haptics need Full Access; without it keys click
     }
@@ -673,7 +677,7 @@ extension KeyboardViewController: EmojiKeyboardDelegate {
         guard let ev = emojiView else { return }
         KeyboardView.searchTop = nil
         endEmojiSearchKeys()
-        heightConstraint?.constant = keyboardHeight
+        heightConstraint?.constant = keyboardHeight + EmojiKeyboardView.extraHeight
         keyboard.isHidden = true
         ev.isHidden = false
         ev.autoresizingMask = [.flexibleWidth, .flexibleHeight]

@@ -21,7 +21,8 @@ final class EmojiKeyboardTests: XCTestCase {
     private var keys: (KeyboardViewController) -> KeyboardView = { vc in vc.view.subviews.compactMap { $0 as? KeyboardView }.first! }
 
     private func render(_ vc: KeyboardViewController, _ name: String) {
-        let h = KeyboardView.keyboardHeight(compactHeight: false)
+        var h = KeyboardView.keyboardHeight(compactHeight: false)
+        if let ev = emoji(vc), !ev.isHidden, !ev.searching { h += EmojiKeyboardView.extraHeight }
         vc.view.frame.size.height = h
         vc.view.setNeedsLayout(); vc.view.layoutIfNeeded()
         for v in vc.view.subviews { v.setNeedsLayout(); v.layoutIfNeeded() }
