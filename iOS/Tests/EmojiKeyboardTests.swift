@@ -126,7 +126,7 @@ final class EmojiKeyboardTests: XCTestCase {
             vc.keyboard(sender, didTap: .emoji)
             render(vc, "fill_\(Int(f * 100))")
         }
-        EmojiKeyboardView.fill = 0.74
+        EmojiKeyboardView.fill = 0.84
     }
 
     func testRenderWidths() {
