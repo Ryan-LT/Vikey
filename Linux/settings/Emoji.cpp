@@ -378,11 +378,18 @@ void placeX11(GtkWidget* w) {
     Window rr, cr; int px = 0, py = 0, wx, wy; unsigned mask; XQueryPointer(d, DefaultRootWindow(d), &rr, &cr, &px, &py, &wx, &wy, &mask);
     GdkRectangle g = {0, 0, DisplayWidth(d, DefaultScreen(d)), DisplayHeight(d, DefaultScreen(d))};
     GListModel* mons = gdk_display_get_monitors(gdk_surface_get_display(s));
-    for (guint i = 0; i < g_list_model_get_n_items(mons); i++) { GdkMonitor* m = (GdkMonitor*)g_list_model_get_item(mons, i); GdkRectangle r; gdk_monitor_get_geometry(m, &r); g_object_unref(m); if (i == 0 || (px >= r.x && px < r.x + r.width && py >= r.y && py < r.y + r.height)) g = r; }
-    int x = g.x + (g.width - pw) / 2, y = g.y + (g.height - ph) / 2 - (int)(g.height * 0.08);
-    XSizeHints h = {}; h.flags = USPosition | PPosition; h.x = x; h.y = y; XSetWMNormalHints(d, xw, &h); XMoveWindow(d, xw, x, y);
-    Atom st = XInternAtom(d, "_NET_WM_STATE", False); Atom vals[] = {XInternAtom(d, "_NET_WM_STATE_ABOVE", False), XInternAtom(d, "_NET_WM_STATE_SKIP_TASKBAR", False), XInternAtom(d, "_NET_WM_STATE_SKIP_PAGER", False)};
-    XChangeProperty(d, xw, st, XA_ATOM, 32, PropModeReplace, (unsigned char*)vals, 3);
+    for (guint i = 0; i < g_list_model_get_n_items(mons); i++) { GdkMonitor* m = (GdkMonitor*)g_list_model_get_item(mons, i); GdkRectangle r; gdk_monitor_get_geometry(m, &r); g_object_unref(m); int f = gdk_surface_get_scale_factor(s); if (i == 0 || (px / f >= r.x && px / f < r.x + r.width && py / f >= r.y && py / f < r.y + r.height)) g = r; }
+    int sc = gdk_surface_get_scale_factor(s);   // GDK sizes are scaled; X positions are device pixels
+    int x = (g.x + (g.width - pw) / 2) * sc, y = (g.y + (g.height - ph) / 2 - (int)(g.height * 0.08)) * sc;
+    XMoveWindow(d, xw, x, y);
+    // above other windows, not in the dock (GTK rewrites the property at map: ask the window manager instead)
+    Atom st = XInternAtom(d, "_NET_WM_STATE", False);
+    for (const char* a : {"_NET_WM_STATE_ABOVE", "_NET_WM_STATE_SKIP_TASKBAR", "_NET_WM_STATE_SKIP_PAGER"}) {
+        XEvent e = {}; e.xclient.type = ClientMessage; e.xclient.window = xw; e.xclient.message_type = st; e.xclient.format = 32;
+        e.xclient.data.l[0] = 1; e.xclient.data.l[1] = (long)XInternAtom(d, a, False); e.xclient.data.l[3] = 2;
+        XSendEvent(d, DefaultRootWindow(d), False, SubstructureRedirectMask | SubstructureNotifyMask, &e);
+    }
+    XFlush(d);
 }
 void activateX11(GtkWidget* w) {   // started by the engine with no startup id: ask the window manager for the focus, as a pager would
     GdkSurface* s = gtk_native_get_surface(GTK_NATIVE(w)); if (!GDK_IS_X11_SURFACE(s)) return;
