@@ -23,8 +23,11 @@ final class AIAssistFlowTests: XCTestCase {
         for ch in s { vc.keyboard(sender, didTap: ch == " " ? .space : .char(String(ch).lowercased())) }
     }
     /// Lets the queued strip update and the model's (stubbed) answer land.
-    private func settle(_ until: () -> Bool = { false }, timeout: TimeInterval = 1.5) {
-        let end = Date().addingTimeInterval(timeout)
+    /// With a condition, waits up to 10 s for it (CI machines are slow: the word check alone waits 0.3 s first);
+    /// without one, just lets the queued work run.
+    private func settle(_ until: (() -> Bool)? = nil, timeout: TimeInterval? = nil) {
+        let end = Date().addingTimeInterval(timeout ?? (until == nil ? 0.5 : 10))
+        let until = until ?? { false }
         repeat { RunLoop.main.run(until: Date().addingTimeInterval(0.02)) } while !until() && Date() < end
     }
     private func strip(_ vc: KeyboardViewController) -> [Suggestion] { vc.keyboardViewForTests.suggestions }
@@ -57,7 +60,7 @@ final class AIAssistFlowTests: XCTestCase {
         AIAssist.stub = .init(next: { _ in ["zzword"] })
         let (vc, _) = make(1)
         type("camr own ", vc)
-        settle({ self.strip(vc).contains { $0.text == "zzword" } }, timeout: 2)
+        settle { self.strip(vc).contains { $0.text == "zzword" } }
         XCTAssertEqual(strip(vc).count, 3)
         XCTAssertEqual(strip(vc).first?.text, "bạn", "the table's best stays first")
         XCTAssertEqual(strip(vc).last?.text, "zzword")

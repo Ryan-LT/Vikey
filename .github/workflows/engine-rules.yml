@@ -29,4 +29,4 @@ jobs:
           brew install xcodegen
           cd iOS && xcodegen generate
           SIM=$(xcrun simctl list devices available | grep -E "iPhone" | head -1 | grep -oE "[0-9A-F-]{36}")
-          xcodebuild test -project VikeyiOS.xcodeproj -scheme Vikey -destination "id=$SIM" CODE_SIGNING_ALLOWED=NO
+          TEST_RUNNER_VIKEY_CI=1 xcodebuild test -project VikeyiOS.xcodeproj -scheme Vikey -destination "id=$SIM" CODE_SIGNING_ALLOWED=NO
