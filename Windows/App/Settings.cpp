@@ -366,7 +366,7 @@ static void buildMain() {
     if (_tooltip) { DestroyWindow(_tooltip); _tooltip = nullptr; }
     _groups.clear(); _titles.clear(); _seps.clear(); _ctl.clear();
     // header
-    _hint = child(L"STATIC", L"", SS_LEFT, MARGIN + 56, 43, 220, 18, 0, fSmall);   // under the wordmark's descender (the y was cut) setHint();
+    _hint = child(L"STATIC", L"", SS_LEFT, MARGIN + 56, 43, 220, 18, 0, fSmall); setHint();   // under the wordmark's descender (the y was cut)
     _seg = child(L"VikeySegmented", L"", 0, W - MARGIN - 164, 22, 164, 30, C_SEG); languageChanged(core::language());
     _y = 70;
     int hk = currentHotkey();
