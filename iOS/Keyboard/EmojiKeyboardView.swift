@@ -17,7 +17,7 @@ final class EmojiKeyboardView: UIView, UICollectionViewDataSource, UICollectionV
     var haptics = false
     var dark = false { didSet { if dark != oldValue { applyColors() } } }
     private(set) var searching = false
-    static let searchHeight: CGFloat = 92     // field + one row of results, above the letter keys
+    static let searchHeight: CGFloat = 98     // field + one row of results, above the letter keys
 
     private struct Category { let title: String; let symbol: String; var items: [Emoji] }
     private var categories: [Category] = []
@@ -62,7 +62,7 @@ final class EmojiKeyboardView: UIView, UICollectionViewDataSource, UICollectionV
         lp.minimumPressDuration = 0.35
         grid.addGestureRecognizer(lp)
 
-        field.layer.cornerRadius = 10; field.layer.cornerCurve = .continuous
+        field.layer.cornerCurve = .continuous   // a capsule, like the system emoji search (radius set in layout)
         fieldIcon.contentMode = .scaleAspectFit
         fieldText.font = .systemFont(ofSize: 17)
         caret.isHidden = true
@@ -152,9 +152,10 @@ final class EmojiKeyboardView: UIView, UICollectionViewDataSource, UICollectionV
     override func layoutSubviews() {
         super.layoutSubviews()
         let W = bounds.width, H = bounds.height, M = Self.margin
-        let fieldH: CGFloat = 36
-        field.frame = CGRect(x: M, y: M, width: W - 2 * M, height: fieldH)
-        let inner = M                                       // magnifier inset inside the field
+        let fieldH: CGFloat = 40
+        field.frame = CGRect(x: M + 2, y: M + 2, width: W - 2 * (M + 2), height: fieldH)
+        field.layer.cornerRadius = fieldH / 2   // follows the keyboard's rounded top corners
+        let inner: CGFloat = 12                             // magnifier inset inside the field
         fieldIcon.frame = CGRect(x: inner, y: (fieldH - 18) / 2, width: 18, height: 18)
         let textX = inner + 18 + 6
         let tw = min(fieldText.intrinsicContentSize.width, field.bounds.width - textX - 10)
@@ -202,7 +203,7 @@ final class EmojiKeyboardView: UIView, UICollectionViewDataSource, UICollectionV
 
     private func applyColors() {
         backgroundColor = UIColor.black.withAlphaComponent(0.001)
-        field.backgroundColor = dark ? UIColor(white: 1, alpha: 0.14) : UIColor(white: 0, alpha: 0.07)
+        field.backgroundColor = dark ? UIColor(white: 1, alpha: 0.12) : UIColor(white: 1, alpha: 0.55)   // soft glass, not a grey box
         fieldIcon.tintColor = .secondaryLabel
         caret.backgroundColor = UIColor(red: 0.31, green: 0.27, blue: 0.90, alpha: 1)
         titleLabel.textColor = .secondaryLabel

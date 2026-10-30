@@ -51,6 +51,8 @@ final class KeyboardView: UIView {
     var showsGlobe = false { didSet { if showsGlobe != oldValue { rebuild() } } }
     /// The text field's kind: email and web fields get @ . / .com keys like the system keyboard.
     var fieldType: UIKeyboardType = .default { didSet { if fieldType != oldValue { rebuild() } } }
+    /// Emoji search: Return is a green checkmark ("done searching"), like the system keyboard (Tony).
+    var returnIsDone = false { didSet { if returnIsDone != oldValue { refreshLabels() } } }
     // setters restyle keys only when something changed: they run on every key press
     var languageTitle = "Tiếng Việt" { didSet { if languageTitle != oldValue { refreshLabels() } } }
     var languageShort = "VI" { didSet { if languageShort != oldValue { refreshLabels() } } }
@@ -269,7 +271,9 @@ final class KeyboardView: UIView {
         case .shift: return (nil, UIImage(systemName: shift == .locked ? "capslock.fill" : (shift == .on ? "shift.fill" : "shift"), withConfiguration: sym))
         case .backspace: return (nil, UIImage(systemName: "delete.left", withConfiguration: sym))
         case .space: return (cursorMode ? "" : languageTitle, nil)
-        case .returnKey: return returnTitle == "return" ? (nil, UIImage(systemName: "return", withConfiguration: sym)) : (returnTitle, nil)
+        case .returnKey:
+            if returnIsDone { return (nil, UIImage(systemName: "checkmark", withConfiguration: UIImage.SymbolConfiguration(pointSize: 19, weight: .semibold))) }
+            return returnTitle == "return" ? (nil, UIImage(systemName: "return", withConfiguration: sym)) : (returnTitle, nil)
         case .globe: return (nil, UIImage(systemName: "globe", withConfiguration: sym))
         case .emoji: return (nil, UIImage(systemName: "face.smiling", withConfiguration: sym))
         case .language: return (languageShort, nil)
@@ -302,11 +306,13 @@ final class KeyboardView: UIView {
     private func refreshColors() {
         bar.dark = dark
         let fg: UIColor = dark ? .white : .black
-        let key: UIColor = dark ? UIColor(white: 0.42, alpha: 1) : .white
-        let pressed: UIColor = dark ? UIColor(white: 0.58, alpha: 1) : UIColor(red: 0.74, green: 0.76, blue: 0.80, alpha: 1)
+        // translucent keys over the keyboard's glass, like iOS 26 (Tony)
+        let key: UIColor = dark ? UIColor(white: 1, alpha: 0.22) : UIColor(white: 1, alpha: 0.68)
+        let pressed: UIColor = dark ? UIColor(white: 1, alpha: 0.38) : UIColor(white: 1, alpha: 0.32)
         for (def, v) in keys {
             var bg = key, tint = fg
             if def.kind == .returnKey && returnIsBlue { bg = .systemBlue; tint = .white }
+            if def.kind == .returnKey && returnIsDone { bg = .systemGreen; tint = .white }
             if def.kind == .language { tint = dark ? UIColor(red: 0.62, green: 0.60, blue: 1, alpha: 1) : UIColor(red: 0.31, green: 0.27, blue: 0.90, alpha: 1) }
             if cursorMode { bg = dark ? UIColor(white: 0.32, alpha: 1) : UIColor(white: 0.93, alpha: 1) }
             v.normalColor = bg
@@ -513,7 +519,7 @@ final class KeyCap: UIView {
         layer.cornerRadius = 8.5
         layer.cornerCurve = .continuous
         layer.shadowColor = UIColor.black.cgColor
-        layer.shadowOpacity = 0.22
+        layer.shadowOpacity = 0.10   // light: the keys are translucent
         layer.shadowRadius = 0
         layer.shadowOffset = CGSize(width: 0, height: 1)
         label.textAlignment = .center

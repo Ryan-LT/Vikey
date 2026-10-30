@@ -92,6 +92,23 @@ final class EmojiKeyboardTests: XCTestCase {
         XCTAssertEqual(vc2.view.frame.height, KeyboardView.keyboardHeight(compactHeight: false))
     }
 
+    func testSearchInAnEmailFieldUsesPlainKeysAndADoneKey() {
+        let (vc, p) = make(width: 402)
+        p.keyboardType = .emailAddress
+        vc.textDidChange(nil)
+        XCTAssertEqual(keys(vc).fieldType, .emailAddress)
+        vc.keyboard(sender, didTap: .emoji)
+        vc.emojiKeyboardStartSearch(emoji(vc)!)
+        XCTAssertEqual(keys(vc).fieldType, .default)
+        XCTAssertTrue(keys(vc).returnIsDone)
+        vc.emojiKeyboard(emoji(vc)!, insert: "🐎"); vc.textDidChange(nil)   // inserting must not reset the search keys
+        XCTAssertEqual(keys(vc).fieldType, .default)
+        render(vc, "search_email_field")
+        vc.keyboard(sender, didTap: .returnKey)            // done: back to the grid
+        XCTAssertFalse(keys(vc).returnIsDone)
+        XCTAssertEqual(keys(vc).fieldType, .emailAddress)
+    }
+
     func testRenderWidths() {
         for w in [375, 393, 402, 430, 440] as [CGFloat] {
             let (vc, _) = make(width: w)

@@ -4,6 +4,7 @@ import UIKit
 /// A text field with a cursor: what the keyboard sees before and after it, and taps that move it.
 final class CursorProxy: NSObject, UITextDocumentProxy {
     var text = "", cursor = 0
+    @objc var keyboardType: UIKeyboardType = .default
     private var chars: [Character] { Array(text) }
     var documentContextBeforeInput: String? { String(chars[..<cursor]) }
     var documentContextAfterInput: String? { String(chars[cursor...]) }

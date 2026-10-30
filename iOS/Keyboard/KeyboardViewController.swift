@@ -222,7 +222,7 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
 
     override func textDidChange(_ textInput: UITextInput?) {
         super.textDidChange(textInput)
-        if (proxy.keyboardType ?? .default) != keyboard.fieldType { startField() }   // moved to another kind of field
+        if emojiView?.searching != true, (proxy.keyboardType ?? .default) != keyboard.fieldType { startField() }   // moved to another kind of field
         externalChange()
         refresh()
     }
@@ -670,6 +670,7 @@ extension KeyboardViewController: EmojiKeyboardDelegate {
     private func browseEmoji() {
         guard let ev = emojiView else { return }
         KeyboardView.searchTop = nil
+        endEmojiSearchKeys()
         heightConstraint?.constant = keyboardHeight
         keyboard.isHidden = true
         ev.isHidden = false
@@ -681,6 +682,7 @@ extension KeyboardViewController: EmojiKeyboardDelegate {
 
     func emojiKeyboardClose(_ v: EmojiKeyboardView) {
         KeyboardView.searchTop = nil
+        endEmojiSearchKeys()
         heightConstraint?.constant = keyboardHeight
         v.isHidden = true
         keyboard.isHidden = false
@@ -691,6 +693,8 @@ extension KeyboardViewController: EmojiKeyboardDelegate {
 
     func emojiKeyboardStartSearch(_ v: EmojiKeyboardView) {
         KeyboardView.searchTop = EmojiKeyboardView.searchHeight
+        keyboard.fieldType = .default      // the search uses plain letters, whatever the app's field is (no @ . keys)
+        keyboard.returnIsDone = true
         heightConstraint?.constant = keyboardHeight
         keyboard.isHidden = false
         keyboard.layer_ = .letters
@@ -701,6 +705,12 @@ extension KeyboardViewController: EmojiKeyboardDelegate {
         v.setSearching(true)
         emojiQuery = ""
         updateEmojiQuery()
+    }
+
+    /// Back to the app's own keys: its field layout and Return key.
+    private func endEmojiSearchKeys() {
+        keyboard.returnIsDone = false
+        keyboard.fieldType = proxy.keyboardType ?? .default
     }
 
     func emojiKeyboard(_ v: EmojiKeyboardView, insert text: String) {
