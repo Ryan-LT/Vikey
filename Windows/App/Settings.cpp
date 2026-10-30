@@ -402,7 +402,7 @@ static void buildMain() {
     RECT wr = {0, 0, W, _y}; AdjustWindowRectEx(&wr, WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX, FALSE, 0);
     SetWindowPos(_win, nullptr, 0, 0, wr.right - wr.left, wr.bottom - wr.top, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
     RedrawWindow(_win, nullptr, nullptr, RDW_INVALIDATE | RDW_ERASE | RDW_ALLCHILDREN | RDW_UPDATENOW);   // a rebuilt combo box kept stale pixels
-    if (emojiRec && emojiKey == 0) startRecording(emojiRec);   // first time the feature is turned on: record right away
+    if (emojiRec && emojiKey == 0 && GetForegroundWindow() == _win) startRecording(emojiRec);   // first time the feature is turned on here: record right away
 }
 
 static LRESULT CALLBACK mainProc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
@@ -528,7 +528,7 @@ static void buildOnboarding() {
         if (emojiOn) {
             HWND r = makeRecorder(_onbWin, L"EmojiHotkey", false, emojiKey, OP + lw2 + 12, y, 150, 34, O_EMOJIKEY, GROUP);
             y += 34 + 10;
-            if (emojiKey == 0) { _oy[4] = y; startRecording(r); }
+            if (emojiKey == 0) { _oy[4] = y; if (GetForegroundWindow() == _onbWin) startRecording(r); }
         }
         break; }
     }
@@ -710,7 +710,7 @@ static int paintAck(HDC dc, int top, bool draw) {   // returns the content heigh
             }
             y += 40;
         }
-        y += 18 - 8;
+        y += 14;
     }
     return y - top + AP - 10;
 }
