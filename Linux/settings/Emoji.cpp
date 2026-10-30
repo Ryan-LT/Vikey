@@ -249,6 +249,7 @@ void relayout() {
         for (auto& g : P.groups) { P.visible.insert(P.visible.end(), g.second.begin(), g.second.end()); add(P.vietnamese ? kGroupVI[g.first] : kGroupEN[g.first], (int)g.second.size()); }
     }
     P.contentH = y; gtk_adjustment_set_upper(P.adj, std::max(y, 1));
+    gtk_widget_set_visible(P.scroll, y > gtk_adjustment_get_page_size(P.adj));   // no scroll bar for a short list
     gtk_widget_set_visible(P.empty, searching() && P.results.empty());
 }
 const Item* rowOf(int i) { for (auto& it : P.items) if (!it.header && i >= it.start && i < it.start + it.count) return &it; return nullptr; }
@@ -447,7 +448,7 @@ void buildEmoji(GtkApplication* app) {
     GtkWidget* overlay = gtk_overlay_new(); gtk_widget_set_vexpand(overlay, TRUE); gtk_widget_set_margin_top(overlay, 8); gtk_widget_set_margin_bottom(overlay, 8);
     P.adj = gtk_adjustment_new(0, 0, 1, CELL, CELL * 4, 1);
     P.area = gtk_drawing_area_new(); gtk_drawing_area_set_draw_func(GTK_DRAWING_AREA(P.area), draw, nullptr, nullptr); gtk_widget_set_vexpand(P.area, TRUE);
-    g_signal_connect(P.area, "resize", G_CALLBACK(+[](GtkDrawingArea*, int, int h, gpointer) { gtk_adjustment_set_page_size(P.adj, h); gtk_adjustment_set_page_increment(P.adj, h); gtk_adjustment_set_value(P.adj, gtk_adjustment_get_value(P.adj)); }), nullptr);
+    g_signal_connect(P.area, "resize", G_CALLBACK(+[](GtkDrawingArea*, int, int h, gpointer) { gtk_adjustment_set_page_size(P.adj, h); gtk_adjustment_set_page_increment(P.adj, h); gtk_widget_set_visible(P.scroll, P.contentH > h); gtk_adjustment_set_value(P.adj, gtk_adjustment_get_value(P.adj)); }), nullptr);
     gtk_overlay_set_child(GTK_OVERLAY(overlay), P.area);
     P.scroll = gtk_scrollbar_new(GTK_ORIENTATION_VERTICAL, P.adj); gtk_widget_set_halign(P.scroll, GTK_ALIGN_END); gtk_widget_add_css_class(P.scroll, "overlay-indicator"); gtk_overlay_add_overlay(GTK_OVERLAY(overlay), P.scroll);
     GtkEventController* sc = gtk_event_controller_scroll_new((GtkEventControllerScrollFlags)(GTK_EVENT_CONTROLLER_SCROLL_VERTICAL | GTK_EVENT_CONTROLLER_SCROLL_KINETIC));
