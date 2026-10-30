@@ -39,7 +39,7 @@ int language() { return prefs::getInt("InputMethod", 1) ? 1 : 0; }
 void refresh() {
     for (int i = 0; i < COUNT; i++) { gtk_widget_remove_css_class(G.dots[i], i == G.step ? "off" : "on"); gtk_widget_add_css_class(G.dots[i], i == G.step ? "on" : "off"); }
     gtk_widget_set_visible(G.back, G.step != WELCOME);
-    int in = vikeyInInputSources();
+    int in = getenv("VIKEY_PREVIEW_SETUP") ? 0 : vikeyInInputSources();   // screenshots of the waiting state
     bool waiting = G.step == SETUP && in == 0;
     gtk_widget_set_visible(G.waitBox, waiting); gtk_widget_set_visible(G.doneBox, G.step == SETUP && in == 1);
     const char* nextLabel = G.step == WELCOME ? "Bắt đầu" : G.step == EMOJI ? "Xong" : "Tiếp tục";
@@ -164,7 +164,7 @@ void onNext(GtkButton*, gpointer) {
 void buildGuide(GtkApplication* app, bool thenMain) {
     G.app = app; G.thenMain = thenMain;
     GtkCssProvider* p = gtk_css_provider_new();
-    gtk_css_provider_load_from_string(p, ".step-num { min-width: 20px; min-height: 20px; border-radius: 10px; background: alpha(currentColor, 0.45); color: @window_bg_color; font-weight: bold; font-size: 0.85em; }");
+    gtk_css_provider_load_from_string(p, ".step-num { min-width: 20px; min-height: 20px; border-radius: 10px; background: alpha(@window_fg_color, 0.40); color: @window_bg_color; font-weight: bold; font-size: 0.85em; }");
     gtk_style_context_add_provider_for_display(gdk_display_get_default(), GTK_STYLE_PROVIDER(p), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
     G.win = adw_application_window_new(app); gtk_window_set_title(GTK_WINDOW(G.win), "Vikey"); gtk_window_set_default_size(GTK_WINDOW(G.win), 540, 470 + 47); gtk_window_set_resizable(GTK_WINDOW(G.win), FALSE);
     g_signal_connect(G.win, "close-request", G_CALLBACK(+[](GtkWindow*, gpointer) -> gboolean { prefs::setInt("OnboardingDone", 1); return FALSE; }), nullptr);
