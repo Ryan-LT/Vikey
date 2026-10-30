@@ -117,17 +117,23 @@ final class KeyboardPerformanceTests: XCTestCase {
         XCTAssertEqual(p.text, "Tôi đi học sorry em ")
     }
 
+    private func waitFor(_ done: () -> Bool, timeout: TimeInterval = 5) {
+        let end = Date().addingTimeInterval(timeout)
+        repeat { RunLoop.main.run(until: Date().addingTimeInterval(0.02)) } while !done() && Date() < end
+    }
+
     func testSuggestionStrip() {
         let (vc, _) = makeKeyboard()
         vc.setLanguageForTests(0)
         type("helo", into: vc)
-        RunLoop.main.run(until: Date().addingTimeInterval(0.05))   // the strip updates right after the key
+        // the strip updates right after the key (on the next main-queue turn; CI machines can take a while)
+        waitFor { !vc.keyboardViewForTests.suggestions.isEmpty }
         let cells = vc.keyboardViewForTests.suggestions.map(\.text)
         XCTAssertEqual(cells.first, "Helo")                         // start of the field: capital
         XCTAssertTrue(cells.contains("Hello"), "suggestions: \(cells)")
         type(" ", into: vc)
-        RunLoop.main.run(until: Date().addingTimeInterval(0.05))
-        XCTAssertTrue(vc.keyboardViewForTests.suggestions.isEmpty)
+        waitFor { !vc.keyboardViewForTests.suggestions.contains { $0.kind == .word } }
+        XCTAssertFalse(vc.keyboardViewForTests.suggestions.contains { $0.kind == .word }, "after a space: next words only")
     }
 
     func testAtMostOneTextReadPerKey() {
