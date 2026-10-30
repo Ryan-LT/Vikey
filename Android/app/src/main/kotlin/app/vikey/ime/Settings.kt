@@ -19,7 +19,6 @@ object Settings {
     const val AUTO_CORRECT = "AutoCorrect"
     const val LANGUAGE = "Language"
     const val DID_ONBOARD = "didOnboard"
-    const val EMOJI_RECENTS = "emojiRecents"
     const val EMOJI_TONE = "emojiTone"
 
     val defaults = mapOf(

@@ -42,8 +42,7 @@ class EmojiKeyboardView(ctx: Context) : View(ctx) {
     var searching = false; private set
     var feedback: KeyHaptics? = null
 
-    companion object { const val SEARCH_HEIGHT = 92f; private const val MARGIN = 8f
-        private val starter = listOf("😂", "❤️", "🥰", "😍", "😭", "👍", "🙏", "😊", "🔥", "😘", "🤣", "🥺", "😅", "🎉", "💕", "😁", "🙂", "😉") }
+    companion object { const val SEARCH_HEIGHT = 92f; private const val MARGIN = 8f }
 
     private class Category(val title: String, val icon: Int, var items: List<Emoji>)
     private var categories: List<Category> = emptyList()
@@ -86,7 +85,7 @@ class EmojiKeyboardView(ctx: Context) : View(ctx) {
         val all = EmojiIndex.get(context).all
         fun g(vararg ids: Int) = all.filter { it.group in ids }
         val t = listOf(
-            Triple("Dùng gần đây", "Frequently Used", R.drawable.ic_cat_clock) to emptyList<Emoji>(),
+            Triple("Dùng thường xuyên", "Frequently Used", R.drawable.ic_cat_clock) to emptyList<Emoji>(),
             Triple("Mặt cười & người", "Smileys & People", R.drawable.ic_cat_face) to g(0, 1),
             Triple("Động vật & thiên nhiên", "Animals & Nature", R.drawable.ic_cat_paw) to g(3),
             Triple("Đồ ăn & thức uống", "Food & Drink", R.drawable.ic_cat_food) to g(4),
@@ -104,9 +103,7 @@ class EmojiKeyboardView(ctx: Context) : View(ctx) {
     private fun reloadRecents() {
         if (categories.isEmpty()) return
         val byChar = EmojiIndex.get(context).all.associateBy { it.char }
-        val list = ArrayList(prefs.getString(Settings.EMOJI_RECENTS, "")!!.split("\n").filter { it.isNotEmpty() })
-        for (e in starter) if (list.size < 18 && e !in list) list.add(e)   // a full block, like iOS
-        categories[0].items = list.mapNotNull { byChar[it] }
+        categories[0].items = EmojiUsage.frequent(prefs, 24).mapNotNull { byChar[it] }
         layoutGrid()
     }
 
@@ -193,7 +190,7 @@ class EmojiKeyboardView(ctx: Context) : View(ctx) {
         text.textAlign = Paint.Align.CENTER
         if (!searching && categories.isNotEmpty()) {
             val s = currentSection()
-            text.color = secondary; text.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD); text.textSize = 12 * d; text.textAlign = Paint.Align.LEFT
+            text.color = secondary; text.typeface = if (android.os.Build.VERSION.SDK_INT >= 28) Typeface.create(Typeface.DEFAULT, 600, false) else Typeface.DEFAULT_BOLD; text.textSize = 12 * d; text.textAlign = Paint.Align.LEFT
             c.drawText(categories[s].title.uppercase(), M + M, fieldRect.bottom + M + 11 * d, text)
             text.textAlign = Paint.Align.CENTER
             // bar: ABC, categories, delete
@@ -321,9 +318,7 @@ class EmojiKeyboardView(ctx: Context) : View(ctx) {
     private fun choose(s: String, e: Emoji) {
         if (haptics) feedback?.tick(this) else feedback?.click()
         listener?.emojiInsert(s)
-        val r = ArrayList(prefs.getString(Settings.EMOJI_RECENTS, "")!!.split("\n").filter { it.isNotEmpty() })
-        r.remove(e.char); r.add(0, e.char)
-        prefs.edit().putString(Settings.EMOJI_RECENTS, r.take(32).joinToString("\n")).apply()
+        EmojiUsage.record(e.char, prefs)
     }
 
     private fun showSkins(e: Emoji, over: RectF) {

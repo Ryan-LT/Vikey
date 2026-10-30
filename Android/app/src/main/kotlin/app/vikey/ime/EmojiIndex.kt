@@ -88,3 +88,33 @@ class EmojiIndex private constructor(val all: List<Emoji>) {
         return total / words.size
     }
 }
+
+/** Frequently used emoji (port of EmojiUsage in App/Model/EmojiSearch.swift): each pick adds 1 and every older score
+ *  fades a little, so a favorite stays on top but this week's emoji still climbs. Stored as "char\tscore" lines. */
+object EmojiUsage {
+    const val KEY = "EmojiUsage"
+    /** Until enough picks exist, the block is filled with the emoji people use most. */
+    val starter = listOf("😂", "❤️", "🥰", "😍", "😭", "👍", "🙏", "😊", "🔥", "😘", "🤣", "🥺", "😅", "🎉", "💕", "😁", "🙂", "😉",
+                         "🤔", "👏", "😎", "💪", "✨", "😢", "🙌", "💯", "😆", "🤗", "😴", "👌")
+
+    private fun load(p: android.content.SharedPreferences): HashMap<String, Double> {
+        val m = HashMap<String, Double>()
+        for (l in (p.getString(KEY, "") ?: "").split("\n")) { val i = l.lastIndexOf('\t'); if (i > 0) l.substring(i + 1).toDoubleOrNull()?.let { m[l.substring(0, i)] = it } }
+        return m
+    }
+
+    fun record(char: String, p: android.content.SharedPreferences) {
+        val s = load(p)
+        for (k in s.keys) s[k] = s[k]!! * 0.97
+        s[char] = (s[char] ?: 0.0) + 1
+        if (s.size > 80) for ((k, _) in s.entries.sortedBy { it.value }.take(s.size - 80)) s.remove(k)
+        p.edit().putString(KEY, s.entries.joinToString("\n") { "${it.key}\t${it.value}" }).apply()
+    }
+
+    fun frequent(p: android.content.SharedPreferences, n: Int): List<String> {
+        val s = load(p)
+        val list = ArrayList(s.entries.sortedWith(compareByDescending<Map.Entry<String, Double>> { it.value }.thenBy { it.key }).map { it.key })
+        for (e in starter) if (list.size < n && e !in list) list.add(e)
+        return list.take(n)
+    }
+}
