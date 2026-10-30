@@ -92,6 +92,11 @@ final class KeyboardView: UIView {
     /// The suggestion strip is shown when suggestions or auto-correct are on; without it the keys
     /// start right away (Tony: no empty strip). Diagnostics add a readout line above it.
     static var barOn = false
+    /// Where the VI/EN key sits: 0 = bottom row (today); 1-3 = design proposals for the top-left corner of the
+    /// suggestion strip (Tony): 1 a "VI" pill, 2 a "VI | EN" switch, 3 a "VI ⇄" chip. Only renders use 1-3 for now.
+    static var langStyle = 0
+    private var langTop: Bool { Self.langStyle > 0 && Self.barOn && Self.searchTop == nil && layer_ != .numpad }
+    private var langTopWidth: CGFloat { [0, 46, 92, 66][min(Self.langStyle, 3)] }
     static let barH: CGFloat = 44
     static func diagH(compactHeight: Bool) -> CGFloat { Diag.on ? (compactHeight ? 30 : 40) : 0 }
     /// Emoji search (EmojiKeyboardView): the search field and a row of results take the top instead of the strip.
@@ -235,6 +240,9 @@ final class KeyboardView: UIView {
                         frames.append(rect(x, w)); x += w + gap
                     case .returnKey:
                         frames.append(rect(W - side - ret, ret))
+                    case .language where langTop:   // up in the strip's corner: the bottom row gets its room
+                        let dh = Self.diagH(compactHeight: compactHeight), h: CGFloat = 32
+                        frames.append(CGRect(x: side, y: dh + 2 + (Self.barH - 4 - h) / 2, width: langTopWidth, height: h))
                     case .char:
                         frames.append(rect(x, charW)); x += charW + gap
                     default:
@@ -248,7 +256,8 @@ final class KeyboardView: UIView {
         diagLabel.frame = CGRect(x: 8, y: 2, width: W - 16, height: max(dh - 4, 20))
         bar.isHidden = !Self.barOn || Self.searchTop != nil || layer_ == .numpad
         diagLabel.isHidden = diagnostics == nil || Self.searchTop != nil   // the emoji search field sits there
-        bar.frame = CGRect(x: side, y: dh + 2, width: W - 2 * side, height: Self.barH - 4)
+        let barX = side + (langTop ? langTopWidth + 8 : 0)
+        bar.frame = CGRect(x: barX, y: dh + 2, width: W - side - barX, height: Self.barH - 4)
         letterRects = []; letterCaps = [:]
         for i in keys.indices where i < frames.count {
             keys[i].def.frame = frames[i]
@@ -297,10 +306,33 @@ final class KeyboardView: UIView {
         for (def, v) in keys {
             var (t, img) = title(for: def.kind)
             if cursorMode, case .char = def.kind { t = "" }     // the system keyboard blanks the keys in cursor mode
+            if def.kind == .language && langTop { styleTopLanguage(v); continue }
             if v.label.text != t { v.label.text = t }
             if v.icon.image != img { v.icon.image = img }
         }
         refreshColors()
+    }
+
+    /// The proposals for a VI/EN key in the strip's corner.
+    private func styleTopLanguage(_ v: KeyCap) {
+        let brand = dark ? UIColor(red: 0.62, green: 0.60, blue: 1, alpha: 1) : UIColor(red: 0.31, green: 0.27, blue: 0.90, alpha: 1)
+        v.layer.cornerRadius = 16
+        v.icon.image = nil
+        switch Self.langStyle {
+        case 2:   // both, the current one highlighted: what a tap does is obvious
+            let other = languageShort == "VI" ? "EN" : "VI"
+            let a = NSMutableAttributedString(string: languageShort, attributes: [.foregroundColor: brand, .font: UIFont.systemFont(ofSize: 15, weight: .bold)])
+            a.append(NSAttributedString(string: "  |  ", attributes: [.foregroundColor: UIColor.tertiaryLabel, .font: UIFont.systemFont(ofSize: 13)]))
+            a.append(NSAttributedString(string: other, attributes: [.foregroundColor: UIColor.secondaryLabel, .font: UIFont.systemFont(ofSize: 15, weight: .medium)]))
+            v.label.attributedText = a
+        case 3:   // the language and a swap sign
+            let a = NSMutableAttributedString(string: languageShort + " ", attributes: [.foregroundColor: brand, .font: UIFont.systemFont(ofSize: 15, weight: .bold)])
+            let att = NSTextAttachment(image: UIImage(systemName: "arrow.left.arrow.right", withConfiguration: UIImage.SymbolConfiguration(pointSize: 12, weight: .semibold))!.withTintColor(brand))
+            a.append(NSAttributedString(attachment: att))
+            v.label.attributedText = a
+        default:  // a small pill
+            v.label.attributedText = NSAttributedString(string: languageShort, attributes: [.foregroundColor: brand, .font: UIFont.systemFont(ofSize: 15, weight: .bold)])
+        }
     }
 
     private func refreshColors() {
