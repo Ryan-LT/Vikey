@@ -357,7 +357,7 @@ static void paintMain(HWND h) {
     // header: icon, wordmark
     HICON icon = (HICON)LoadImageW(GetModuleHandleW(nullptr), MAKEINTRESOURCEW(IDI_APP), IMAGE_ICON, 44, 44, LR_DEFAULTCOLOR);
     if (icon) { DrawIconEx(dc, MARGIN, 14, icon, 44, 44, 0, nullptr, DI_NORMAL); DestroyIcon(icon); }
-    drawWordmark(dc, fWordmark, MARGIN + 56, 12);
+    drawWordmark(dc, fWordmark, MARGIN + 56, 9);
     EndPaint(h, &ps);
 }
 
@@ -366,7 +366,7 @@ static void buildMain() {
     if (_tooltip) { DestroyWindow(_tooltip); _tooltip = nullptr; }
     _groups.clear(); _titles.clear(); _seps.clear(); _ctl.clear();
     // header
-    _hint = child(L"STATIC", L"", SS_LEFT, MARGIN + 56, 40, 220, 20, 0, fSmall); setHint();
+    _hint = child(L"STATIC", L"", SS_LEFT, MARGIN + 56, 43, 220, 18, 0, fSmall);   // under the wordmark's descender (the y was cut) setHint();
     _seg = child(L"VikeySegmented", L"", 0, W - MARGIN - 164, 22, 164, 30, C_SEG); languageChanged(core::language());
     _y = 70;
     int hk = currentHotkey();
