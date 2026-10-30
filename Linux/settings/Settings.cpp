@@ -73,10 +73,10 @@ GtkWidget* recorderNew(std::function<int()> get, std::function<void(int)> set, b
     return r->btn;
 }
 GtkWidget* tipTitle(const char* title, const char* tip) {
-    GtkWidget* box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 2); gtk_widget_set_valign(box, GTK_ALIGN_CENTER);
+    GtkWidget* box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 2); gtk_widget_set_valign(box, GTK_ALIGN_CENTER); gtk_widget_add_css_class(box, "tiptitle");
     GtkWidget* l = gtk_label_new(title); gtk_label_set_xalign(GTK_LABEL(l), 0); gtk_box_append(GTK_BOX(box), l);
     // a "?" in a circle (the Mac's questionmark.circle): drawn with CSS, icon themes differ (Yaru's question icon is a diamond)
-    GtkWidget* mb = gtk_menu_button_new(); GtkWidget* q = gtk_label_new("?"); gtk_widget_add_css_class(q, "tip-mark"); gtk_menu_button_set_child(GTK_MENU_BUTTON(mb), q); gtk_menu_button_set_has_frame(GTK_MENU_BUTTON(mb), FALSE);
+    GtkWidget* mb = gtk_menu_button_new(); GtkWidget* q = gtk_label_new("?"); gtk_widget_add_css_class(q, "tip-mark"); gtk_widget_set_halign(q, GTK_ALIGN_CENTER); gtk_widget_set_valign(q, GTK_ALIGN_CENTER); gtk_menu_button_set_child(GTK_MENU_BUTTON(mb), q); gtk_menu_button_set_has_frame(GTK_MENU_BUTTON(mb), FALSE);
     gtk_widget_add_css_class(mb, "tip"); gtk_widget_set_tooltip_text(mb, tip); gtk_widget_set_valign(mb, GTK_ALIGN_CENTER);
     GtkWidget* pop = gtk_popover_new(); GtkWidget* pl = gtk_label_new(tip); gtk_label_set_wrap(GTK_LABEL(pl), TRUE); gtk_label_set_max_width_chars(GTK_LABEL(pl), 36); gtk_label_set_xalign(GTK_LABEL(pl), 0);
     for (auto f : {gtk_widget_set_margin_start, gtk_widget_set_margin_end, gtk_widget_set_margin_top, gtk_widget_set_margin_bottom}) f(pl, 6);
@@ -95,7 +95,8 @@ void loadCss() {
     GtkCssProvider* p = gtk_css_provider_new();
     gtk_css_provider_load_from_string(p,
         "menubutton.tip > button { min-width: 22px; min-height: 22px; padding: 0; opacity: 0.45; background: none; box-shadow: none; }\n"
-        ".tip-mark { min-width: 13px; min-height: 13px; border: 1.5px solid currentColor; border-radius: 50%; font-size: 10px; font-weight: bold; padding: 0; }\n"
+        ".tip-mark { min-width: 13px; min-height: 13px; border: 1.5px solid currentColor; border-radius: 50%; font-size: 10px; font-weight: 800; padding: 0; margin: 0; }\n"
+        "box.tiptitle > menubutton { margin-start: 3px; }\n"
         "menubutton.tip > button:hover { opacity: 0.8; }\n"
         ".brand { color: #4F46E5; } .dots .on { background: #4F46E5; } .dots .off { background: alpha(currentColor, 0.25); }\n"
         ".dots > * { min-width: 7px; min-height: 7px; border-radius: 4px; }\n"
