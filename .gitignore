@@ -17,3 +17,4 @@ Tools/autoswitch/driver/undo_test
 Windows/installer/out/
 Windows/installer/mkinst.cmd
 
+Windows/Tests/livetest.out

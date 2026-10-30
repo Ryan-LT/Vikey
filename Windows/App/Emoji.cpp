@@ -122,7 +122,10 @@ static void loadIndex() {
         GlyphCheck gc;
         for (auto& row : root.a) {
             if (row.t != JV::Arr || row.a.size() < 8 || row.a[0].t != JV::Str) continue;
-            Emoji e; e.ch = row.a[0].s; if (e.ch.empty() || !gc.drawable(e.ch)) continue;
+            Emoji e; e.ch = row.a[0].s; if (e.ch.empty()) continue;
+            if (e.ch.size() >= 2 && e.ch[0] == 0xD83C && e.ch[1] >= 0xDDE6 && e.ch[1] <= 0xDDFF) continue;   // country flags: Segoe UI Emoji draws them as two letters
+            if (e.ch.find(L"\xDB40") != std::wstring::npos) continue;   // tag sequences (England, Scotland, Wales): not in Segoe UI Emoji
+            if (!gc.drawable(e.ch)) continue;
             e.group = (int)row.a[1].n; e.version = row.a[2].n; e.nameEN = row.a[3].s; e.nameVI = row.a[4].s;
             for (auto& s : {e.nameEN, e.nameVI}) if (!s.empty()) e.terms.push_back(makeTerm(s, 3));
             std::wstring kw = row.a[5].s + L" | " + row.a[6].s; size_t p = 0;
@@ -338,6 +341,7 @@ static void ensureGraphics() {
     if (!_dw) DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, __uuidof(IDWriteFactory), (IUnknown**)&_dw);
     if (!_fSearch && _dw) {
         _fSearch = fmt(L"Segoe UI", 17); _fHeader = fmt(L"Segoe UI", 11, DWRITE_FONT_WEIGHT_SEMI_BOLD); _fFooter = fmt(L"Segoe UI", 13);
+        if (_fFooter) { IDWriteInlineObject* sign = nullptr; _dw->CreateEllipsisTrimmingSign(_fFooter, &sign); DWRITE_TRIMMING tr = {DWRITE_TRIMMING_GRANULARITY_CHARACTER, 0, 0}; _fFooter->SetTrimming(&tr, sign); if (sign) sign->Release(); }
         _fEmoji = fmt(L"Segoe UI Emoji", 28, DWRITE_FONT_WEIGHT_NORMAL, true); _fEmojiFooter = fmt(L"Segoe UI Emoji", 22); _fTone = fmt(L"Segoe UI Emoji", 18, DWRITE_FONT_WEIGHT_NORMAL, true);
         _fWordmark = fmt(L"Segoe UI", 13, DWRITE_FONT_WEIGHT_BOLD); _fBadge = fmt(L"Segoe UI", 11, DWRITE_FONT_WEIGHT_SEMI_BOLD, true); _fEmpty = fmt(L"Segoe UI", 15, DWRITE_FONT_WEIGHT_NORMAL, true);
     }
@@ -361,7 +365,7 @@ static float textWidth(const std::wstring& s, IDWriteTextFormat* f) {
     if (s.empty() || !_dw) return 0; IDWriteTextLayout* l = nullptr; _dw->CreateTextLayout(s.c_str(), (UINT32)s.size(), f, 10000, 100, &l); if (!l) return 0;
     DWRITE_TEXT_METRICS m; l->GetMetrics(&m); l->Release(); return m.widthIncludingTrailingWhitespace;
 }
-static void text(const std::wstring& s, IDWriteTextFormat* f, D2D1_RECT_F r, ID2D1Brush* b) { if (!s.empty()) _rt->DrawTextW(s.c_str(), (UINT32)s.size(), f, r, b, D2D1_DRAW_TEXT_OPTIONS_ENABLE_COLOR_FONT | D2D1_DRAW_TEXT_OPTIONS_CLIP); }
+static void text(const std::wstring& s, IDWriteTextFormat* f, D2D1_RECT_F r, ID2D1Brush* b) { if (!s.empty()) _rt->DrawTextW(s.c_str(), (UINT32)s.size(), f, r, b, (D2D1_DRAW_TEXT_OPTIONS)(D2D1_DRAW_TEXT_OPTIONS_ENABLE_COLOR_FONT | D2D1_DRAW_TEXT_OPTIONS_CLIP)); }
 static float gridTop() { return SEARCH_H + 1 + GRID_PAD; }
 static D2D1_RECT_F cellRect(const Row& r, int c) { float x = GRID_X + c * CELL, y = gridTop() + r.y - _scrollY; return D2D1::RectF(x, y, x + CELL, y + CELL); }
 static D2D1_RECT_F toneRect() { return D2D1::RectF(WIDTH - 14 - 28, HEIGHT - FOOTER_H + 8, WIDTH - 14, HEIGHT - 8); }
@@ -385,7 +389,7 @@ static void paint() {
     _rt->FillRectangle(D2D1::RectF(0, SEARCH_H, WIDTH, SEARCH_H + 1), _bSep);
     // grid
     float gt = SEARCH_H + 1, gb = HEIGHT - FOOTER_H - 1;
-    _rt->PushAxisAlignedClip(D2D1::RectF(0, gt, WIDTH, gb), D2D1_ANTIALIAS_MODE_ALIASED);
+    _rt->PushAxisAlignedClip(D2D1::RectF(0, gt + GRID_PAD, WIDTH, gb - GRID_PAD), D2D1_ANTIALIAS_MODE_ALIASED);   // the scrolling area itself is inset (Tony)
     if (_searching() && _results.empty()) text(_vietnamese ? L"Không tìm thấy emoji nào" : L"No emoji found", _fEmpty, D2D1::RectF(0, gt + 100, WIDTH, gt + 140), _bSecondary);
     for (auto& r : _rows) {
         float y = gridTop() + r.y - _scrollY; if (y + r.h < gt || y > gb) continue;
@@ -503,7 +507,6 @@ static void prepare() {
 
 void install(HINSTANCE inst) {
     _inst = inst;
-    core::setEmojiHotkeyHandler([] { toggle(); });
     std::thread([] { loadIndex(); }).detach();
     settingsChanged();
 }
