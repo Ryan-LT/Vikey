@@ -752,8 +752,11 @@ extension KeyboardViewController: EmojiKeyboardDelegate {
         guard let ev = emojiView else { return }
         let vi = driver.language == 1
         let shown = vi ? Telex.convert(emojiQuery) : emojiQuery
-        let found = emojiQuery.trimmingCharacters(in: .whitespaces).isEmpty ? [] :
-            EmojiIndex.shared.search(emojiQuery, vietnamese: vi, limit: 80).filter { $0.version <= EmojiKeyboardView.maxVersion }
+        // nothing typed yet: the frequently used ones, never an empty row (Tony)
+        let byChar = { (c: String) in EmojiIndex.shared.all.first { $0.char == c } }
+        let found = emojiQuery.trimmingCharacters(in: .whitespaces).isEmpty
+            ? EmojiUsage.frequent(in: VKSettings.defaults, count: 24).compactMap(byChar)
+            : EmojiIndex.shared.search(emojiQuery, vietnamese: vi, limit: 80).filter { $0.version <= EmojiKeyboardView.maxVersion }
         ev.setQuery(shown, results: found)
     }
 }

@@ -110,6 +110,15 @@ final class EmojiKeyboardTests: XCTestCase {
         XCTAssertEqual(keys(vc).fieldType, .emailAddress)
     }
 
+    func testEmptySearchShowsFrequentlyUsed() {
+        let (vc, _) = make(width: 402)
+        vc.keyboard(sender, didTap: .emoji)
+        let ev = emoji(vc)!
+        vc.emojiKeyboardStartSearch(ev)
+        XCTAssertFalse(ev.resultsForTests.isEmpty, "an empty query shows the frequently used emoji")
+        render(vc, "search_empty")
+    }
+
     func testRenderWidths() {
         for w in [375, 393, 402, 430, 440] as [CGFloat] {
             let (vc, _) = make(width: w)

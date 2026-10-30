@@ -24,6 +24,7 @@ final class EmojiKeyboardView: UIView, UICollectionViewDataSource, UICollectionV
     private struct Category { let title: String; let symbol: String; var items: [Emoji] }
     private var categories: [Category] = []
     private var results: [Emoji] = []
+    var resultsForTests: [Emoji] { results }
     private let vietnameseUI = (Locale.preferredLanguages.first ?? "").hasPrefix("vi")
 
     private let field = UIView()
