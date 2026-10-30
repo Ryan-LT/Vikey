@@ -969,7 +969,7 @@ void reverseLastStandaloneChar(const Uint32& keyCode, const bool& isCaps) {
 
 static bool _afterDigit = false;   //the word started right after a digit: a lone w is a unit (100W), not ư (D33)
 void checkForStandaloneChar(const Uint16& data, const bool& isCaps, const Uint32& keyWillReverse) {
-    if (CHR(_index - 1) == keyWillReverse && TypingWord[_index - 1] & TONEW_MASK) {
+    if (_index > 0 && CHR(_index - 1) == keyWillReverse && TypingWord[_index - 1] & TONEW_MASK) {   //w, [ or ] can start a word
         hCode = vWillProcess;
         hBPC = 1;
         hNCC = 1;
