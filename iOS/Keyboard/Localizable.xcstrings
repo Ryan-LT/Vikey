@@ -1,6 +1,54 @@
 {
  "sourceLanguage": "vi",
  "strings": {
+  "Hãy chọn trong một đoạn" : {
+   "localizations" : {
+    "en" : {
+     "stringUnit" : {
+      "state" : "translated",
+      "value" : "Select one paragraph"
+     }
+    },
+    "vi" : {
+     "stringUnit" : {
+      "state" : "translated",
+      "value" : "Hãy chọn trong một đoạn"
+     }
+    }
+   }
+  },
+  "Không sửa được · Thử lại" : {
+   "localizations" : {
+    "en" : {
+     "stringUnit" : {
+      "state" : "translated",
+      "value" : "Couldn't fix · Retry"
+     }
+    },
+    "vi" : {
+     "stringUnit" : {
+      "state" : "translated",
+      "value" : "Không sửa được · Thử lại"
+     }
+    }
+   }
+  },
+  "Đoạn quá dài để sửa" : {
+   "localizations" : {
+    "en" : {
+     "stringUnit" : {
+      "state" : "translated",
+      "value" : "Too long to proofread"
+     }
+    },
+    "vi" : {
+     "stringUnit" : {
+      "state" : "translated",
+      "value" : "Đoạn quá dài để sửa"
+     }
+    }
+   }
+  },
   "Sửa lỗi" : {
    "localizations" : {
     "en" : {
@@ -49,22 +97,6 @@
     }
    }
   },
-  "Không sửa được" : {
-   "localizations" : {
-    "en" : {
-     "stringUnit" : {
-      "state" : "translated",
-      "value" : "Couldn't fix"
-     }
-    },
-    "vi" : {
-     "stringUnit" : {
-      "state" : "translated",
-      "value" : "Không sửa được"
-     }
-    }
-   }
-  },
   "Hoàn tác" : {
    "localizations" : {
     "en" : {
@@ -81,34 +113,18 @@
     }
    }
   },
-  "Đang tìm từ…" : {
+  "Đang kiểm tra…" : {
    "localizations" : {
     "en" : {
      "stringUnit" : {
       "state" : "translated",
-      "value" : "Finding words…"
+      "value" : "Checking…"
      }
     },
     "vi" : {
      "stringUnit" : {
       "state" : "translated",
-      "value" : "Đang tìm từ…"
-     }
-    }
-   }
-  },
-  "Không có gợi ý" : {
-   "localizations" : {
-    "en" : {
-     "stringUnit" : {
-      "state" : "translated",
-      "value" : "No ideas"
-     }
-    },
-    "vi" : {
-     "stringUnit" : {
-      "state" : "translated",
-      "value" : "Không có gợi ý"
+      "value" : "Đang kiểm tra…"
      }
     }
    }
@@ -157,22 +173,6 @@
      "stringUnit" : {
       "state" : "translated",
       "value" : "Áp dụng"
-     }
-    }
-   }
-  },
-  "Hãy chọn lại đoạn văn" : {
-   "localizations" : {
-    "en" : {
-     "stringUnit" : {
-      "state" : "translated",
-      "value" : "Select the text again"
-     }
-    },
-    "vi" : {
-     "stringUnit" : {
-      "state" : "translated",
-      "value" : "Hãy chọn lại đoạn văn"
      }
     }
    }

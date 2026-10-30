@@ -5,6 +5,8 @@ protocol EmojiKeyboardDelegate: AnyObject {
     func emojiKeyboardDelete(_ v: EmojiKeyboardView)
     /// ABC: back to the letters.
     func emojiKeyboardClose(_ v: EmojiKeyboardView)
+    /// ‹ left of the search field: out of the search, or back to the letters (Tony, after Grammarly).
+    func emojiKeyboardBack(_ v: EmojiKeyboardView)
     /// The search field was tapped: the letter keys come back below the field and a row of results.
     func emojiKeyboardStartSearch(_ v: EmojiKeyboardView)
 }
@@ -38,6 +40,7 @@ final class EmojiKeyboardView: UIView, UICollectionViewDataSource, UICollectionV
     private let catSelection = UIView()                     // the grey circle behind the selected category
     private let barView = UIView()
     private let abc = UIButton(type: .system)
+    private let back = UIButton(type: .system)
     private let del = UIButton(type: .system)
     private var catButtons: [UIButton] = []
     var feedback: KeyHaptics?
@@ -77,6 +80,11 @@ final class EmojiKeyboardView: UIView, UICollectionViewDataSource, UICollectionV
 
         titleLabel.font = .systemFont(ofSize: 12, weight: .semibold)
 
+        back.setImage(UIImage(systemName: "chevron.left", withConfiguration: UIImage.SymbolConfiguration(pointSize: 20, weight: .medium)), for: .normal)
+        back.accessibilityLabel = vietnameseUI ? "Quay lại" : "Back"
+        back.accessibilityIdentifier = "emoji.back"
+        back.addTarget(self, action: #selector(tapBack), for: .touchUpInside)
+        addSubview(back)
         abc.setTitle("ABC", for: .normal)
         abc.titleLabel?.font = .systemFont(ofSize: 17, weight: .regular)
         abc.addTarget(self, action: #selector(tapABC), for: .touchUpInside)
@@ -164,8 +172,10 @@ final class EmojiKeyboardView: UIView, UICollectionViewDataSource, UICollectionV
         // measured on the system emoji keyboard (iOS 26.5) at 402 and 440 pt; values in between are interpolated
         func lerp(_ at402: CGFloat, _ at440: CGFloat) -> CGFloat { at402 + (W - 402) * (at440 - at402) / 38 }
         let fieldH: CGFloat = 40
-        field.frame = CGRect(x: 10, y: 9.33, width: W - 20, height: fieldH)   // 10 from the sides, 9.33 from the top edge
-        field.layer.cornerRadius = KeyboardView.hostCorner - 10              // concentric with the keyboard's corner
+        let backW: CGFloat = 44                                              // ‹ in the corner, the field after it
+        back.frame = CGRect(x: 2, y: 9.33, width: backW, height: fieldH)
+        field.frame = CGRect(x: backW + 2, y: 9.33, width: W - backW - 12, height: fieldH)   // 10 from the right, 9.33 from the top edge
+        field.layer.cornerRadius = KeyboardView.hostCorner - 10              // concentric with the keyboard's (right) corner
         field.layer.cornerCurve = .continuous
         let inner: CGFloat = 12                             // magnifier inset inside the field
         fieldIcon.frame = CGRect(x: inner, y: (fieldH - 18) / 2, width: 18, height: 18)
@@ -223,6 +233,7 @@ final class EmojiKeyboardView: UIView, UICollectionViewDataSource, UICollectionV
         backgroundColor = UIColor.black.withAlphaComponent(0.001)
         field.backgroundColor = dark ? UIColor(white: 1, alpha: 0.12) : UIColor(white: 1, alpha: 0.55)   // soft glass, not a grey box
         fieldIcon.tintColor = .secondaryLabel
+        back.tintColor = dark ? UIColor(white: 1, alpha: 0.75) : UIColor(white: 0, alpha: 0.6)
         caret.backgroundColor = UIColor(red: 0.31, green: 0.27, blue: 0.90, alpha: 1)
         titleLabel.textColor = .secondaryLabel
         let fg: UIColor = dark ? .white : .black
@@ -293,6 +304,7 @@ final class EmojiKeyboardView: UIView, UICollectionViewDataSource, UICollectionV
         updateTitle()
     }
     @objc private func tapABC() { delegate?.emojiKeyboardClose(self) }
+    @objc private func tapBack() { delegate?.emojiKeyboardBack(self) }
     @objc private func tapSearch() { if !searching { delegate?.emojiKeyboardStartSearch(self) } }
     @objc private func deleteDown() {
         delegate?.emojiKeyboardDelete(self)

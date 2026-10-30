@@ -101,9 +101,7 @@ final class KeyboardView: UIView {
     /// Where the VI/EN key sits: 0 = bottom row (today); 1-3 = design proposals for the top-left corner of the
     /// suggestion strip (Tony): 1 a "VI" pill, 2 a "VI | EN" switch, 3 a "VI ⇄" chip. Only renders use 1-3 for now.
     static var langStyle = 1   // Tony picked the pill (A); the bottom row is the fallback when the strip is off
-    /// The proofread preview covers the strip: the VI/EN pill stays put under it, so no key moves.
-    static var panelOpen = false
-    private var langTop: Bool { Self.langStyle > 0 && Self.barOn && (Self.searchTop == nil || Self.panelOpen) && layer_ != .numpad }
+    private var langTop: Bool { Self.langStyle > 0 && Self.barOn && Self.searchTop == nil && layer_ != .numpad }
     private var langTopWidth: CGFloat { [0, 50, 96, 70][min(Self.langStyle, 3)] }
     static let pillH: CGFloat = 38
     static let barH: CGFloat = 44
@@ -283,7 +281,6 @@ final class KeyboardView: UIView {
         let barX = side + (langTop ? langTopWidth + 8 : 0)
         let barY = langTop ? dh + side + Self.pillH / 2 - (Self.barH - 4) / 2 : dh + 2   // centred on the pill
         bar.frame = CGRect(x: barX, y: barY, width: W - side - barX, height: Self.barH - 4)
-        keys.first { $0.def.kind == .language }?.view.isHidden = langTop && Self.panelOpen   // under the preview
         letterRects = []; letterCaps = [:]
         for i in keys.indices where i < frames.count {
             keys[i].def.frame = frames[i]
@@ -406,11 +403,14 @@ final class KeyboardView: UIView {
 
     // MARK: touches
 
+    func capForTests(at p: CGPoint) -> KeyCap? { cap(at: p) }
     private func cap(at p: CGPoint) -> KeyCap? {
+        for (_, v) in keys where !v.isHidden && v.frame.insetBy(dx: -3, dy: -5.5).contains(p) { return v }
+        // the strip is not a key: a tap on a note there ("Fixing…", "No mistakes") must never type the letter below
+        if !bar.isHidden, p.y < bar.frame.maxY { return nil }
         var best: KeyCap?; var bestD = CGFloat.greatestFiniteMagnitude
-        for (_, v) in keys {
+        for (_, v) in keys where !v.isHidden {
             let f = v.frame.insetBy(dx: -3, dy: -5.5)
-            if f.contains(p) { return v }
             let dx = max(f.minX - p.x, 0, p.x - f.maxX), dy = max(f.minY - p.y, 0, p.y - f.maxY)
             let d = dx * dx + dy * dy
             if d < bestD { bestD = d; best = v }
@@ -438,7 +438,12 @@ final class KeyboardView: UIView {
     }
     private func release(_ c: KeyCap) { c.backgroundColor = c.normalColor }
 
+    /// Taps right after the keys come back (the proofread preview closed) are the second half of a double tap.
+    func ignoreTouches(for seconds: Double) { quietUntil = CACurrentMediaTime() + seconds }
+    private var quietUntil: CFTimeInterval = 0
+
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        if CACurrentMediaTime() < quietUntil { return }
         for t in touches {
             let p = t.location(in: self)
             Diag.touches += 1
