@@ -38,7 +38,7 @@ static HFONT fBody, fBodyBold, fSmall, fWordmark, fTitle, fMono, fTitle2, fCallo
 static const COLORREF BG = RGB(246, 246, 246), GROUP = RGB(255, 255, 255), BORDER = RGB(226, 226, 226), SEP = RGB(236, 236, 236);
 static const COLORREF TEXT = RGB(0, 0, 0), SECONDARY = RGB(110, 110, 115), TERTIARY = RGB(170, 170, 175), ACCENT = RGB(10, 124, 255), GREEN = RGB(52, 199, 89), TOGGLE_OFF = RGB(233, 233, 235);
 static const COLORREF BRAND = RGB(79, 70, 229);   // design/BRAND.md #4F46E5
-static const int W = 460, MARGIN = 20, ROW = 38, RADIUS = 10;
+static const int W = 460, MARGIN = 20, ROW = 36, GAP = 14, RADIUS = 10;   // fits a 1366x768 screen with every row shown
 static ULONG_PTR gdipToken = 0;
 static HINSTANCE _inst;
 static void initLook() {
@@ -318,8 +318,8 @@ static void addTip(HWND tip, const wchar_t* text) {
 }
 /// One form row: label (+ tip) on the left, a control on the right. Returns the control.
 static int _y; static int _groupTop = -1;
-static void beginGroup(const wchar_t* title) { if (title) { _titles.push_back({_y, title}); _y += 30; } _groupTop = _y; }
-static void endGroup() { _groups.push_back({_groupTop, _y}); _y += 18; }
+static void beginGroup(const wchar_t* title) { if (title) { _titles.push_back({_y, title}); _y += 28; } _groupTop = _y; }
+static void endGroup() { _groups.push_back({_groupTop, _y}); _y += GAP; }
 static void rowLabel(const wchar_t* label, const wchar_t* tip) {
     if (_y != _groupTop) _seps.push_back(_y);
     int ly = _y + (ROW - 20) / 2;
@@ -398,9 +398,10 @@ static void buildMain() {
     toggleRow(L"Tự động cập nhật", L"Mỗi ngày Vikey kiểm tra bản mới trên vikey.app, tự tải về và cài khi bạn thoát Vikey hoặc tắt máy.", C_UPDATE, prefs::getInt(L"AutoUpdate", 1) != 0);
     endGroup();
     refreshEnabled();
+    _y += 4;   // the last group's gap is the bottom margin
     RECT wr = {0, 0, W, _y}; AdjustWindowRectEx(&wr, WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX, FALSE, 0);
     SetWindowPos(_win, nullptr, 0, 0, wr.right - wr.left, wr.bottom - wr.top, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
-    InvalidateRect(_win, nullptr, TRUE);
+    RedrawWindow(_win, nullptr, nullptr, RDW_INVALIDATE | RDW_ERASE | RDW_ALLCHILDREN | RDW_UPDATENOW);   // a rebuilt combo box kept stale pixels
     if (emojiRec && emojiKey == 0) startRecording(emojiRec);   // first time the feature is turned on: record right away
 }
 

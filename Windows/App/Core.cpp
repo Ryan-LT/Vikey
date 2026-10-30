@@ -513,22 +513,26 @@ static LRESULT CALLBACK keyboardHook(int nCode, WPARAM wParam, LPARAM lParam) {
     if (!down) return CallNextHookEx(_kbHook, nCode, wParam, lParam);
 
     _keycode = engineKey(k->vkCode);
-    if (_keycode == KEY_EMPTY) return CallNextHookEx(_kbHook, nCode, wParam, lParam);   // F-keys, media keys...
-
-    // emoji picker hotkey: a key with exactly these modifiers
+    // emoji picker hotkey (opens and closes it): a key with exactly these modifiers
     if (vEmojiHotkey && GET_SWITCH_KEY(vEmojiHotkey) == _keycode &&
         HAS_CONTROL(vEmojiHotkey) == GET_BOOL(_flag & F_CONTROL) && HAS_OPTION(vEmojiHotkey) == GET_BOOL(_flag & F_ALT) &&
         HAS_COMMAND(vEmojiHotkey) == GET_BOOL(_flag & F_WIN) && HAS_SHIFT(vEmojiHotkey) == GET_BOOL(_flag & F_SHIFT)) {
         if (_emojiHandler) _emojiHandler();
         return 1;
     }
+    // while open, the picker reads the keys for its search (it does its own Telex reading); the app in front keeps
+    // its cursor. Characters sent by other tools (VK_PACKET) go to it as characters.
+    if (vEmojiOpen && vEmojiWindow) {
+        if (k->vkCode == VK_PACKET) PostMessageW(vEmojiWindow, WM_APP + 12, k->scanCode, 0);
+        else PostMessageW(vEmojiWindow, WM_APP + 10, k->vkCode, (LPARAM)_flag);
+        return 1;
+    }
+    if (_keycode == KEY_EMPTY) return CallNextHookEx(_kbHook, nCode, wParam, lParam);   // F-keys, media keys...
+
     // switch language hotkey
     if (GET_SWITCH_KEY(vSwitchKeyStatus) != _keycode) _lastFlag = 0;
     else if (checkHotKey(vSwitchKeyStatus, GET_SWITCH_KEY(vSwitchKeyStatus) != 0xFE)) { switchLanguage("hotkey"); _lastFlag = 0; _hasJustUsedHotKey = true; return 1; }
     _hasJustUsedHotKey = _lastFlag != 0;
-
-    // the emoji picker reads the keys for its search (it does its own Telex reading); the app in front keeps its cursor
-    if (vEmojiOpen && vEmojiWindow) { PostMessageW(vEmojiWindow, WM_APP + 10, k->vkCode, (LPARAM)_flag); return 1; }
 
     // Backspace right after an automatic correction undoes it
     if (_keycode == KEY_DELETE && _autoFixUndo.active && !(OTHER_CONTROL_KEY)) { if (UndoAutoFixWithBackspace()) return 1; }

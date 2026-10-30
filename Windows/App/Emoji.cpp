@@ -480,6 +480,7 @@ static LRESULT CALLBACK proc(HWND h, UINT m, WPARAM w, LPARAM l) {
     case WM_MOUSEACTIVATE: return MA_NOACTIVATE;
     case WM_APP + 10: onKey((DWORD)w, (unsigned)l); return 0;
     case WM_APP + 11: close(); return 0;
+    case WM_APP + 12: if (w >= 0x20) { typeText(std::wstring(1, (wchar_t)w)); InvalidateRect(h, nullptr, FALSE); } return 0;
     case WM_TIMER: if (w == TIMER_CARET) { _caret = !_caret; InvalidateRect(h, nullptr, FALSE); } return 0;
     case WM_MOUSEMOVE: {   // hover selects only when the mouse really moved (not when the grid scrolled under it)
         POINT p; GetCursorPos(&p); if (p.x == _lastMouse.x && p.y == _lastMouse.y) return 0; _lastMouse = p;
