@@ -1222,6 +1222,7 @@ static int _asPrevCount = 0;
 void vAutoSwitchForget() {
     _asPrevCount = 0;
     _asWordStartOk = true;   //a fresh context (language switched, app changed): the next word stands on its own
+    _spaceCount = 0; _specialChar.clear(); _typingStates.clear();   //and Backspace can't reopen a word from before it
 }
 
 static void asInitLetters() {
@@ -1996,7 +1997,7 @@ void vKeyHandleEvent(const vKeyEvent& event,
             hExt = 3;//normal word
         }
         
-        if (hCode == vDoNothing) {
+        if (hCode == vDoNothing || event == vKeyEvent::Mouse) {   //a click: the apps drop the restore, so nothing calls startNewSession for it
             startNewSession();
             vCheckSpelling = _useSpellCheckingBefore;
         }
