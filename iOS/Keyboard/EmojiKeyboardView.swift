@@ -173,7 +173,7 @@ final class EmojiKeyboardView: UIView, UICollectionViewDataSource, UICollectionV
             titleLabel.frame = CGRect(x: alignX, y: field.frame.maxY + M, width: W - alignX - M, height: 14)
             let gridTop = titleLabel.frame.maxY + 4, barH: CGFloat = 44
             let gh = H - gridTop - barH
-            let rows = max(3, Int(gh / 42))
+            let rows = gh >= 136 ? 4 : 3   // 4 rows like the system emoji keyboard (Tony); 3 when the keyboard is short
             let cell = floor(gh / CGFloat(rows))
             // whole columns across the width, so the spacing is even
             // whole columns: the first emoji starts on the margin and the last one ends on it, gaps equal

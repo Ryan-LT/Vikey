@@ -93,7 +93,7 @@ struct MainView: View {
                     NavigationLink("Ghi nhận") { AcknowledgementsView() }
                     Link("Gửi góp ý", destination: Self.feedbackURL)
                     Link("vikey.app", destination: URL(string: "https://vikey.app")!)
-                    LabeledContent("Phiên bản", value: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "")
+                    LabeledContent("Phiên bản", value: "\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "") (\(Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? ""))")   // version (build)
                 } footer: {
                     Text("Vikey được thiết kế và phát triển bởi Tony Dinh, dựa trên dự án mã nguồn mở OpenKey của Tuyen Mai. Mã nguồn mở theo giấy phép GPL-3.0.")
                 }

@@ -41,7 +41,7 @@ protocol KeyboardViewDelegate: AnyObject {
 /// suggestions; here it gives the top-row key popups room, since iOS clips a keyboard to its view).
 /// Touches are handled by this view, not per key, so fast typing between keys never gets lost.
 final class KeyboardView: UIView {
-    enum Layer { case letters, numbers, symbols }
+    enum Layer { case letters, numbers, symbols, numpad }   // numpad: number, phone and decimal fields
     enum Shift { case off, on, locked }
 
     weak var delegate: KeyboardViewDelegate?
@@ -49,6 +49,8 @@ final class KeyboardView: UIView {
     var shift: Shift = .off { didSet { if shift != oldValue { refreshLabels() } } }
     var dark = false { didSet { if dark != oldValue { refreshColors() } } }
     var showsGlobe = false { didSet { if showsGlobe != oldValue { rebuild() } } }
+    /// The text field's kind: email and web fields get @ . / .com keys like the system keyboard.
+    var fieldType: UIKeyboardType = .default { didSet { if fieldType != oldValue { rebuild() } } }
     // setters restyle keys only when something changed: they run on every key press
     var languageTitle = "Tiếng Việt" { didSet { if languageTitle != oldValue { refreshLabels() } } }
     var languageShort = "VI" { didSet { if languageShort != oldValue { refreshLabels() } } }
@@ -118,10 +120,24 @@ final class KeyboardView: UIView {
 
     private func rowKinds() -> [[KeyKind]] {
         func chars(_ s: String) -> [KeyKind] { s.map { .char(String($0)) } }
-        var bottom: [KeyKind] = [layer_ == .letters ? .layer(.numbers) : .layer(.letters), .emoji]
+        // the system's email, URL, web search and Twitter layouts have no emoji key: room for @ . / .com and the space bar
+        let special = layer_ == .letters && [.emailAddress, .URL, .webSearch, .twitter].contains(fieldType)
+        var bottom: [KeyKind] = [layer_ == .letters ? .layer(.numbers) : .layer(.letters)] + (special ? [] : [.emoji])
         if showsGlobe { bottom.append(.globe) }
-        bottom += [.language, .space, .returnKey]
+        bottom.append(.language)
+        switch (layer_, fieldType) {   // like the system keyboard's email, URL, web search and Twitter layouts
+        case (.letters, .emailAddress): bottom += [.space, .char("@"), .char(".")]
+        case (.letters, .URL): bottom += [.char("."), .char("/"), .char(".com")]
+        case (.letters, .webSearch): bottom += [.space, .char(".")]
+        case (.letters, .twitter): bottom += [.space, .char("@"), .char("#")]
+        default: bottom.append(.space)
+        }
+        bottom.append(.returnKey)
         switch layer_ {
+        case .numpad:
+            let left: KeyKind? = fieldType == .decimalPad ? .char(Locale.current.decimalSeparator ?? ".")
+                : fieldType == .phonePad ? .char("+") : nil
+            return [chars("123"), chars("456"), chars("789"), (left.map { [$0] } ?? []) + [.char("0"), .backspace]]
         case .letters: return [chars("qwertyuiop"), chars("asdfghjkl"), [.shift] + chars("zxcvbnm") + [.backspace], bottom]
         case .numbers: return [chars("1234567890"), chars("-/:;()$&@\""), [.layer(.symbols)] + chars(".,?!'") + [.backspace], bottom]
         case .symbols: return [chars("[]{}#%^*+="), chars("_\\|~<>€£¥•"), [.layer(.numbers)] + chars(".,?!'") + [.backspace], bottom]
@@ -165,6 +181,16 @@ final class KeyboardView: UIView {
         let key = (W - 2 * side - 9 * gap) / 10
         let rows = rowKinds()
         var frames: [CGRect] = []
+        if layer_ == .numpad {   // 3 × 4, the whole height, like the system number pad
+            let g = 6 * s, top: CGFloat = 8, bottomPad: CGFloat = 4
+            let kw = (W - 2 * side - 2 * g) / 3, kh = (bounds.height - top - bottomPad - 3 * g) / 4
+            for (r, row) in rows.enumerated() {
+                let cols = row.count == 2 ? [1, 2] : [0, 1, 2]   // number pad: no key bottom left
+                for (i, _) in row.enumerated() {
+                    frames.append(CGRect(x: side + CGFloat(cols[i]) * (kw + g), y: top + CGFloat(r) * (kh + g), width: kw, height: kh))
+                }
+            }
+        } else {
         for (r, row) in rows.enumerated() {
             let y = m.top + CGFloat(r) * m.pitch
             func rect(_ x: CGFloat, _ w: CGFloat) -> CGRect { CGRect(x: x, y: y, width: w, height: m.keyH) }
@@ -194,22 +220,31 @@ final class KeyboardView: UIView {
             default:
                 let small = 43.3 * s, ret = 92.6 * s
                 var x = side
+                let fixed = row.filter { if case .char = $0 { return false }; return $0 != .space && $0 != .returnKey }.count
+                let charKeys = row.filter { if case .char = $0 { return true }; return false }.count
+                let hasSpace = row.contains(.space)
+                // without a space bar (URL fields) the extra keys share the room; with one they are small
+                let charW: CGFloat = hasSpace ? small : (W - 2 * side - ret - CGFloat(fixed) * (small + gap) - CGFloat(charKeys) * gap) / CGFloat(max(1, charKeys))
                 for kind in row {
                     switch kind {
                     case .space:
-                        let w = W - side - ret - gap - x
+                        let after = CGFloat(charKeys) * (small + gap)
+                        let w = W - side - ret - gap - x - after
                         frames.append(rect(x, w)); x += w + gap
                     case .returnKey:
                         frames.append(rect(W - side - ret, ret))
+                    case .char:
+                        frames.append(rect(x, charW)); x += charW + gap
                     default:
                         frames.append(rect(x, small)); x += small + gap
                     }
                 }
             }
         }
+        }
         let dh = Self.diagH(compactHeight: compactHeight)
         diagLabel.frame = CGRect(x: 8, y: 2, width: W - 16, height: max(dh - 4, 20))
-        bar.isHidden = !Self.barOn || Self.searchTop != nil
+        bar.isHidden = !Self.barOn || Self.searchTop != nil || layer_ == .numpad
         diagLabel.isHidden = diagnostics == nil || Self.searchTop != nil   // the emoji search field sits there
         bar.frame = CGRect(x: side, y: dh + 2, width: W - 2 * side, height: Self.barH - 4)
         letterRects = []; letterCaps = [:]
@@ -230,7 +265,7 @@ final class KeyboardView: UIView {
     private func title(for kind: KeyKind) -> (String?, UIImage?) {
         let sym = UIImage.SymbolConfiguration(pointSize: 19, weight: .regular)
         switch kind {
-        case .char(let c): return (shift != .off && layer_ == .letters ? c.uppercased() : c, nil)
+        case .char(let c): return (shift != .off && layer_ == .letters && c.count == 1 ? c.uppercased() : c, nil)
         case .shift: return (nil, UIImage(systemName: shift == .locked ? "capslock.fill" : (shift == .on ? "shift.fill" : "shift"), withConfiguration: sym))
         case .backspace: return (nil, UIImage(systemName: "delete.left", withConfiguration: sym))
         case .space: return (cursorMode ? "" : languageTitle, nil)
@@ -245,7 +280,7 @@ final class KeyboardView: UIView {
     private func setFonts() {
         for (def, v) in keys {
             switch def.kind {
-            case .char: v.label.font = .systemFont(ofSize: layer_ == .letters ? 23 : 22, weight: .regular)
+            case .char(let c): v.label.font = .systemFont(ofSize: c.count > 1 ? 16 : layer_ == .numpad ? 26 : layer_ == .letters ? 23 : 22, weight: .regular)
             case .space: v.label.font = .systemFont(ofSize: 15, weight: .regular); v.label.adjustsFontSizeToFitWidth = true; v.label.minimumScaleFactor = 0.6
             case .language: v.label.font = .systemFont(ofSize: 16, weight: .semibold)
             case .returnKey: v.label.font = .systemFont(ofSize: 16, weight: .medium)
@@ -335,7 +370,7 @@ final class KeyboardView: UIView {
             press(c, late: CACurrentMediaTime() - t.timestamp > 0.05)
             switch k {
             case .char:
-                if traitCollection.horizontalSizeClass == .compact { popup.show(over: c, in: self) }
+                if traitCollection.horizontalSizeClass == .compact && layer_ != .numpad { popup.show(over: c, in: self) }
                 startHold(after: 0.45) { [weak self] in self?.showAlternates(for: c) }
             case .backspace:
                 delegate?.keyboard(self, didTap: .backspace)
@@ -454,7 +489,7 @@ final class KeyboardView: UIView {
         "i": ["i", "í", "ì", "ỉ", "ĩ", "ị"], "y": ["y", "ý", "ỳ", "ỷ", "ỹ", "ỵ"], "d": ["d", "đ"],
         ".": [".", "…"], "-": ["-", "–", "—", "•"], "'": ["'", "’", "‘", "`"], "\"": ["\"", "“", "”", "„", "«", "»"],
         "!": ["!", "¡"], "?": ["?", "¿"], "$": ["$", "₫", "€", "£", "¥", "₩", "¢"], "0": ["0", "°"], "&": ["&", "§"],
-        "/": ["/", "\\"], "%": ["%", "‰"],
+        "/": ["/", "\\"], "%": ["%", "‰"], ".com": [".com", ".vn", ".net", ".org", ".edu", ".io"],
     ]
 
     private func showAlternates(for c: KeyCap) {

@@ -153,8 +153,21 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
     }
 
     /// A new text field: start fresh; web addresses and email start in English (and go back after).
+    /// The layout for the field, like the system keyboard: a number pad for number/phone/decimal fields,
+    /// the 123 page for numbers-and-punctuation, @ . / .com keys for email and web fields.
+    private func applyFieldLayout() {
+        let t = proxy.keyboardType ?? .default
+        keyboard.fieldType = t
+        switch t {
+        case .numberPad, .asciiCapableNumberPad, .phonePad, .decimalPad: keyboard.layer_ = .numpad
+        case .numbersAndPunctuation: keyboard.layer_ = .numbers
+        default: if keyboard.layer_ == .numpad { keyboard.layer_ = .letters }
+        }
+    }
+
     private func startField() {
         driver.resetContext()
+        applyFieldLayout()
         let type = proxy.keyboardType ?? .default
         let webField = type == .URL || type == .emailAddress || type == .webSearch
         if webField && webFieldsEnglish {
@@ -209,6 +222,7 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
 
     override func textDidChange(_ textInput: UITextInput?) {
         super.textDidChange(textInput)
+        if (proxy.keyboardType ?? .default) != keyboard.fieldType { startField() }   // moved to another kind of field
         externalChange()
         refresh()
     }
@@ -251,6 +265,9 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
             }
         }
         switch kind {
+        case .char(let c) where c.count > 1:   // ".com"
+            clearWord()
+            for ch in c { type(String(ch)) }
         case .char(let c):
             if snapsBack(c) { backspace() }   // "this ." → "this." like the system keyboard (Tony)
             if c == "-", (lastContext ?? "").hasSuffix("-"), !(lastContext ?? "").hasSuffix("--"),
@@ -324,7 +341,7 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
 
     func keyboard(_ view: KeyboardView, insertAlternate text: String) {
         clearWord()
-        type(text)      // a character the engine doesn't know passes through and starts a new word
+        for ch in text { type(String(ch)) }   // one character at a time (".vn"); unknown ones pass through and start a new word
         if keyboard.shift == .on { keyboard.shift = .off }
     }
 
