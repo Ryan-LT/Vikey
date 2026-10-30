@@ -105,7 +105,7 @@ static std::string hotkeyLabel() {   // "Alt+Z" (same names as vikey-settings)
     std::string s; if (hk & 0x100) s += "Ctrl+"; if (hk & 0x200) s += "Alt+"; if (hk & 0x800) s += "Shift+"; if (hk & 0x400) s += "Super+";
     int k = hk & 0xFF; if (k != 0xFE) { for (auto& e : N) if (e.k == k) s += e.n; } else if (!s.empty()) s.pop_back();
     return s;
-} --------------------------------------------------------------
+}
 static void updateLangProp(VikeyEngine* e) {
     if (!e || !e->pLang) return;
     int vi = core::language();
