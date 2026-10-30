@@ -281,7 +281,8 @@ bool modifier(unsigned bit, bool down) {
     if (down) _flag |= bit; else _flag &= ~bit;
     if (_lastFlag == 0 || _lastFlag < _flag) _lastFlag = _flag;
     else if (_lastFlag > _flag) {
-        bool hit = checkHotKey(vSwitchKeyStatus, GET_SWITCH_KEY(vSwitchKeyStatus) != 0xFE);
+        // only a hotkey without a key: a key hotkey fired on its key-down, and _keycode is just the last key typed
+        bool hit = GET_SWITCH_KEY(vSwitchKeyStatus) == 0xFE && checkHotKey(vSwitchKeyStatus, false);
         _lastFlag = 0;
         if (hit) { toggleLanguage("hotkey"); return true; }
     }
