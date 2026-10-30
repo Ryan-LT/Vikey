@@ -360,7 +360,8 @@ final class KeyboardView: UIView {
             Diag.delayMs = max(Diag.delayMs, (Diag.touchStart - t.timestamp) * 1000)
             guard var c = cap(at: p), var k = kind(of: c), k != .globe else { continue }
             // fat-finger: a touch near a letter's border goes to the letter most likely next in this word
-            if case .char = k, layer_ == .letters, let ctx = wordContext?(), !letterRects.isEmpty {
+            // only on a letter key: the email/web . @ / .com keys on this page are never swapped for a letter (Tony: . gave n)
+            if case .char(let ch) = k, ch.count == 1, ch.first?.isLetter == true, layer_ == .letters, let ctx = wordContext?(), !letterRects.isEmpty {
                 let picked = ctx.prefix.lowercased().withCString { VKPickLetter(Float(p.x), Float(p.y), $0, ctx.vietnamese ? 1 : 0, letterRects, Int32(letterRects.count)) }
                 if picked != 0, let pc = letterCaps[Character(UnicodeScalar(UInt8(bitPattern: picked)))], let pk = kind(of: pc) { c = pc; k = pk }
             }
