@@ -1,7 +1,8 @@
 package app.vikey.ime
 
 /** English contractions typed without the apostrophe ("dont" → "don't", "Ill" → "I'll"), fixed at the end of the word
- *  like the system keyboard. Only words that are not English words themselves ("wont", "were", "well", "its", "lets" stay). */
+ *  like the system keyboard. Only words that are not English words themselves ("were", "well", "its" stay; "lets" only with
+ *  a capital), and the caller skips valid Vietnamese ("im"). Same table as iOS/Keyboard/Contractions.swift. */
 object Contractions {
     private val table = mapOf(
         "dont" to "don't", "cant" to "can't", "isnt" to "isn't", "arent" to "aren't", "wasnt" to "wasn't", "werent" to "weren't",
@@ -12,10 +13,11 @@ object Contractions {
         "theyre" to "they're", "theyve" to "they've", "theyll" to "they'll", "theyd" to "they'd",
         "weve" to "we've", "itll" to "it'll", "thatll" to "that'll", "shes" to "she's", "thats" to "that's", "whats" to "what's",
         "wheres" to "where's", "theres" to "there's", "heres" to "here's", "hows" to "how's", "whos" to "who's", "whove" to "who've",
-        "lets" to "let's", "yall" to "y'all", "i" to "I",
+        "lets" to "let's", "yall" to "y'all", "i" to "I", "wont" to "won't",
     )
-    /** Real English words that only become contractions with a capital I ("Ill" → "I'll", "ill" stays). */
-    private val capitalOnly = mapOf("ill" to "I'll", "id" to "I'd")
+    /** Real English words that only become contractions with a capital I ("Ill" → "I'll", "ill" stays).
+     *  "Lets" (the start of a sentence) is "Let's" like the system keyboard; "she lets" stays (Tony). */
+    private val capitalOnly = mapOf("ill" to "I'll", "id" to "I'd", "lets" to "Let's")
     private val notFixed = setOf("lets")
 
     /** The fixed word, or null. `typed` is the word as it shows; keeps its capitals (Dont → Don't, DONT → DON'T). */

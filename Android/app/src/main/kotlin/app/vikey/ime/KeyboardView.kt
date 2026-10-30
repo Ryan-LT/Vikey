@@ -136,6 +136,9 @@ class KeyboardView(ctx: Context) : View(ctx) {
     private val tmp = RectF()
     private val path = Path()
     private val icons = HashMap<Int, Drawable>()
+    /** iOS .semibold (600); Roboto has it from Android 9, medium before. */
+    private val semibold: Typeface = if (android.os.Build.VERSION.SDK_INT >= 28) Typeface.create(Typeface.DEFAULT, 600, false) else Typeface.create("sans-serif-medium", Typeface.NORMAL)
+    private var lastX = 0f
 
     init { rebuild() }
 
@@ -249,8 +252,8 @@ class KeyboardView(ctx: Context) : View(ctx) {
             if (k.kind == KeyKind.Language) tint = brand
             if (cursorMode) bg = if (dark) Color.rgb(82, 82, 82) else Color.rgb(237, 237, 237)
             if (k.pressed) bg = pressedColor
-            // the 1 pt shadow under each key
-            fill.color = if (dark) Color.argb(90, 0, 0, 0) else Color.argb(56, 0, 0, 0)
+            // the 1 pt shadow under each key (black at 0.22, like iOS)
+            fill.color = Color.argb(56, 0, 0, 0)
             tmp.set(k.frame); tmp.offset(0f, d); c.drawRoundRect(tmp, r, r, fill)
             fill.color = bg; c.drawRoundRect(k.frame, r, r, fill)
             drawLabel(c, k, tint)
@@ -287,7 +290,7 @@ class KeyboardView(ctx: Context) : View(ctx) {
             is KeyKind.Char -> { text.typeface = Typeface.DEFAULT; text.textSize = (if (layer == Layer.LETTERS) 23f else 22f) * d }
             KeyKind.Space -> { text.typeface = Typeface.DEFAULT; text.textSize = 15 * d
                 val maxW = k.frame.width() - 8 * d; while (text.measureText(t) > maxW && text.textSize > 9 * d) text.textSize -= d }
-            KeyKind.Language -> { text.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD); text.textSize = 16 * d }
+            KeyKind.Language -> { text.typeface = semibold; text.textSize = 16 * d }
             KeyKind.Return -> { text.typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL); text.textSize = 16 * d }
             else -> { text.typeface = Typeface.DEFAULT; text.textSize = 16 * d }
         }
@@ -401,9 +404,10 @@ class KeyboardView(ctx: Context) : View(ctx) {
             MotionEvent.ACTION_MOVE -> { val i = e.findPointerIndex(pointerId); if (i >= 0) moved(e.getX(i), e.getY(i)) }
             MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP -> {
                 val i = e.actionIndex
-                if (e.getPointerId(i) == pointerId) touchKey?.let { finish(it) } ?: run { pointerId = -1 }
+                if (e.getPointerId(i) == barPointer) barUp(e.getX(i), e.getY(i))
+                else if (e.getPointerId(i) == pointerId) touchKey?.let { finish(it) } ?: run { pointerId = -1 }
             }
-            MotionEvent.ACTION_CANCEL -> { touchKey?.let { release(it) }; reset() }
+            MotionEvent.ACTION_CANCEL -> { touchKey?.let { release(it) }; barPointer = -1; barIndex = -1; reset() }
         }
         invalidate()
         return true
@@ -413,8 +417,8 @@ class KeyboardView(ctx: Context) : View(ctx) {
         Diag.touches++
         Diag.touchStart = SystemClock.uptimeMillis()
         Diag.delayMs = max(Diag.delayMs, (Diag.touchStart - eventTime).toDouble())
-        if (barOn && searchTop == null && suggestions.isNotEmpty() && barRect().contains(x, y)) {   // the strip
-            if (touchKey == null) { val b = barRect(); val i = ((x - b.left) / (b.width() / 3)).toInt().coerceIn(0, 2); if (i < suggestions.size) listener?.keyboardPickSuggestion(i) }
+        if (barOn && searchTop == null && suggestions.isNotEmpty() && barRect().contains(x, y)) {   // the strip: picks on lift, like a UIButton
+            if (touchKey == null) { val i = barCell(x); if (i < suggestions.size) { barPointer = id; barIndex = i } }
             return
         }
         var k = keyAt(x, y) ?: return
@@ -425,7 +429,7 @@ class KeyboardView(ctx: Context) : View(ctx) {
         }
         // a new touch while another is down: the earlier key is typed now (fast two-thumb typing)
         touchKey?.let { finish(it) }
-        pointerId = id; touchKey = k; touchStartX = x; touchStartY = y; slideFromLayer = false
+        pointerId = id; touchKey = k; touchStartX = x; touchStartY = y; lastX = x; slideFromLayer = false
         press(k, late = SystemClock.uptimeMillis() - eventTime > 50)
         when (kind) {
             is KeyKind.Char -> {
@@ -433,7 +437,7 @@ class KeyboardView(ctx: Context) : View(ctx) {
                 val kk = k; startHold(450) { showAlternates(kk) }
             }
             KeyKind.Backspace -> { listener?.keyboardDidTap(KeyKind.Backspace); repeatCount = 0; startHold(450) { startRepeat() } }
-            KeyKind.Space -> startHold(400) { enterCursorMode(x) }
+            KeyKind.Space -> startHold(400) { enterCursorMode(lastX) }
             KeyKind.Shift -> listener?.keyboardDidTap(KeyKind.Shift)
             KeyKind.Globe -> startHold(500) { listener?.keyboardGlobeHold(); touchKey?.let { release(it) }; reset() }
             is KeyKind.Layer -> {
@@ -446,7 +450,17 @@ class KeyboardView(ctx: Context) : View(ctx) {
         }
     }
 
+    private var barPointer = -1; private var barIndex = -1
+    private fun barCell(x: Float): Int { val b = barRect(); return ((x - b.left) / (b.width() / 3)).toInt().coerceIn(0, 2) }
+    /** Lift on the strip: pick the cell the finger went down on if it is still over it (sliding off cancels). */
+    private fun barUp(x: Float, y: Float) {
+        val i = barIndex; barPointer = -1; barIndex = -1
+        val b = barRect(); b.inset(0f, -8 * d)
+        if (i >= 0 && b.contains(x, y) && barCell(x) == i && i < suggestions.size) listener?.keyboardPickSuggestion(i)
+    }
+
     private fun moved(x: Float, y: Float) {
+        lastX = x
         val current = touchKey ?: return
         if (cursorMode) {
             val step = 9 * width / (402 * d)

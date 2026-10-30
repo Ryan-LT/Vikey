@@ -26,6 +26,8 @@ object KeyboardStatus {
     }
     fun isSelected(c: Context) = SysSettings.Secure.getString(c.contentResolver, SysSettings.Secure.DEFAULT_INPUT_METHOD)?.startsWith(c.packageName) == true
     fun openSettings(c: Context) = c.startActivity(Intent(SysSettings.ACTION_INPUT_METHOD_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+    /** Settings › Apps › Vikey › Language (Android 13+). */
+    fun openAppLanguage(c: Context) = c.startActivity(Intent(SysSettings.ACTION_APP_LOCALE_SETTINGS, android.net.Uri.fromParts("package", c.packageName, null)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
     fun showPicker(c: Context) = (c.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager).showInputMethodPicker()
 }
 

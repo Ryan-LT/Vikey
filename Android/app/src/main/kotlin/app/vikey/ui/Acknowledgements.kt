@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.ArrowOutward
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -48,6 +49,7 @@ object Acknowledgements {
 @Composable
 fun AcknowledgementsScreen(back: () -> Unit) {
     val ctx = LocalContext.current
+    androidx.activity.compose.BackHandler(onBack = back)   // system Back returns to Settings, like the iOS navigation back
     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).statusBarsPadding().navigationBarsPadding()) {
         TopAppBar(title = { Text(stringResource(R.string.acknowledgements)) }, navigationIcon = { IconButton(back) { Icon(Icons.AutoMirrored.Filled.ArrowBack, null) } },
             colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background))
@@ -66,7 +68,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.section(title: Int, i
             for ((i, c) in items.withIndex()) {
                 Row(Modifier.fillMaxWidth().clickable { open(c.url) }.padding(16.dp, 10.dp), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) { Text(c.name); Text("${c.by} · ${c.license}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
-                    Text("↗", color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f))
+                    Icon(Icons.Outlined.ArrowOutward, null, Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f))
                 }
                 if (i < items.size - 1) HorizontalDivider(Modifier.padding(start = 16.dp))
             }

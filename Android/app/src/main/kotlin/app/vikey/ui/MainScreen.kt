@@ -140,7 +140,7 @@ fun MainScreen(onReviewOnboarding: () -> Unit, onAcknowledgements: () -> Unit) {
                 ToggleRow(R.string.diagnostics, R.string.diagnostics_tip, diagnostics, last = !diagnostics) { diagnostics = it; save(Settings.DIAGNOSTICS, it) }
                 if (diagnostics) {
                     LinkRow(stringResource(R.string.send_log), icon = { Icon(Icons.Outlined.Share, null, tint = brand) }) {
-                        val i = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_SUBJECT, "Vikey keyboard log").putExtra(Intent.EXTRA_TEXT, logText.ifEmpty { "(empty log)" })
+                        val i = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_SUBJECT, "Vikey keyboard log").putExtra(Intent.EXTRA_TEXT, logText.ifEmpty { ctx.getString(R.string.log_empty_share) })
                         ctx.startActivity(Intent.createChooser(i, null))
                     }
                     LinkRow(stringResource(R.string.clear_log), color = MaterialTheme.colorScheme.error) { KBLog.clear(ctx); logText = "" }
@@ -152,14 +152,33 @@ fun MainScreen(onReviewOnboarding: () -> Unit, onAcknowledgements: () -> Unit) {
         }
         item {
             Card {
+                // per-app language (Android 13+), like the iOS row that opens the app's page in Settings
+                if (android.os.Build.VERSION.SDK_INT >= 33) {
+                    Row(Modifier.fillMaxWidth().clickable { KeyboardStatus.openAppLanguage(ctx) }.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text(stringResource(R.string.app_language), Modifier.weight(1f))
+                        Text(appLanguageName(ctx), color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
+                    }
+                    HorizontalDivider(Modifier.padding(start = 16.dp))
+                }
                 LinkRow(stringResource(R.string.review_onboarding), onClick = onReviewOnboarding)
                 LinkRow(stringResource(R.string.acknowledgements), onClick = onAcknowledgements)
+                LinkRow(stringResource(R.string.send_feedback)) {   // vikey.app/feedback (English page when the app is in English), like iOS
+                    val en = ctx.getString(R.string.lang_code) != "vi"
+                    ctx.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://vikey.app${if (en) "/en" else ""}/feedback?platform=android&v=${BuildConfig.VERSION_NAME}")))
+                }
                 LinkRow("vikey.app") { ctx.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://vikey.app"))) }
                 Row(Modifier.fillMaxWidth().padding(16.dp)) { Text(stringResource(R.string.version), Modifier.weight(1f)); Text(BuildConfig.VERSION_NAME, color = MaterialTheme.colorScheme.onSurfaceVariant) }
             }
             Footer(stringResource(R.string.footer))
         }
     }
+}
+
+/** The language the app shows, in that language ("Tiếng Việt", "English"), like the iOS row: the strings resolve to
+ *  vi or en whatever the phone's language is, so the name comes from the strings, not the system locale. */
+private fun appLanguageName(c: android.content.Context): String {
+    val l = java.util.Locale(c.getString(R.string.lang_code))
+    return l.getDisplayLanguage(l).replaceFirstChar { it.uppercase(l) }
 }
 
 @Composable fun Wordmark(size: androidx.compose.ui.unit.TextUnit) {
@@ -178,7 +197,10 @@ fun MainScreen(onReviewOnboarding: () -> Unit, onAcknowledgements: () -> Unit) {
         Spacer(Modifier.width(6.dp))
         Box {
             Icon(Icons.AutoMirrored.Outlined.HelpOutline, null, Modifier.size(18.dp).clickable { shown = true }, tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f))
-            if (shown) Popup(onDismissRequest = { shown = false }, alignment = Alignment.TopStart) {
+            // below the (?) like the iOS popover; focusable so Back and a tap outside close it
+            val below = with(androidx.compose.ui.platform.LocalDensity.current) { 24.dp.roundToPx() }
+            if (shown) Popup(onDismissRequest = { shown = false }, alignment = Alignment.TopStart, offset = androidx.compose.ui.unit.IntOffset(0, below),
+                properties = androidx.compose.ui.window.PopupProperties(focusable = true)) {
                 Surface(Modifier.widthIn(max = 280.dp), shape = RoundedCornerShape(12.dp), tonalElevation = 6.dp, shadowElevation = 6.dp) {
                     Text(stringResource(tip), Modifier.padding(14.dp), style = MaterialTheme.typography.bodyMedium)
                 }
