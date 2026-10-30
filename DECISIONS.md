@@ -84,6 +84,16 @@ If every listed change is intended, accept them with `Tools/autoswitch/check.sh 
 **Details:** `Android/PLAN.md`.
 
 ---
+## 43. Lowercase "os" in Vietnamese is "ó"
+
+**Status:** Shipped 2026-10-30.
+
+**Problem.** In Vietnamese mode "la với os" stayed "os" and switched to English (Tony): "os" (OS) is in the developer word list at the top English score (40), while "ó" is a common chat interjection.
+
+**Fix.** "os" gets English score 0 (build_dict.py `EN_OVERRIDE`; patched in the built data like D40). At 0, a Vietnamese sentence gives "ó" and an English one keeps "os" ("the os is", "my os is linux" in either mode). OS the acronym is typed in caps, which stays as typed. A sweep: 10 and 0 behave the same; -10 and below turn English-mode "os" into "ó".
+
+**Result.** Val macro 0.119% → 0.120% wrong words (99.88%); chat_typos one manual switch and one wrong word fewer. Rules D43 (3 cases).
+
 ## 42. Acronyms don't flip the word before them
 
 **Status:** Shipped 2026-10-29.

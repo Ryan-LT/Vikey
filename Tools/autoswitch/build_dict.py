@@ -115,6 +115,9 @@ for k in ('see',):
     vn.pop(k, None)
 
 en_rows, en_total = load('en_50k.txt')
+# Acronyms typed lowercase that are Vietnamese words in Telex: 'os' is ó (Tony: D43). 0 = Vietnamese wins in a
+# Vietnamese sentence, English wins in an English one.
+EN_OVERRIDE = {'os': 0}
 # Keep only words the macOS English spell checker accepts (drops subtitle junk like "ys", "af", "carm").
 # en_spell_ok.txt is produced by spellfilter.swift; see README.md.
 spell_ok = set(open(os.path.join(HERE, 'en_spell_ok.txt')).read().split())
@@ -149,6 +152,7 @@ for name in ('en_extra.txt', 'en_code.txt'):
         if line.startswith('#'): continue
         for w in line.split():
             en[w] = max(en.get(w, -999), 40)
+en.update({w: v for w, v in EN_OVERRIDE.items() if w in en})
 
 def emit(name, d):
     keys = sorted(d)

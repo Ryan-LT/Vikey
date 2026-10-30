@@ -119,3 +119,6 @@ D41	0	THUOWNGF VIEETJ 	THƯỜNG VIỆT 	1	the same, two words
 D41	0	HW IRS USA NASA 	HW IRS USA NASA 	0	unmarked acronyms stay as typed
 D42	1	e lieen heej been ASL 	e liên hệ bên ASL 	0	an acronym put back to its keys does not flip the word before it (bên ASL, not been ASL)
 D42	1	been USA 	bên USA 	0	the same with an acronym that is an English word
+D43	1	la voiws os 	la với ó 	1	lowercase os in Vietnamese is ó (Tony); OS the acronym is typed in caps
+D43	0	the os is 	the os is 	0	in English, os stays
+D43	1	my os is linux 	my os is linux 	0	an English sentence keeps os
