@@ -3,10 +3,6 @@
 #include "KeyMap.h"
 #include "Prefs.h"
 #include "Engine.h"
-#include <imm.h>
-#ifndef IMC_GETOPENSTATUS
-#define IMC_GETOPENSTATUS 0x0005   // lives in immdev.h in recent SDKs
-#endif
 #include <psapi.h>
 #include <mmsystem.h>
 #include "resource.h"
@@ -16,7 +12,6 @@
 #include <cstdio>
 #include <ctime>
 #include <mutex>
-#pragma comment(lib, "imm32.lib")
 #pragma comment(lib, "psapi.lib")
 #pragma comment(lib, "winmm.lib")
 
@@ -252,12 +247,6 @@ static void updateOtherInputLanguage() {
     HWND w = GetForegroundWindow(); DWORD tid = GetWindowThreadProcessId(w, nullptr);
     HKL hkl = GetKeyboardLayout(tid); LANGID lang = LOWORD((DWORD_PTR)hkl); WORD primary = PRIMARYLANGID(lang);
     _otherInputLanguage = !(primary == LANG_ENGLISH || primary == LANG_VIETNAMESE || primary == LANG_NEUTRAL);
-}
-static bool imeComposing() {
-    HWND w = GetForegroundWindow(); HWND ime = ImmGetDefaultIMEWnd(w);
-    if (!ime) return false;
-    DWORD_PTR r = 0; SendMessageTimeoutW(ime, WM_IME_CONTROL, IMC_GETOPENSTATUS, 0, SMTO_ABORTIFHUNG, 20, &r);
-    return r != 0 && _otherInputLanguage;
 }
 
 // ---- Pause auto switch after a manual switch (D21) ------------------------------------------
@@ -498,15 +487,21 @@ static LRESULT CALLBACK keyboardHook(int nCode, WPARAM wParam, LPARAM lParam) {
     KBDLLHOOKSTRUCT* k = (KBDLLHOOKSTRUCT*)lParam;
     if (k->dwExtraInfo == VIKEY_EVENT_TAG) return CallNextHookEx(_kbHook, nCode, wParam, lParam);   // our own output
     bool down = wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN;
-    if (GetKeyState(VK_CAPITAL) & 1) _flag |= F_CAPS; else _flag &= ~F_CAPS;
+    // modifiers as Windows has them, not only from the events seen here: keys let go on the lock screen (Win+L) or
+    // after Ctrl+Alt+Del never reach the hook, and a Win or Alt left set stops Telex until that key is tapped again
+    _flag = (GetKeyState(VK_CAPITAL) & 1 ? F_CAPS : 0) | (GetAsyncKeyState(VK_SHIFT) < 0 ? F_SHIFT : 0) | (GetAsyncKeyState(VK_CONTROL) < 0 ? F_CONTROL : 0) |
+            (GetAsyncKeyState(VK_MENU) < 0 ? F_ALT : 0) | (GetAsyncKeyState(VK_LWIN) < 0 || GetAsyncKeyState(VK_RWIN) < 0 ? F_WIN : 0);
     checkPauseExpired();
 
     // modifier keys: track them, and detect a modifiers-only hotkey on release
     if (modifierVk(k->vkCode, down)) {
         if (_lastFlag == 0 || _lastFlag < _flag) _lastFlag = _flag;
         else if (_lastFlag > _flag) {
-            if (checkHotKey(vSwitchKeyStatus, GET_SWITCH_KEY(vSwitchKeyStatus) != 0xFE)) { _lastFlag = 0; switchLanguage("hotkey"); _hasJustUsedHotKey = true; return 1; }
-            _lastFlag = 0; _hasJustUsedHotKey = false;
+            // only a hotkey without a key (a key hotkey fired on its key-down; _keycode is just the last key typed, so
+            // Alt+Z, then Alt alone, flipped back). The key-up goes on: a swallowed one leaves the modifier held down.
+            bool hit = GET_SWITCH_KEY(vSwitchKeyStatus) == 0xFE && checkHotKey(vSwitchKeyStatus, false);
+            _lastFlag = 0; _hasJustUsedHotKey = hit;
+            if (hit) switchLanguage("hotkey");
         }
         return CallNextHookEx(_kbHook, nCode, wParam, lParam);
     }
@@ -539,11 +534,12 @@ static LRESULT CALLBACK keyboardHook(int nCode, WPARAM wParam, LPARAM lParam) {
     _autoFixUndo.active = false;
     TLNoteKey(_keycode, _flag);
 
+    updateOtherInputLanguage();   // every key: Win+Space can switch to a Japanese/Chinese IME in the same window
     if (vLanguage == 0) {
         if (vAutoSwitchByTyping && HandleEnglishKeyForAutoSwitch()) return 1;
         return CallNextHookEx(_kbHook, nCode, wParam, lParam);
     }
-    if (vOtherLanguage && (_otherInputLanguage || imeComposing())) return CallNextHookEx(_kbHook, nCode, wParam, lParam);
+    if (vOtherLanguage && _otherInputLanguage) return CallNextHookEx(_kbHook, nCode, wParam, lParam);
 
     vAutoSwitchRequest = -1;
     vKeyHandleEvent(vKeyEvent::Keyboard, vKeyEventState::KeyDown, _keycode,
