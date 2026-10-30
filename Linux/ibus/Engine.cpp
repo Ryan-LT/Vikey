@@ -150,6 +150,10 @@ static gboolean vikey_process_key_event(IBusEngine* engine, guint keyval, guint 
         return FALSE;
     }
     if (release) return FALSE;
+    // a password/PIN field (the app's input purpose, sent on every focus in): keys go through as typed, like macOS
+    // secure input: no Telex, no auto switch, and the core never sees them, so the typing log can't record them
+    guint purpose = 0, hints = 0; ibus_engine_get_content_type(engine, &purpose, &hints);
+    if (purpose == IBUS_INPUT_PURPOSE_PASSWORD || purpose == IBUS_INPUT_PURPOSE_PIN) return FALSE;
     if (_appPending) { _appPending = false; std::string app = frontAppX11(); if (!app.empty() && app != core::frontApp()) core::focusChanged(app); }
     MappedKey m = engineKey(keyval);
     if (m.key == KEY_EMPTY) { if (keyval < 0x100 || (keyval >= 0x1000000)) core::click(); return FALSE; }   // a key we don't model ends the word
