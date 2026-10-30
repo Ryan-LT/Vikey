@@ -46,6 +46,11 @@ Tools/autoswitch/check.sh
 
 See [DECISIONS.md](DECISIONS.md) for every rule and why it exists.
 
+## Contributing
+
+Pull requests are welcome, AI-written code included. Show the problem with a screenshot or video, describe the
+before and after, and add test cases. See [CONTRIBUTING.md](CONTRIBUTING.md).
+
 ## License and credits
 
 Vikey is based on [OpenKey](https://github.com/tuyenvm/OpenKey) by Tuyen Mai, and is distributed under the GNU General Public License v3.0. See [LICENSE](LICENSE).
