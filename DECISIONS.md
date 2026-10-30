@@ -23,6 +23,16 @@ If every listed change is intended, accept them with `Tools/autoswitch/check.sh 
 
 ---
 
+## 46. Linux: no per-website memory, no automatic install (approved)
+
+**Status:** Approved by Tony, 2026-10-30 (Telegram 247): "This is ok and approved." Do not raise these again.
+
+**Per-website memory.** Linux gives an input method no way to read the browser's address bar (no accessibility hook on Wayland, nothing in IBus). Vikey for Linux remembers the language per app only. Getting it would need a browser extension; not planned.
+
+**Automatic install of updates.** Installing silently needs root or an apt/dnf repository. Vikey for Linux checks vikey.app/release.json once a day and shows a notification with a link to the download page; the user installs the new .deb/.rpm.
+
+---
+
 ## 45. Linux catches up with the Mac app
 
 **Asked by Tony** (2026-10-29): "Use the iOS and macOS app as the baseline. Port all the features to Windows/Linux/Android. Try to reach 100% feature parity."
