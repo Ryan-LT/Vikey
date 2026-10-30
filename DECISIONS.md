@@ -23,6 +23,23 @@ If every listed change is intended, accept them with `Tools/autoswitch/check.sh 
 
 ---
 
+## 44. Linux catches up with the Mac app
+
+**Asked by Tony** (2026-10-29): "Use the iOS and macOS app as the baseline. Port all the features to Windows/Linux/Android. Try to reach 100% feature parity."
+
+**Decided**
+
+- The Linux core (`Linux/ibus/Core.cpp`) follows `VikeyCore.mm` again: undo then type on (D32), digits start a word (D33), look forward (D35); D39/D41/D42 come with the shared engine. Live cases for each in `Linux/Tests/cases-linux.tsv`.
+- Switch sound: the Mac's two notes (`.caf` → `.wav`), played inside the engine with GStreamer, not the system bell.
+- Emoji picker: `vikey-settings --emoji`, a port of the Mac panel and its search (English, Vietnamese, Telex keys, Frequently Used, sections, arrows by row, Enter, Esc clears then closes, closes on click elsewhere). The engine opens it on the hotkey and types the choice into the app through the command file.
+- Guide (first run, menu "Hướng dẫn…"): the Mac's steps and copy; the Accessibility step becomes "add Vikey to the input sources", checked live on GNOME.
+- Menu "Kiểm tra cập nhật…" and a real "Tự động cập nhật" switch: a daily check of vikey.app/release.json with a notification; the user installs the package (no repo yet).
+- "Ghi nhận" in About (the Mac list without Sparkle). Every row name and tip re-checked against MainView.swift.
+- Not matched: per-website memory (needs a browser extension), positioning the picker as a pure Wayland client (it runs on XWayland), installing updates by itself (`Linux/PLAN.md`).
+
+**Verified.** Live typing in the Ubuntu 24.04 VM (GNOME Wayland) from the installed package: 25/25 (14 shared + 11 Linux). Picker, guide, update dialogs, notification and the panel menu checked by hand with screenshots; the switch sound recorded from the audio output.
+
+---
 ## 43. Vikey for Android
 
 **Status:** Built 2026-10-29 on branch `android` (release build signed, live test 14/14 on the emulator). Publishing waits for a try on Tony's phone.

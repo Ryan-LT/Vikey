@@ -105,6 +105,7 @@ static void updateLangProp(VikeyEngine* e) {
     ibus_property_set_symbol(e->pLang, ibus_text_new_from_string(vi ? "V" : "E"));
     ibus_property_set_state(e->pLang, vi ? PROP_STATE_CHECKED : PROP_STATE_UNCHECKED);
     ibus_engine_update_property(IBUS_ENGINE(e), e->pLang);
+    if (e->pLog && (bool)ibus_property_get_visible(e->pLog) != (prefs::getInt("TypingLogEnabled", 0) != 0)) { ibus_property_set_visible(e->pLog, !ibus_property_get_visible(e->pLog)); ibus_engine_update_property(IBUS_ENGINE(e), e->pLog); }
     if (e->pAuto) { ibus_property_set_state(e->pAuto, prefs::getInt("AutoSwitchByTyping", 1) ? PROP_STATE_CHECKED : PROP_STATE_UNCHECKED); ibus_engine_update_property(IBUS_ENGINE(e), e->pAuto); }
 }
 static void buildProps(VikeyEngine* e) {
@@ -117,7 +118,9 @@ static void buildProps(VikeyEngine* e) {
     e->pGuide = ibus_property_new("guide", PROP_TYPE_NORMAL, ibus_text_new_from_string("Hướng dẫn…"), nullptr, nullptr, TRUE, TRUE, PROP_STATE_UNCHECKED, nullptr);
     e->pUpdate = ibus_property_new("update", PROP_TYPE_NORMAL, ibus_text_new_from_string("Kiểm tra cập nhật…"), nullptr, nullptr, TRUE, TRUE, PROP_STATE_UNCHECKED, nullptr);
     e->pAbout = ibus_property_new("about", PROP_TYPE_NORMAL, ibus_text_new_from_string("Giới thiệu Vikey"), nullptr, nullptr, TRUE, TRUE, PROP_STATE_UNCHECKED, nullptr);
-    for (IBusProperty* p : {e->pLang, e->pAuto, e->pOpen, e->pLog, e->pGuide, e->pUpdate, e->pAbout}) { g_object_ref_sink(p); ibus_prop_list_append(e->props, p); }
+    // the Mac menu bar's order; the typing log is a debug item there (Gỡ lỗi), shown only while logging is on
+    ibus_property_set_visible(e->pLog, prefs::getInt("TypingLogEnabled", 0) != 0);
+    for (IBusProperty* p : {e->pLang, e->pAuto, e->pOpen, e->pGuide, e->pUpdate, e->pAbout, e->pLog}) { g_object_ref_sink(p); ibus_prop_list_append(e->props, p); }
 }
 static void launchSettings(const char* arg, const char* arg2) {
     gchar* argv[] = {(gchar*)"vikey-settings", (gchar*)arg, (gchar*)arg2, nullptr};
