@@ -138,6 +138,7 @@ bool vAutoSwitchCheckEnglishWord(const Uint32* keys, const int& count,
 /**
  * Forget the words remembered for look-back (language switched by hand, app changed...),
  * and the ones Backspace would go back into: they may not be what is on screen any more.
+ * Right after vAutoSwitchCheckEnglishWord converted a word, Backspace history is that word (it is on screen).
  */
 void vAutoSwitchForget();
 
