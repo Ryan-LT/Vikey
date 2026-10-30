@@ -225,6 +225,7 @@ const char* kGroupEN[] = {"Smileys & Emotion", "People & Body", "", "Animals & N
 const char* kTones[] = {"✋", "✋🏻", "✋🏼", "✋🏽", "✋🏾", "✋🏿"};
 struct Item { bool header; std::string title; int y, h, start, count; };
 struct Picker {
+    GtkAdjustment* adj = nullptr;   // the grid scrolls by hand: one drawing area the size of the view (a 10k px tall widget is over GPU texture limits)
     GtkApplication* app; GtkWidget *win, *area, *scroll, *display, *caret, *placeholder, *badge, *curEmoji, *curName, *toneBtn, *tonePop, *empty;
     std::string raw; bool allSelected = false, vietnamese = true, caretOn = true, wasActive = false, firstMotion = true, closing = false;
     int tone = 0, selected = 0; double lastX = -1, lastY = -1;
@@ -247,11 +248,11 @@ void relayout() {
         P.visible = P.recents; if (!P.recents.empty()) add(P.vietnamese ? "Dùng thường xuyên" : "Frequently Used", (int)P.recents.size());
         for (auto& g : P.groups) { P.visible.insert(P.visible.end(), g.second.begin(), g.second.end()); add(P.vietnamese ? kGroupVI[g.first] : kGroupEN[g.first], (int)g.second.size()); }
     }
-    P.contentH = y; gtk_widget_set_size_request(P.area, -1, std::max(y, 1));
+    P.contentH = y; gtk_adjustment_set_upper(P.adj, std::max(y, 1));
     gtk_widget_set_visible(P.empty, searching() && P.results.empty());
 }
 const Item* rowOf(int i) { for (auto& it : P.items) if (!it.header && i >= it.start && i < it.start + it.count) return &it; return nullptr; }
-GtkAdjustment* vadj() { return gtk_scrolled_window_get_vadjustment(GTK_SCROLLED_WINDOW(P.scroll)); }
+GtkAdjustment* vadj() { return P.adj; }
 void scrollTop() { gtk_adjustment_set_value(vadj(), 0); }
 void scrollToSelected() {
     const Item* r = rowOf(P.selected); if (!r) return;
@@ -339,7 +340,7 @@ void draw(GtkDrawingArea*, cairo_t* cr, int w, int, gpointer) {
     GdkRGBA fg; gtk_widget_get_color(P.area, &fg);
     bool dark = adw_style_manager_get_dark(adw_style_manager_get_default());
     double v = gtk_adjustment_get_value(vadj()), page = gtk_adjustment_get_page_size(vadj());
-    if (getenv("VIKEY_DEBUG")) fprintf(stderr, "draw w=%d items=%zu v=%.0f page=%.0f contentH=%d visible=%zu\n", w, P.items.size(), v, page, P.contentH, P.visible.size());
+    cairo_translate(cr, 0, -v);
     PangoLayout* l = gtk_widget_create_pango_layout(P.area, nullptr);
     PangoFontDescription* ef = pango_font_description_new(); pango_font_description_set_absolute_size(ef, 28 * PANGO_SCALE);
     PangoFontDescription* hf = pango_font_description_copy(pango_context_get_font_description(gtk_widget_get_pango_context(P.area)));
@@ -437,9 +438,16 @@ void buildEmoji(GtkApplication* app) {
     GtkWidget* s1 = gtk_separator_new(GTK_ORIENTATION_HORIZONTAL); gtk_widget_add_css_class(s1, "emoji-sep"); gtk_box_append(GTK_BOX(panel), s1);
     // grid: one drawing area (draws only the rows in view), inset so there is a gap under the divider at any scroll
     GtkWidget* overlay = gtk_overlay_new(); gtk_widget_set_vexpand(overlay, TRUE); gtk_widget_set_margin_top(overlay, 8); gtk_widget_set_margin_bottom(overlay, 8);
-    P.scroll = gtk_scrolled_window_new(); gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(P.scroll), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
-    P.area = gtk_drawing_area_new(); gtk_drawing_area_set_draw_func(GTK_DRAWING_AREA(P.area), draw, nullptr, nullptr);
-    gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(P.scroll), P.area); gtk_overlay_set_child(GTK_OVERLAY(overlay), P.scroll);
+    P.adj = gtk_adjustment_new(0, 0, 1, CELL, CELL * 4, 1);
+    P.area = gtk_drawing_area_new(); gtk_drawing_area_set_draw_func(GTK_DRAWING_AREA(P.area), draw, nullptr, nullptr); gtk_widget_set_vexpand(P.area, TRUE);
+    g_signal_connect(P.area, "resize", G_CALLBACK(+[](GtkDrawingArea*, int, int h, gpointer) { gtk_adjustment_set_page_size(P.adj, h); gtk_adjustment_set_page_increment(P.adj, h); gtk_adjustment_set_value(P.adj, gtk_adjustment_get_value(P.adj)); }), nullptr);
+    gtk_overlay_set_child(GTK_OVERLAY(overlay), P.area);
+    P.scroll = gtk_scrollbar_new(GTK_ORIENTATION_VERTICAL, P.adj); gtk_widget_set_halign(P.scroll, GTK_ALIGN_END); gtk_widget_add_css_class(P.scroll, "overlay-indicator"); gtk_overlay_add_overlay(GTK_OVERLAY(overlay), P.scroll);
+    GtkEventController* sc = gtk_event_controller_scroll_new((GtkEventControllerScrollFlags)(GTK_EVENT_CONTROLLER_SCROLL_VERTICAL | GTK_EVENT_CONTROLLER_SCROLL_KINETIC));
+    g_signal_connect(sc, "scroll", G_CALLBACK(+[](GtkEventControllerScroll* c, double, double dy, gpointer) -> gboolean {
+        double step = gtk_event_controller_scroll_get_unit(c) == GDK_SCROLL_UNIT_WHEEL ? CELL * 1.5 : 1.0;
+        gtk_adjustment_set_value(P.adj, gtk_adjustment_get_value(P.adj) + dy * step); return TRUE; }), nullptr);
+    gtk_widget_add_controller(P.area, sc);
     P.empty = gtk_label_new(""); gtk_widget_add_css_class(P.empty, "dim-label"); gtk_widget_set_valign(P.empty, GTK_ALIGN_START); gtk_widget_set_margin_top(P.empty, 110); gtk_overlay_add_overlay(GTK_OVERLAY(overlay), P.empty);
     g_signal_connect_swapped(vadj(), "value-changed", G_CALLBACK(gtk_widget_queue_draw), P.area);
     gtk_box_append(GTK_BOX(panel), overlay);
@@ -469,13 +477,13 @@ void buildEmoji(GtkApplication* app) {
     g_signal_connect(kc, "key-pressed", G_CALLBACK(onKey), nullptr); gtk_widget_add_controller(P.win, kc);
     GtkEventController* mc = gtk_event_controller_motion_new();
     g_signal_connect(mc, "motion", G_CALLBACK(+[](GtkEventControllerMotion*, double x, double y, gpointer) {
-        double vy = y - gtk_adjustment_get_value(vadj());
+        double vy = y;   // the view's own coordinates: the grid scrolling under a still mouse is not a move
         if (P.firstMotion) { P.firstMotion = false; P.lastX = x; P.lastY = vy; return; }
         if (x == P.lastX && vy == P.lastY) return;
-        P.lastX = x; P.lastY = vy; int i = indexAt(x, y); if (i >= 0 && i != P.selected) { P.selected = i; updateTexts(); } }), nullptr);
+        P.lastX = x; P.lastY = vy; int i = indexAt(x, y + gtk_adjustment_get_value(vadj())); if (i >= 0 && i != P.selected) { P.selected = i; updateTexts(); } }), nullptr);
     gtk_widget_add_controller(P.area, mc);
     GtkGesture* click = gtk_gesture_click_new();
-    g_signal_connect(click, "released", G_CALLBACK(+[](GtkGestureClick*, int, double x, double y, gpointer) { int i = indexAt(x, y); if (i >= 0) choose(P.visible[i]); }), nullptr);
+    g_signal_connect(click, "released", G_CALLBACK(+[](GtkGestureClick*, int, double x, double y, gpointer) { int i = indexAt(x, y + gtk_adjustment_get_value(vadj())); if (i >= 0) choose(P.visible[i]); }), nullptr);
     gtk_widget_add_controller(P.area, GTK_EVENT_CONTROLLER(click));
     // clicked elsewhere: close (not while the skin tone popover has the pointer)
     g_signal_connect(P.win, "notify::is-active", G_CALLBACK(+[](GObject*, GParamSpec*, gpointer) {
@@ -484,7 +492,7 @@ void buildEmoji(GtkApplication* app) {
     g_timeout_add(530, [](gpointer) -> gboolean { P.caretOn = !P.caretOn; gtk_widget_set_opacity(P.caret, P.caretOn && !P.allSelected ? 1 : 0); return G_SOURCE_CONTINUE; }, nullptr);
 #ifdef VIKEY_HAVE_X11
     g_signal_connect(P.win, "realize", G_CALLBACK(+[](GtkWidget* w, gpointer) { placeX11(w); }), nullptr);
-    g_signal_connect(P.win, "map", G_CALLBACK(+[](GtkWidget* w, gpointer) { g_timeout_add(60, [](gpointer w) -> gboolean { activateX11((GtkWidget*)w); return FALSE; }, w); }), nullptr);
+    g_signal_connect(P.win, "map", G_CALLBACK(+[](GtkWidget* w, gpointer) { g_timeout_add(30, [](gpointer w) -> gboolean { placeX11((GtkWidget*)w); activateX11((GtkWidget*)w); return FALSE; }, w); }), nullptr);
 #endif
     relayout(); updateTexts();
     gtk_window_present(GTK_WINDOW(P.win));

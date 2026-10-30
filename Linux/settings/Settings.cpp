@@ -97,7 +97,7 @@ void loadCss() {
     gtk_css_provider_load_from_string(p,
         "menubutton.tip > button { min-width: 22px; min-height: 22px; padding: 0; opacity: 0.45; background: none; box-shadow: none; }\n"
         ".tip-mark { min-width: 13px; min-height: 13px; border: 1.5px solid currentColor; border-radius: 50%; font-size: 10px; font-weight: 800; padding: 0; margin: 0; }\n"
-        "box.tiptitle > menubutton { margin-start: 3px; }\n"
+        "box.tiptitle > menubutton { margin-left: 3px; }\n"
         "menubutton.tip > button:hover { opacity: 0.8; }\n"
         ".brand { color: #4F46E5; } .dots .on { background: #4F46E5; } .dots .off { background: alpha(currentColor, 0.25); }\n"
         ".dots > * { min-width: 7px; min-height: 7px; border-radius: 4px; }\n"
