@@ -27,8 +27,9 @@ void initSmartSwitchKey(const Byte* pData, const int& size) {
     }
     Uint8 bundleIdSize;
     Uint8 value;
-    for (int i = 0; i < count; i++) {
+    for (int i = 0; i < count && cursor < (Uint32)size; i++) {
         bundleIdSize = pData[cursor++];
+        if (cursor + bundleIdSize >= (Uint32)size) break; //truncated or corrupt (an older build wrapped keys > 255 bytes): don't read past the data
         string bundleId((char*)pData + cursor, bundleIdSize);
         cursor += bundleIdSize;
         value = pData[cursor++];
@@ -38,17 +39,21 @@ void initSmartSwitchKey(const Byte* pData, const int& size) {
 
 void getSmartSwitchKeySaveData(vector<Byte>& outData) {
     outData.clear();
-    Uint16 count = (Uint16)_smartSwitchKeyData.size();
-    outData.push_back((Byte)count);
-    outData.push_back((Byte)(count>>8));
+    Uint16 count = 0;
+    outData.push_back(0); //the count, filled in below
+    outData.push_back(0);
     
     for (std::map<string, Int8>::iterator it = _smartSwitchKeyData.begin(); it != _smartSwitchKeyData.end(); ++it) {
+        if (it->first.length() > 255) continue; //the length is one byte: a longer key ("app|host") would break every entry after it
         outData.push_back((Byte)it->first.length());
         for (int j = 0; j < it->first.length(); j++) {
             outData.push_back(it->first[j]);
         }
         outData.push_back(it->second);
+        count++;
     }
+    outData[0] = (Byte)count;
+    outData[1] = (Byte)(count>>8);
 }
 
 int getAppInputMethodStatus(const string& bundleId, const int& currentInputMethod) {
