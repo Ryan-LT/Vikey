@@ -23,16 +23,16 @@
 },
 "windows": {
 "x64": {
-"download_url": "/downloads/Vikey-1.0.15-x64-Setup.exe",
-"portable_url": "/downloads/Vikey-1.0.15-x64-portable.zip",
-"sha256": "807b0ebc3c4dcd23b845f876184d380bfa82f7b5e3d95f6553c384cf66b6b0e3"
+"download_url": "/downloads/Vikey-1.0.26-x64-Setup.exe",
+"portable_url": "/downloads/Vikey-1.0.26-x64-portable.zip",
+"sha256": "fc7f85ffd667eaa490459446ef1b604f7ebbaf08596ad8ed55e2b44231def3ef"
 },
 "arm64": {
-"download_url": "/downloads/Vikey-1.0.15-arm64-Setup.exe",
-"portable_url": "/downloads/Vikey-1.0.15-arm64-portable.zip",
-"sha256": "b7711086875d1b7f40363ee5b142694398de4fef356ffb20a7f5c554cb15b684"
+"download_url": "/downloads/Vikey-1.0.26-arm64-Setup.exe",
+"portable_url": "/downloads/Vikey-1.0.26-arm64-portable.zip",
+"sha256": "948d4acab2f3ea27fec446db8ad7aa3219517cc4034edec845d07120f21ab333"
 },
-"version": "1.0.15"
+"version": "1.0.26"
 },
 "android": {
 "version": "1.0.23",
