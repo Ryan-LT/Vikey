@@ -24,6 +24,7 @@ CASES = [  # name, language (0 EN / 1 VI), autocap, keys, expected
     ("shortcut",        0, False, "omw ", "On my way! "),
     ("shortcut_undo",   0, False, "omw \b", "omw"),
     ("shortcut_vi",     1, False, "omw ", "On my way! "),
+    ("strip_pick",      0, False, "teh\x03", "the "),   # \x03 = tap the middle strip cell (picks on lift)
 ]
 
 def main():
@@ -34,7 +35,10 @@ def main():
         sh("am broadcast -a app.vikey.DEBUG -p app.vikey --ez autocap %s >/dev/null" % ("true" if cap else "false"))
         clear_field()
         sh("am broadcast -a app.vikey.DEBUG -p app.vikey --ei lang %d --ez letters true >/dev/null" % lang); time.sleep(0.4)
-        type_text(keys, top); time.sleep(0.6)
+        for part in keys.split("\x03"):
+            if part: type_text(part, top)
+        if "\x03" in keys: time.sleep(0.4); sh("input tap 540 %d" % (top + int(28 * 2.625))); time.sleep(0.4)
+        time.sleep(0.6)
         got = field_text(); ok = got == want; fails += not ok
         print("%-4s %-18s got=%r expected=%r" % ("ok" if ok else "FAIL", name, got, want))
     sh("am broadcast -a app.vikey.DEBUG -p app.vikey --ez autocap true >/dev/null")

@@ -404,9 +404,10 @@ class KeyboardView(ctx: Context) : View(ctx) {
             MotionEvent.ACTION_MOVE -> { val i = e.findPointerIndex(pointerId); if (i >= 0) moved(e.getX(i), e.getY(i)) }
             MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP -> {
                 val i = e.actionIndex
-                if (e.getPointerId(i) == pointerId) touchKey?.let { finish(it) } ?: run { pointerId = -1 }
+                if (e.getPointerId(i) == barPointer) barUp(e.getX(i), e.getY(i))
+                else if (e.getPointerId(i) == pointerId) touchKey?.let { finish(it) } ?: run { pointerId = -1 }
             }
-            MotionEvent.ACTION_CANCEL -> { touchKey?.let { release(it) }; reset() }
+            MotionEvent.ACTION_CANCEL -> { touchKey?.let { release(it) }; barPointer = -1; barIndex = -1; reset() }
         }
         invalidate()
         return true
@@ -416,8 +417,8 @@ class KeyboardView(ctx: Context) : View(ctx) {
         Diag.touches++
         Diag.touchStart = SystemClock.uptimeMillis()
         Diag.delayMs = max(Diag.delayMs, (Diag.touchStart - eventTime).toDouble())
-        if (barOn && searchTop == null && suggestions.isNotEmpty() && barRect().contains(x, y)) {   // the strip
-            if (touchKey == null) { val b = barRect(); val i = ((x - b.left) / (b.width() / 3)).toInt().coerceIn(0, 2); if (i < suggestions.size) listener?.keyboardPickSuggestion(i) }
+        if (barOn && searchTop == null && suggestions.isNotEmpty() && barRect().contains(x, y)) {   // the strip: picks on lift, like a UIButton
+            if (touchKey == null) { val i = barCell(x); if (i < suggestions.size) { barPointer = id; barIndex = i } }
             return
         }
         var k = keyAt(x, y) ?: return
@@ -447,6 +448,15 @@ class KeyboardView(ctx: Context) : View(ctx) {
             }
             else -> {}
         }
+    }
+
+    private var barPointer = -1; private var barIndex = -1
+    private fun barCell(x: Float): Int { val b = barRect(); return ((x - b.left) / (b.width() / 3)).toInt().coerceIn(0, 2) }
+    /** Lift on the strip: pick the cell the finger went down on if it is still over it (sliding off cancels). */
+    private fun barUp(x: Float, y: Float) {
+        val i = barIndex; barPointer = -1; barIndex = -1
+        val b = barRect(); b.inset(0f, -8 * d)
+        if (i >= 0 && b.contains(x, y) && barCell(x) == i && i < suggestions.size) listener?.keyboardPickSuggestion(i)
     }
 
     private fun moved(x: Float, y: Float) {
