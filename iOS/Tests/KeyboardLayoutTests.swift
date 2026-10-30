@@ -47,6 +47,25 @@ final class LanguageKeyProposalTests: XCTestCase {
                 try? img.pngData()?.write(to: URL(fileURLWithPath: "/tmp/claude-501/layouts/lang_\(style)_\(dark ? "dark" : "light").png"))
             }
         }
-        KeyboardView.langStyle = 0
+        KeyboardView.langStyle = 1
+    }
+
+    func testPillStates() {
+        KeyboardView.barOn = true; KeyboardView.langStyle = 1
+        for (lang, title) in [("VI", "Tiếng Việt"), ("EN", "English")] {
+            let kb = KeyboardView(frame: CGRect(x: 0, y: 0, width: 402, height: KeyboardView.keyboardHeight(compactHeight: false)))
+            kb.languageShort = lang; kb.languageTitle = title
+            kb.backgroundColor = UIColor(red: 0.82, green: 0.83, blue: 0.86, alpha: 1)
+            kb.layoutIfNeeded()
+            let img = UIGraphicsImageRenderer(bounds: kb.bounds).image { ctx in kb.layer.render(in: ctx.cgContext) }
+            try? img.pngData()?.write(to: URL(fileURLWithPath: "/tmp/claude-501/layouts/pill_\(lang).png"))
+            let caps = kb.subviews.compactMap { $0 as? KeyCap }
+            XCTAssertTrue(caps.contains { $0.frame.minY < 40 && ($0.label.attributedText?.string == lang) }, "the pill sits in the strip's corner")
+        }
+        KeyboardView.barOn = false
+        let kb = KeyboardView(frame: CGRect(x: 0, y: 0, width: 402, height: KeyboardView.keyboardHeight(compactHeight: false)))
+        kb.layoutIfNeeded()
+        XCTAssertTrue(kb.subviews.compactMap { $0 as? KeyCap }.contains { $0.label.text == "VI" && $0.frame.minY > 150 }, "no strip: back in the bottom row")
     }
 }
+

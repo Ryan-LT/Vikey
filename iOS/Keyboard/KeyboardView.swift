@@ -55,7 +55,13 @@ final class KeyboardView: UIView {
     var returnIsDone = false { didSet { if returnIsDone != oldValue { refreshLabels() } } }
     // setters restyle keys only when something changed: they run on every key press
     var languageTitle = "Tiếng Việt" { didSet { if languageTitle != oldValue { refreshLabels() } } }
-    var languageShort = "VI" { didSet { if languageShort != oldValue { refreshLabels() } } }
+    var languageShort = "VI" {
+        didSet {
+            guard languageShort != oldValue else { return }
+            refreshLabels()
+            if langTop { animateLanguagePill(toVietnamese: languageShort == "VI") }
+        }
+    }
     var returnTitle = "return" { didSet { if returnTitle != oldValue { refreshLabels() } } }
     var returnIsBlue = false { didSet { if returnIsBlue != oldValue { refreshColors() } } }
     var haptics = false
@@ -94,7 +100,7 @@ final class KeyboardView: UIView {
     static var barOn = false
     /// Where the VI/EN key sits: 0 = bottom row (today); 1-3 = design proposals for the top-left corner of the
     /// suggestion strip (Tony): 1 a "VI" pill, 2 a "VI | EN" switch, 3 a "VI ⇄" chip. Only renders use 1-3 for now.
-    static var langStyle = 0
+    static var langStyle = 1   // Tony picked the pill (A); the bottom row is the fallback when the strip is off
     private var langTop: Bool { Self.langStyle > 0 && Self.barOn && Self.searchTop == nil && layer_ != .numpad }
     private var langTopWidth: CGFloat { [0, 46, 92, 66][min(Self.langStyle, 3)] }
     static let barH: CGFloat = 44
@@ -313,6 +319,23 @@ final class KeyboardView: UIView {
         refreshColors()
     }
 
+    /// The switch, seen: the new language rolls in (up into VI, down into EN) and the pill pops.
+    private func animateLanguagePill(toVietnamese vi: Bool) {
+        guard let v = keys.first(where: { $0.def.kind == .language })?.view else { return }
+        let roll = CATransition()
+        roll.type = .push
+        roll.subtype = vi ? .fromTop : .fromBottom
+        roll.duration = 0.22
+        roll.timingFunction = CAMediaTimingFunction(name: .easeOut)
+        v.label.layer.add(roll, forKey: "roll")
+        let tint = CATransition(); tint.type = .fade; tint.duration = 0.22
+        v.layer.add(tint, forKey: "tint")
+        v.transform = CGAffineTransform(scaleX: 0.86, y: 0.86)
+        UIView.animate(withDuration: 0.42, delay: 0, usingSpringWithDamping: 0.45, initialSpringVelocity: 6, options: [.allowUserInteraction]) {
+            v.transform = .identity
+        }
+    }
+
     /// The proposals for a VI/EN key in the strip's corner.
     private func styleTopLanguage(_ v: KeyCap) {
         let brand = dark ? UIColor(red: 0.62, green: 0.60, blue: 1, alpha: 1) : UIColor(red: 0.31, green: 0.27, blue: 0.90, alpha: 1)
@@ -345,6 +368,9 @@ final class KeyboardView: UIView {
             var bg = key, tint = fg
             if def.kind == .returnKey && returnIsBlue { bg = .systemBlue; tint = .white }
             if def.kind == .returnKey && returnIsDone { bg = .systemGreen; tint = .white }
+            if def.kind == .language && langTop && languageShort == "VI" {   // tinted in Vietnamese, neutral in English
+                bg = dark ? UIColor(red: 0.42, green: 0.40, blue: 1, alpha: 0.30) : UIColor(red: 0.31, green: 0.27, blue: 0.90, alpha: 0.14)
+            }
             if def.kind == .language { tint = dark ? UIColor(red: 0.62, green: 0.60, blue: 1, alpha: 1) : UIColor(red: 0.31, green: 0.27, blue: 0.90, alpha: 1) }
             if cursorMode { bg = dark ? UIColor(white: 0.32, alpha: 1) : UIColor(white: 0.93, alpha: 1) }
             v.normalColor = bg

@@ -72,4 +72,14 @@ final class KeyboardSystemParityTests: XCTestCase {
         vc.keyboard(sender, didTap: .backspace)       // like an auto-correct: delete puts the keys back
         XCTAssertEqual(p.text, "Omw")   // same as an auto-correct undo
     }
+
+    func testReturnOn123StartsTheNextLineWithACapital() {
+        let (vc, p) = make()
+        type("hi", vc)
+        vc.keyboard(sender, didTap: .layer(.numbers))
+        vc.keyboard(sender, didTap: .char("1"))
+        vc.keyboard(sender, didTap: .returnKey)
+        type("next", vc)
+        XCTAssertEqual(p.text, "Hi1\nNext")
+    }
 }

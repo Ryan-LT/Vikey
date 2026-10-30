@@ -296,6 +296,7 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
             clearWord()
         case .returnKey:
             clearWord()
+            if keyboard.layer_ == .numbers || keyboard.layer_ == .symbols { keyboard.layer_ = .letters }   // like space: a new line starts on ABC (Tony)
             type("\n")
         case .backspace:
             if undoCorrection() { break }
@@ -312,6 +313,7 @@ final class KeyboardViewController: UIInputViewController, KeyboardViewDelegate 
             lastShiftTap = t
         case .layer(let l):
             keyboard.layer_ = l
+            if l == .letters { updateAutoShift(lastContext ?? "") }   // back on ABC after a new line or ". ": the capital shows
         case .language:
             lastCorrection = nil
             driver.manualSwitch(at: now)
