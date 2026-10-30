@@ -49,7 +49,7 @@ class EmojiKeyboardView(ctx: Context) : View(ctx) {
     private var results: List<Emoji> = emptyList()
     private var queryShown = ""
     private val d = resources.displayMetrics.density
-    private val vietnameseUI = resources.configuration.locales[0].language == "vi"
+    private val vietnameseUI = android.content.res.Resources.getSystem().configuration.locales[0].language == "vi"   // the phone's language, like the iOS keyboard
     private val prefs get() = Settings.prefs(context)
     private val tone get() = prefs.getInt(Settings.EMOJI_TONE, 0)
 

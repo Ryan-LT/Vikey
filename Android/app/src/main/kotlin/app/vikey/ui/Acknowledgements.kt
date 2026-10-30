@@ -49,6 +49,7 @@ object Acknowledgements {
 @Composable
 fun AcknowledgementsScreen(back: () -> Unit) {
     val ctx = LocalContext.current
+    androidx.activity.compose.BackHandler(onBack = back)   // system Back returns to Settings, like the iOS navigation back
     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).statusBarsPadding().navigationBarsPadding()) {
         TopAppBar(title = { Text(stringResource(R.string.acknowledgements)) }, navigationIcon = { IconButton(back) { Icon(Icons.AutoMirrored.Filled.ArrowBack, null) } },
             colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background))

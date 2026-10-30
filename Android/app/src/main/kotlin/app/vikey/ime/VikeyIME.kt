@@ -52,6 +52,13 @@ class VikeyIME : InputMethodService(), KeyboardView.Listener, EmojiKeyboardView.
     private val handler = Handler(Looper.getMainLooper())
     private val ic: InputConnection? get() = currentInputConnection
 
+    /** The keyboard speaks the phone's language, not the app's per-app language (Android 13+), like the iOS keyboard
+     *  extension, which a per-app language never reaches (otherwise it would depend on whether this process restarted). */
+    private fun str(id: Int): String {
+        val cfg = Configuration(resources.configuration); cfg.setLocales(android.content.res.Resources.getSystem().configuration.locales)
+        return createConfigurationContext(cfg).getString(id)
+    }
+
     override fun onCreate() {
         super.onCreate()
         driver = Driver()
@@ -174,7 +181,7 @@ class VikeyIME : InputMethodService(), KeyboardView.Listener, EmojiKeyboardView.
         autoCorrectOn = b(Settings.AUTO_CORRECT)
         KeyboardView.barOn = suggestionsOn || autoCorrectOn
         Diag.on = b(Settings.DIAGNOSTICS)
-        keyboard.diagnostics = if (Diag.on) getString(R.string.diag_hint) else null
+        keyboard.diagnostics = if (Diag.on) str(R.string.diag_hint) else null
         keyboard.haptics = haptics
         keyboard.showsGlobe = if (Build.VERSION.SDK_INT >= 28) shouldOfferSwitchingToNextInputMethod() else true
         applyHeight()
@@ -233,11 +240,11 @@ class VikeyIME : InputMethodService(), KeyboardView.Listener, EmojiKeyboardView.
     private fun returnTitle(): Pair<String?, Boolean> {
         if (!hasEnterAction) return null to false
         return when (imeOptions and EditorInfo.IME_MASK_ACTION) {
-            EditorInfo.IME_ACTION_GO -> getString(R.string.ret_go) to true
-            EditorInfo.IME_ACTION_SEARCH -> getString(R.string.ret_search) to true
-            EditorInfo.IME_ACTION_SEND -> getString(R.string.ret_send) to true
-            EditorInfo.IME_ACTION_DONE -> getString(R.string.ret_done) to true
-            EditorInfo.IME_ACTION_NEXT -> getString(R.string.ret_next) to false
+            EditorInfo.IME_ACTION_GO -> str(R.string.ret_go) to true
+            EditorInfo.IME_ACTION_SEARCH -> str(R.string.ret_search) to true
+            EditorInfo.IME_ACTION_SEND -> str(R.string.ret_send) to true
+            EditorInfo.IME_ACTION_DONE -> str(R.string.ret_done) to true
+            EditorInfo.IME_ACTION_NEXT -> str(R.string.ret_next) to false
             else -> null to false
         }
     }

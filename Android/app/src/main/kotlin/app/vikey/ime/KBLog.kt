@@ -10,7 +10,7 @@ object KBLog {
     private var file: File? = null
     fun init(c: Context) { file = File(c.filesDir, "keyboard-log.txt") }
     fun add(line: String) {
-        val t = String.format("%8.3f", (System.nanoTime() - start) / 1e9)
+        val t = String.format(java.util.Locale.ROOT, "%8.3f", (System.nanoTime() - start) / 1e9)
         synchronized(buffer) { buffer.add("$t $line"); if (buffer.size >= 20) flush() }
     }
     fun flush() {
@@ -37,5 +37,5 @@ object Diag {
     var touches = 0; var haptics = 0; var edits = 0; var late = 0
     var suggestMs = 0.0; var delayMs = 0.0; var readMs = 0.0
     var lastKind = "letter"
-    fun time(ms: Double) = if (ms < 0.1) String.format("%.0f ns", ms * 1_000_000) else String.format("%.2f ms", ms)
+    fun time(ms: Double) = if (ms < 0.1) String.format(java.util.Locale.ROOT, "%.0f ns", ms * 1_000_000) else String.format(java.util.Locale.ROOT, "%.2f ms", ms)   // "1.00 ms" in every locale, like iOS
 }

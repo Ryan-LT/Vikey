@@ -1,4 +1,5 @@
 <resources>
+    <string name="lang_code">en</string>
     <string name="app_name">Vikey</string>
     <string name="ime_name">Vikey</string>
     <string name="subtype_vi">Vietnamese (Vikey)</string>
@@ -10,7 +11,7 @@
     <string name="ret_next">next</string>
 
     <string name="add_keyboard">Add the Vikey keyboard in Settings</string>
-    <string name="add_keyboard_footer">Settings › System › Languages &amp; input › On-screen keyboard › turn on Vikey.</string>
+    <string name="add_keyboard_footer">Tap above, then turn on Vikey.</string>
     <string name="select_keyboard">Choose Vikey as the current keyboard</string>
     <string name="try_keyboard">Try the keyboard</string>
     <string name="try_placeholder">Tap here, pick Vikey with the keyboard switcher, and type</string>
@@ -32,7 +33,7 @@
     <string name="suggestions">Word suggestions</string>
     <string name="suggestions_tip">Show suggested words above the keys, in both Vietnamese and English. Tap a word to use it.</string>
     <string name="autocorrect">Auto-correct</string>
-    <string name="autocorrect_tip">When you hit a neighbouring key ("teh" instead of "the"), Vikey fixes the word when you press space. Press delete right after to keep what you typed.</string>
+    <string name="autocorrect_tip">When you hit a neighbouring key (\"teh\" instead of \"the\"), Vikey fixes the word when you press space. Press delete right after to keep what you typed.</string>
     <string name="autocap">Auto-capitalization</string>
     <string name="autocap_tip">The first letter of a sentence is capitalized, like the system keyboard.</string>
     <string name="haptics">Haptic feedback</string>
@@ -48,7 +49,6 @@
     <string name="log_empty">Nothing yet. Open the Vikey keyboard and type something.</string>
     <string name="log_lines">%1$d lines</string>
     <string name="app_language">App language</string>
-    <string name="system_default">System default</string>
     <string name="review_onboarding">Show the intro again</string>
     <string name="acknowledgements">Acknowledgements</string>
     <string name="version">Version</string>
@@ -61,15 +61,14 @@
     <string name="onb_title1">English and Vietnamese,\nswitched as you type</string>
     <string name="onb_sub1">Type English in the middle of Vietnamese and Vikey fixes the word and switches for you.</string>
     <string name="onb_title2">Add the Vikey keyboard</string>
-    <string name="onb_step1">Open Android Settings</string>
-    <string name="onb_step2">Languages &amp; input › On-screen keyboard</string>
-    <string name="onb_step3">Turn on Vikey</string>
-    <string name="onb_step4">Switch to Vikey with the keyboard icon on the navigation bar</string>
+    <string name="onb_step1">Open Settings</string>
+    <string name="onb_step2">Turn on Vikey</string>
+    <string name="onb_step3">Pick Vikey with ⌨ while typing</string>
     <string name="open_settings">Open Settings</string>
     <string name="added">Vikey added</string>
     <string name="onb_privacy">The keyboard never uses the network; what you type stays on your phone.</string>
     <string name="onb_title3">Try it</string>
-    <string name="onb_sub3">Tap the box below, pick Vikey with the keyboard switcher, then try typing "tooi ddi meeting nhes".</string>
+    <string name="onb_sub3">Tap the box below, pick Vikey with the keyboard switcher, then try typing \"tooi ddi meeting nhes\".</string>
     <string name="onb_type_here">Type here</string>
     <string name="demo_plain">A normal keyboard</string>
     <string name="ack_code">Code</string>

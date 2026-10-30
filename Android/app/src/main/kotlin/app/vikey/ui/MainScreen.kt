@@ -170,10 +170,10 @@ fun MainScreen(onReviewOnboarding: () -> Unit, onAcknowledgements: () -> Unit) {
     }
 }
 
-/** The app's language as its own name ("Tiếng Việt", "English"), or "System default" when none is chosen. */
+/** The language the app shows, in that language ("Tiếng Việt", "English"), like the iOS row: the strings resolve to
+ *  vi or en whatever the phone's language is, so the name comes from the strings, not the system locale. */
 private fun appLanguageName(c: android.content.Context): String {
-    val chosen = if (android.os.Build.VERSION.SDK_INT >= 33) c.getSystemService(android.app.LocaleManager::class.java)?.applicationLocales?.takeIf { !it.isEmpty }?.get(0) else null
-    val l = chosen ?: return c.getString(R.string.system_default)
+    val l = java.util.Locale(c.getString(R.string.lang_code))
     return l.getDisplayLanguage(l).replaceFirstChar { it.uppercase(l) }
 }
 
@@ -193,7 +193,10 @@ private fun appLanguageName(c: android.content.Context): String {
         Spacer(Modifier.width(6.dp))
         Box {
             Icon(Icons.AutoMirrored.Outlined.HelpOutline, null, Modifier.size(18.dp).clickable { shown = true }, tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f))
-            if (shown) Popup(onDismissRequest = { shown = false }, alignment = Alignment.TopStart) {
+            // below the (?) like the iOS popover; focusable so Back and a tap outside close it
+            val below = with(androidx.compose.ui.platform.LocalDensity.current) { 24.dp.roundToPx() }
+            if (shown) Popup(onDismissRequest = { shown = false }, alignment = Alignment.TopStart, offset = androidx.compose.ui.unit.IntOffset(0, below),
+                properties = androidx.compose.ui.window.PopupProperties(focusable = true)) {
                 Surface(Modifier.widthIn(max = 280.dp), shape = RoundedCornerShape(12.dp), tonalElevation = 6.dp, shadowElevation = 6.dp) {
                     Text(stringResource(tip), Modifier.padding(14.dp), style = MaterialTheme.typography.bodyMedium)
                 }

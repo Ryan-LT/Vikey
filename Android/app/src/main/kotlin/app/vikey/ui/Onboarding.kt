@@ -81,7 +81,7 @@ fun OnboardingScreen(done: () -> Unit) {
         Spacer(Modifier.weight(1f))
         Image(painterResource(R.drawable.logo), null, Modifier.size(84.dp).shadow(14.dp, RoundedCornerShape(20.dp), spotColor = BrandLight.copy(alpha = 0.3f)).clip(RoundedCornerShape(20.dp)))
         Spacer(Modifier.height(22.dp))
-        Text(stringResource(R.string.onb_title1), fontSize = 34.sp, lineHeight = 41.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+        FitTitle(stringResource(R.string.onb_title1), TextAlign.Center)
         Spacer(Modifier.height(10.dp))
         Text(stringResource(R.string.onb_sub1), textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(30.dp))
@@ -94,9 +94,9 @@ fun OnboardingScreen(done: () -> Unit) {
     val ctx = LocalContext.current
     Column(Modifier.fillMaxSize().padding(horizontal = 28.dp)) {
         Spacer(Modifier.weight(1f))
-        Text(stringResource(R.string.onb_title2), fontSize = 34.sp, lineHeight = 41.sp, fontWeight = FontWeight.Bold)
+        FitTitle(stringResource(R.string.onb_title2))
         Spacer(Modifier.height(22.dp))
-        Step(1, stringResource(R.string.onb_step1)); Step(2, stringResource(R.string.onb_step2)); Step(3, stringResource(R.string.onb_step3)); Step(4, stringResource(R.string.onb_step4))
+        Step(1, stringResource(R.string.onb_step1)); Step(2, stringResource(R.string.onb_step2)); Step(3, stringResource(R.string.onb_step3))
         Spacer(Modifier.height(22.dp))
         OutlinedButton({ KeyboardStatus.openSettings(ctx) }) { Icon(Icons.Outlined.Settings, null); Spacer(Modifier.width(8.dp)); Text(stringResource(R.string.open_settings), fontWeight = FontWeight.SemiBold) }
         if (added) { Spacer(Modifier.height(16.dp)); Row(verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Filled.CheckCircle, null, tint = Color(0xFF34C759)); Spacer(Modifier.width(8.dp)); Text(stringResource(R.string.added), color = Color(0xFF34C759), fontWeight = FontWeight.SemiBold) } }
@@ -118,13 +118,31 @@ fun OnboardingScreen(done: () -> Unit) {
     var sample by remember { mutableStateOf("") }
     Column(Modifier.fillMaxSize().padding(horizontal = 28.dp)) {
         Spacer(Modifier.weight(1f))
-        Text(stringResource(R.string.onb_title3), fontSize = 34.sp, lineHeight = 41.sp, fontWeight = FontWeight.Bold)
+        FitTitle(stringResource(R.string.onb_title3))
         Spacer(Modifier.height(18.dp))
         Text(stringResource(R.string.onb_sub3), color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(18.dp))
         OutlinedTextField(sample, { sample = it }, Modifier.fillMaxWidth(), placeholder = { Text(stringResource(R.string.onb_type_here)) }, minLines = 3, maxLines = 6, shape = RoundedCornerShape(14.dp),
             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences))
         Spacer(Modifier.weight(2f))
+    }
+}
+
+/** A large title (iOS .largeTitle bold, 34) that never wraps a written line: each line of the text keeps to one line,
+ *  the size steps down until it does (Tony: no weird line breaks). */
+@Composable private fun FitTitle(text: String, align: TextAlign = TextAlign.Start) {
+    androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth()) {
+        val measurer = androidx.compose.ui.text.rememberTextMeasurer()
+        val lines = text.count { it == '\n' } + 1
+        val maxW = constraints.maxWidth
+        val base = androidx.compose.material3.LocalTextStyle.current   // measure exactly what Text draws (theme letter spacing too)
+        fun style(sz: Float) = base.merge(androidx.compose.ui.text.TextStyle(fontSize = sz.sp, lineHeight = (sz * 1.2f).sp, fontWeight = FontWeight.Bold, textAlign = align))
+        val size = remember(text, maxW, base) {
+            var sz = 34f
+            while (sz > 22f && measurer.measure(text, style(sz), constraints = androidx.compose.ui.unit.Constraints(maxWidth = maxW)).lineCount > lines) sz -= 1f
+            sz
+        }
+        Text(text, Modifier.fillMaxWidth(), style = style(size))
     }
 }
 
