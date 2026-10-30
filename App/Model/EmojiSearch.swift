@@ -42,6 +42,8 @@ final class EmojiIndex {
             for k in ((r[5] as? String ?? "") + " | " + (r[6] as? String ?? "")).components(separatedBy: " | ") where !k.isEmpty {
                 terms.append(Term(k, weight: 2))
             }
+            // emoticons (":D", "=))", "^_^") rank like names: typing one exactly puts its emoji first (Tony)
+            for t in (r.count > 9 ? (r[9] as? String ?? "") : "").split(separator: " ") { terms.append(Term(String(t), weight: 3)) }
             return Emoji(char: c, group: g, version: v, nameEN: en, nameVI: vi, skins: r[7] as? [String] ?? [], popularity: r.count > 8 ? (r[8] as? Int ?? 0) : 0, terms: terms)
         }
     }

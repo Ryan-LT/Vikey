@@ -865,6 +865,22 @@
         }
       }
     },
+    "Gửi góp ý": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Send feedback"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gửi góp ý"
+          }
+        }
+      }
+    },
     "Ghi nhận": {
       "localizations": {
         "en": {

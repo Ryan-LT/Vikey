@@ -14,10 +14,10 @@ GITHUB = "https://github.com/tonyminibot/Vikey"
 
 T = {   # layout text per language (D31: Vietnamese at /, English at /en/)
     "vi": dict(faq="Câu hỏi", changelog="Phiên bản", download="Tải về", home="Trang chủ", support="Hỗ trợ",
-               faq_long="Câu hỏi thường gặp", bugs="Báo lỗi", privacy="Quyền riêng tư", ack="Ghi nhận", source="Mã nguồn",
+               faq_long="Câu hỏi thường gặp", bugs="Báo lỗi", feedback="Gửi góp ý", privacy="Quyền riêng tư", ack="Ghi nhận", source="Mã nguồn",
                license="Giấy phép GPL-3.0", switch="EN", switch_title="English", sitename="Vikey - Gõ tiếng Việt"),
     "en": dict(faq="FAQ", changelog="Changelog", download="Download", home="Home", support="Support",
-               faq_long="FAQ", bugs="Report a bug", privacy="Privacy", ack="Acknowledgements", source="Source code",
+               faq_long="FAQ", bugs="Report a bug", feedback="Send feedback", privacy="Privacy", ack="Acknowledgements", source="Source code",
                license="GPL-3.0 license", switch="VI", switch_title="Tiếng Việt", sitename="Vikey - Gõ tiếng Việt"),
 }
 
@@ -49,7 +49,7 @@ def footer(lang, pre):
     return f"""<footer class="foot"><div class="wrap cols">
 <div class="col"><p class="muted">© {YEAR} Tony Dinh</p></div>
 <div class="col"><h4>Vikey</h4><a href="{pre}/">{t["home"]}</a><a href="{pre}/download">{t["download"]}</a><a href="{pre}/changelog">{t["changelog"]}</a></div>
-<div class="col"><h4>{t["support"]}</h4><a href="{pre}/faq">{t["faq_long"]}</a><a href="{GITHUB}/issues">{t["bugs"]}</a><a href="{pre}/privacy">{t["privacy"]}</a><a href="{pre}/acknowledgements">{t["ack"]}</a></div>
+<div class="col"><h4>{t["support"]}</h4><a href="{pre}/faq">{t["faq_long"]}</a><a href="{pre}/feedback">{t["feedback"]}</a><a href="{GITHUB}/issues">{t["bugs"]}</a><a href="{pre}/privacy">{t["privacy"]}</a><a href="{pre}/acknowledgements">{t["ack"]}</a></div>
 <div class="col"><h4>{t["source"]}</h4><a href="{GITHUB}">GitHub</a><a href="{GITHUB}/blob/main/LICENSE">{t["license"]}</a><a href="https://x.com/tdinh_me">@tdinh_me</a></div>
 </div></footer>"""
 

@@ -349,3 +349,21 @@ h1 span{white-space:nowrap}
 .sendbox p,.sendbox h3{text-wrap:balance}.sendbox input[type=email]:focus{outline:2px solid var(--blue);outline-offset:1px;border-color:transparent}
 .pcard .two{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%;margin-top:auto}.pcard .two .btn{width:auto;margin-top:0;padding:10px 6px}
 .sendbox .ts{min-height:65px}
+/* feedback page */
+.fbpage{max-width:620px;padding-top:56px;padding-bottom:80px}
+.fbform{display:grid;gap:4px;margin-top:24px}
+.fbform .fbkinds{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px}
+.fbform .fbkinds label{cursor:pointer}
+.fbform .fbkinds input{position:absolute;opacity:0;pointer-events:none}
+.fbform .fbkinds span{display:inline-block;padding:8px 16px;border:1px solid var(--line);border-radius:999px;font-weight:600;font-size:14px;background:#fff}
+.fbform .fbkinds input:checked+span{background:var(--chip);border-color:var(--blue);color:var(--blue)}
+.fbform .fbkinds input:focus-visible+span{outline:2px solid var(--blue);outline-offset:2px}
+.fbform .field textarea{font-family:inherit;font-size:16px;resize:vertical;min-height:150px}
+.fbform .field input{font-size:16px}
+.fbform .field input:focus,.fbform .field textarea:focus{outline:2px solid var(--blue);outline-offset:1px;border-color:transparent}
+.fbform .ts{min-height:65px;margin-top:6px}
+.fbform .err{color:#c0262d;margin:0}.fbform .err:empty{display:none}
+.fbform .btn.big{justify-self:start;margin-top:6px}
+.fbform .hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
+.fbform .meta{margin-top:8px}
+.fbdone{text-align:center;padding:40px 0}.fbdone .tick{width:64px;height:64px;margin:0 auto 12px;border-radius:50%;background:#e8f7ef;color:#1f9d57;font-size:32px;font-weight:800;display:flex;align-items:center;justify-content:center}
