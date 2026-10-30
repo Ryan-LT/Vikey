@@ -193,11 +193,21 @@ class VikeyIME : InputMethodService(), KeyboardView.Listener, EmojiKeyboardView.
         return v == InputType.TYPE_TEXT_VARIATION_URI || v == InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS || v == InputType.TYPE_TEXT_VARIATION_WEB_EMAIL_ADDRESS
     }
 
-    /** A new text field: start fresh; web addresses and email start in English (and go back after). */
+    /** Passwords go in exactly as pressed: no Telex, no auto switch (English mode switches too), no smart punctuation. */
+    private val isPasswordField: Boolean get() {
+        val v = inputType and InputType.TYPE_MASK_VARIATION
+        return when (inputType and InputType.TYPE_MASK_CLASS) {
+            InputType.TYPE_CLASS_TEXT -> v == InputType.TYPE_TEXT_VARIATION_PASSWORD || v == InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD || v == InputType.TYPE_TEXT_VARIATION_WEB_PASSWORD
+            InputType.TYPE_CLASS_NUMBER -> v == InputType.TYPE_NUMBER_VARIATION_PASSWORD
+            else -> false
+        }
+    }
+
+    /** A new text field: start fresh; web addresses, email and passwords start in English (and go back after). */
     private fun startField(info: EditorInfo) {
         inputType = info.inputType; imeOptions = info.imeOptions
         driver.resetContext()
-        if (isWebField && webFieldsEnglish) {
+        if (isPasswordField || (isWebField && webFieldsEnglish)) {
             if (fieldLanguage == null) fieldLanguage = driver.language
             driver.language = 0
         } else fieldLanguage?.let { driver.language = it; fieldLanguage = null }
@@ -218,8 +228,7 @@ class VikeyIME : InputMethodService(), KeyboardView.Listener, EmojiKeyboardView.
         if (inputType and InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS != 0) return false
         val cls = inputType and InputType.TYPE_MASK_CLASS
         if (cls != InputType.TYPE_CLASS_TEXT) return false
-        val v = inputType and InputType.TYPE_MASK_VARIATION
-        return !(isWebField || v == InputType.TYPE_TEXT_VARIATION_PASSWORD || v == InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD || v == InputType.TYPE_TEXT_VARIATION_WEB_PASSWORD)
+        return !(isWebField || isPasswordField)
     }
 
     private val now get() = SystemClock.uptimeMillis() / 1000.0
@@ -277,7 +286,7 @@ class VikeyIME : InputMethodService(), KeyboardView.Listener, EmojiKeyboardView.
         when (kind) {
             is KeyKind.Char -> {
                 val c = kind.c
-                if (snapsBack(c)) backspace()   // "this ." → "this." like the system keyboard (Tony)
+                if (!isPasswordField && snapsBack(c)) backspace()   // "this ." → "this." like the system keyboard (Tony)
                 val before = lastContext ?: ""
                 if (c == "-" && before.endsWith("-") && !before.endsWith("--") && smartDashesHere) {   // smart dashes: "--" → "—"
                     backspace(); clearWord(); type("—"); return
@@ -371,7 +380,7 @@ class VikeyIME : InputMethodService(), KeyboardView.Listener, EmojiKeyboardView.
     private fun spaceKey() {
         // double space: ". " like the system keyboard
         val before = lastContext ?: ""
-        if (doubleSpacePeriod && now - lastSpace < 0.6 && before.endsWith(" ") && before.length >= 2 && before[before.length - 2].let { it.isLetterOrDigit() }) {
+        if (doubleSpacePeriod && !isPasswordField && now - lastSpace < 0.6 && before.endsWith(" ") && before.length >= 2 && before[before.length - 2].let { it.isLetterOrDigit() }) {
             val c = ic
             c?.beginBatchEdit(); c?.deleteSurroundingText(1, 0); c?.commitText(". ", 1); c?.endBatchEdit()
             driver.resetContext()
@@ -384,7 +393,7 @@ class VikeyIME : InputMethodService(), KeyboardView.Listener, EmojiKeyboardView.
         if (keyboard.layer != KeyboardView.Layer.LETTERS) keyboard.layer = KeyboardView.Layer.LETTERS
     }
 
-    private fun type(s: String) = apply(driver.typeCharacter(s, now))
+    private fun type(s: String) = apply(if (isPasswordField) Edit(0, s, false) else driver.typeCharacter(s, now))   // the engine never sees a password
     private fun backspace() {
         val before = lastContext ?: ""
         if (before.isNotEmpty() && wordPrefix.isEmpty() && !before.last().isLetterOrDigit()) {   // emoji, symbols: delete one grapheme, not one code unit
