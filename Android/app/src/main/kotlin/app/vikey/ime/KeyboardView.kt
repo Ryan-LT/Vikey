@@ -136,6 +136,9 @@ class KeyboardView(ctx: Context) : View(ctx) {
     private val tmp = RectF()
     private val path = Path()
     private val icons = HashMap<Int, Drawable>()
+    /** iOS .semibold (600); Roboto has it from Android 9, medium before. */
+    private val semibold: Typeface = if (android.os.Build.VERSION.SDK_INT >= 28) Typeface.create(Typeface.DEFAULT, 600, false) else Typeface.create("sans-serif-medium", Typeface.NORMAL)
+    private var lastX = 0f
 
     init { rebuild() }
 
@@ -249,8 +252,8 @@ class KeyboardView(ctx: Context) : View(ctx) {
             if (k.kind == KeyKind.Language) tint = brand
             if (cursorMode) bg = if (dark) Color.rgb(82, 82, 82) else Color.rgb(237, 237, 237)
             if (k.pressed) bg = pressedColor
-            // the 1 pt shadow under each key
-            fill.color = if (dark) Color.argb(90, 0, 0, 0) else Color.argb(56, 0, 0, 0)
+            // the 1 pt shadow under each key (black at 0.22, like iOS)
+            fill.color = Color.argb(56, 0, 0, 0)
             tmp.set(k.frame); tmp.offset(0f, d); c.drawRoundRect(tmp, r, r, fill)
             fill.color = bg; c.drawRoundRect(k.frame, r, r, fill)
             drawLabel(c, k, tint)
@@ -287,7 +290,7 @@ class KeyboardView(ctx: Context) : View(ctx) {
             is KeyKind.Char -> { text.typeface = Typeface.DEFAULT; text.textSize = (if (layer == Layer.LETTERS) 23f else 22f) * d }
             KeyKind.Space -> { text.typeface = Typeface.DEFAULT; text.textSize = 15 * d
                 val maxW = k.frame.width() - 8 * d; while (text.measureText(t) > maxW && text.textSize > 9 * d) text.textSize -= d }
-            KeyKind.Language -> { text.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD); text.textSize = 16 * d }
+            KeyKind.Language -> { text.typeface = semibold; text.textSize = 16 * d }
             KeyKind.Return -> { text.typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL); text.textSize = 16 * d }
             else -> { text.typeface = Typeface.DEFAULT; text.textSize = 16 * d }
         }
@@ -425,7 +428,7 @@ class KeyboardView(ctx: Context) : View(ctx) {
         }
         // a new touch while another is down: the earlier key is typed now (fast two-thumb typing)
         touchKey?.let { finish(it) }
-        pointerId = id; touchKey = k; touchStartX = x; touchStartY = y; slideFromLayer = false
+        pointerId = id; touchKey = k; touchStartX = x; touchStartY = y; lastX = x; slideFromLayer = false
         press(k, late = SystemClock.uptimeMillis() - eventTime > 50)
         when (kind) {
             is KeyKind.Char -> {
@@ -433,7 +436,7 @@ class KeyboardView(ctx: Context) : View(ctx) {
                 val kk = k; startHold(450) { showAlternates(kk) }
             }
             KeyKind.Backspace -> { listener?.keyboardDidTap(KeyKind.Backspace); repeatCount = 0; startHold(450) { startRepeat() } }
-            KeyKind.Space -> startHold(400) { enterCursorMode(x) }
+            KeyKind.Space -> startHold(400) { enterCursorMode(lastX) }
             KeyKind.Shift -> listener?.keyboardDidTap(KeyKind.Shift)
             KeyKind.Globe -> startHold(500) { listener?.keyboardGlobeHold(); touchKey?.let { release(it) }; reset() }
             is KeyKind.Layer -> {
@@ -447,6 +450,7 @@ class KeyboardView(ctx: Context) : View(ctx) {
     }
 
     private fun moved(x: Float, y: Float) {
+        lastX = x
         val current = touchKey ?: return
         if (cursorMode) {
             val step = 9 * width / (402 * d)
