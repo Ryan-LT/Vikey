@@ -7,7 +7,7 @@
     <string name="ret_done">Xong</string>
     <string name="ret_next">Tiếp</string>
 
-    <string name="add_keyboard">Bật bàn phím Vikey trong Cài đặt</string>
+    <string name="add_keyboard">Thêm bàn phím Vikey trong Cài đặt</string>
     <string name="add_keyboard_footer">Cài đặt › Hệ thống › Ngôn ngữ và phương thức nhập › Bàn phím ảo › bật Vikey.</string>
     <string name="select_keyboard">Chọn Vikey làm bàn phím hiện tại</string>
     <string name="try_keyboard">Thử bàn phím</string>
@@ -34,17 +34,19 @@
     <string name="autocap">Tự viết hoa</string>
     <string name="autocap_tip">Chữ đầu tiên của câu được viết hoa, như bàn phím hệ thống.</string>
     <string name="haptics">Rung khi gõ</string>
-    <string name="haptics_tip">Rung nhẹ mỗi khi chạm phím, như bàn phím hệ thống.</string>
+    <string name="haptics_tip">Rung nhẹ mỗi khi chạm phím, như bàn phím hệ thống. Vikey không bao giờ gửi gì ra khỏi máy.</string>
     <string name="double_space">Phím tắt dấu chấm</string>
     <string name="double_space_tip">Chạm nhanh hai lần phím cách để thêm dấu chấm và một khoảng trắng.</string>
     <string name="sec_debug">Gỡ lỗi</string>
     <string name="diagnostics">Hiện thông số</string>
-    <string name="diagnostics_tip">Phía trên các phím hiện thời gian xử lý mỗi lần chạm, số lần rung và số lần chạm, và ghi vào nhật ký. Nhật ký không chứa chữ bạn gõ, chỉ có thời gian và loại phím (chữ, dấu cách, xoá…).</string>
+    <string name="diagnostics_tip">Phía trên các phím hiện thời gian xử lý mỗi lần chạm, số lần rung và số lần chạm Android gửi tới, và ghi vào nhật ký. Nhật ký không chứa chữ bạn gõ, chỉ có thời gian và loại phím (chữ, dấu cách, xoá…).</string>
     <string name="send_log">Gửi nhật ký</string>
+    <string name="log_empty_share">(nhật ký trống)</string>
     <string name="clear_log">Xoá nhật ký</string>
     <string name="log_empty">Chưa có gì. Mở bàn phím Vikey và gõ thử.</string>
     <string name="log_lines">%1$d dòng</string>
     <string name="app_language">Ngôn ngữ ứng dụng</string>
+    <string name="system_default">Theo hệ thống</string>
     <string name="review_onboarding">Xem lại hướng dẫn</string>
     <string name="acknowledgements">Ghi nhận</string>
     <string name="version">Phiên bản</string>
@@ -62,7 +64,7 @@
     <string name="onb_step3">Bật Vikey</string>
     <string name="onb_step4">Chuyển sang Vikey bằng biểu tượng bàn phím trên thanh điều hướng</string>
     <string name="open_settings">Mở Cài đặt</string>
-    <string name="added">Đã bật Vikey</string>
+    <string name="added">Đã thêm Vikey</string>
     <string name="onb_privacy">Bàn phím không kết nối mạng, những gì bạn gõ không rời khỏi máy.</string>
     <string name="onb_title3">Thử ngay</string>
     <string name="onb_sub3">Chạm vào ô bên dưới, chọn Vikey bằng nút đổi bàn phím, rồi gõ thử "tooi ddi meeting nhes".</string>

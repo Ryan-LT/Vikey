@@ -10,6 +10,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -54,13 +57,31 @@ fun DemoCard() {
     val b = brand
     Column(Modifier.fillMaxWidth().shadow(20.dp, RoundedCornerShape(20.dp), spotColor = BrandLight.copy(alpha = 0.18f)).clip(RoundedCornerShape(20.dp)).background(MaterialTheme.colorScheme.surface).padding(18.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(stringResource(R.string.demo_plain).uppercase(), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(stringResource(R.string.demo_plain).uppercase(), fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant)   // iOS .caption semibold
             Spacer(Modifier.weight(1f))
             Text(if (vietnamese) "VI" else "EN", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold,
                 modifier = Modifier.background(if (vietnamese) b else Color.Gray, RoundedCornerShape(5.dp)).padding(horizontal = 7.dp, vertical = 3.dp))
         }
         Spacer(Modifier.height(12.dp))
-        Text(if (plain.isEmpty()) AnnotatedString(" ") else marked(plain, vikey, good = false, b), fontSize = 20.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        // the normal side: differing words red with a dotted underline (Compose has no dotted underline: drawn here)
+        var layout by remember { mutableStateOf<TextLayoutResult?>(null) }
+        val plainText = if (plain.isEmpty()) AnnotatedString(" ") else marked(plain, vikey, good = false, b)
+        Text(plainText, fontSize = 20.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis,
+            onTextLayout = { layout = it },
+            modifier = Modifier.drawBehind {
+                val l = layout ?: return@drawBehind
+                if (l.layoutInput.text.text != plainText.text) return@drawBehind
+                val dot = 1.5.dp.toPx(); val step = 3.5.dp.toPx()
+                for (r in plainText.spanStyles) {
+                    if (r.item.color != DemoRed) continue
+                    val start = r.start; val end = minOf(r.end, l.layoutInput.text.length)
+                    if (start >= end || l.getLineForOffset(start) != 0) continue
+                    val x0 = l.getHorizontalPosition(start, true); val x1 = minOf(l.getHorizontalPosition(end, true), size.width)
+                    val y = l.getLineBaseline(0) + 3.dp.toPx()
+                    var x = x0 + dot
+                    while (x < x1) { drawCircle(DemoRed, dot / 2, Offset(x, y)); x += step }
+                }
+            })
         Spacer(Modifier.height(12.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
             Image(painterResource(R.drawable.logo), null, Modifier.size(15.dp).clip(RoundedCornerShape(3.5.dp)))
@@ -71,16 +92,18 @@ fun DemoCard() {
     }
 }
 
+private val DemoRed = Color(0xFFD14242)
+
 /** Words where a normal keyboard and Vikey disagree are marked: red dotted on the normal side, brand-tinted on the Vikey side. */
 private fun marked(a: String, b: String, good: Boolean, brand: Color): AnnotatedString {
     val wa = a.split(" "); val wb = b.split(" ")
-    val red = Color(0xFFD14242)
+    val red = DemoRed
     return buildAnnotatedString {
         for ((i, w) in wa.withIndex()) {
             if (i > 0) append(" ")
             if (w.isNotEmpty() && (i >= wb.size || wb[i] != w)) {
                 if (good) withStyle(SpanStyle(color = brand, background = brand.copy(alpha = 0.14f))) { append(w) }
-                else withStyle(SpanStyle(color = red, textDecoration = TextDecoration.Underline)) { append(w) }
+                else withStyle(SpanStyle(color = red)) { append(w) }   // + the dotted underline drawn by DemoCard
             } else append(w)
         }
     }

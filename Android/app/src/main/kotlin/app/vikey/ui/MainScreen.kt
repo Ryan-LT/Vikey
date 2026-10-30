@@ -140,7 +140,7 @@ fun MainScreen(onReviewOnboarding: () -> Unit, onAcknowledgements: () -> Unit) {
                 ToggleRow(R.string.diagnostics, R.string.diagnostics_tip, diagnostics, last = !diagnostics) { diagnostics = it; save(Settings.DIAGNOSTICS, it) }
                 if (diagnostics) {
                     LinkRow(stringResource(R.string.send_log), icon = { Icon(Icons.Outlined.Share, null, tint = brand) }) {
-                        val i = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_SUBJECT, "Vikey keyboard log").putExtra(Intent.EXTRA_TEXT, logText.ifEmpty { "(empty log)" })
+                        val i = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_SUBJECT, "Vikey keyboard log").putExtra(Intent.EXTRA_TEXT, logText.ifEmpty { ctx.getString(R.string.log_empty_share) })
                         ctx.startActivity(Intent.createChooser(i, null))
                     }
                     LinkRow(stringResource(R.string.clear_log), color = MaterialTheme.colorScheme.error) { KBLog.clear(ctx); logText = "" }
@@ -152,6 +152,14 @@ fun MainScreen(onReviewOnboarding: () -> Unit, onAcknowledgements: () -> Unit) {
         }
         item {
             Card {
+                // per-app language (Android 13+), like the iOS row that opens the app's page in Settings
+                if (android.os.Build.VERSION.SDK_INT >= 33) {
+                    Row(Modifier.fillMaxWidth().clickable { KeyboardStatus.openAppLanguage(ctx) }.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text(stringResource(R.string.app_language), Modifier.weight(1f))
+                        Text(appLanguageName(ctx), color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
+                    }
+                    HorizontalDivider(Modifier.padding(start = 16.dp))
+                }
                 LinkRow(stringResource(R.string.review_onboarding), onClick = onReviewOnboarding)
                 LinkRow(stringResource(R.string.acknowledgements), onClick = onAcknowledgements)
                 LinkRow("vikey.app") { ctx.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://vikey.app"))) }
@@ -160,6 +168,13 @@ fun MainScreen(onReviewOnboarding: () -> Unit, onAcknowledgements: () -> Unit) {
             Footer(stringResource(R.string.footer))
         }
     }
+}
+
+/** The app's language as its own name ("Tiếng Việt", "English"), or "System default" when none is chosen. */
+private fun appLanguageName(c: android.content.Context): String {
+    val chosen = if (android.os.Build.VERSION.SDK_INT >= 33) c.getSystemService(android.app.LocaleManager::class.java)?.applicationLocales?.takeIf { !it.isEmpty }?.get(0) else null
+    val l = chosen ?: return c.getString(R.string.system_default)
+    return l.getDisplayLanguage(l).replaceFirstChar { it.uppercase(l) }
 }
 
 @Composable fun Wordmark(size: androidx.compose.ui.unit.TextUnit) {

@@ -81,7 +81,7 @@ fun OnboardingScreen(done: () -> Unit) {
         Spacer(Modifier.weight(1f))
         Image(painterResource(R.drawable.logo), null, Modifier.size(84.dp).shadow(14.dp, RoundedCornerShape(20.dp), spotColor = BrandLight.copy(alpha = 0.3f)).clip(RoundedCornerShape(20.dp)))
         Spacer(Modifier.height(22.dp))
-        Text(stringResource(R.string.onb_title1), fontSize = 32.sp, lineHeight = 38.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+        Text(stringResource(R.string.onb_title1), fontSize = 34.sp, lineHeight = 41.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
         Spacer(Modifier.height(10.dp))
         Text(stringResource(R.string.onb_sub1), textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(30.dp))
@@ -94,7 +94,7 @@ fun OnboardingScreen(done: () -> Unit) {
     val ctx = LocalContext.current
     Column(Modifier.fillMaxSize().padding(horizontal = 28.dp)) {
         Spacer(Modifier.weight(1f))
-        Text(stringResource(R.string.onb_title2), fontSize = 32.sp, fontWeight = FontWeight.Bold)
+        Text(stringResource(R.string.onb_title2), fontSize = 34.sp, lineHeight = 41.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(22.dp))
         Step(1, stringResource(R.string.onb_step1)); Step(2, stringResource(R.string.onb_step2)); Step(3, stringResource(R.string.onb_step3)); Step(4, stringResource(R.string.onb_step4))
         Spacer(Modifier.height(22.dp))
@@ -110,7 +110,7 @@ fun OnboardingScreen(done: () -> Unit) {
     Row(Modifier.padding(bottom = 16.dp), verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.size(32.dp).clip(CircleShape).background(BrandLight), contentAlignment = Alignment.Center) { Text("$n", color = Color.White, fontWeight = FontWeight.SemiBold) }
         Spacer(Modifier.width(14.dp))
-        Text(text, fontSize = 19.sp)
+        Text(text, fontSize = 20.sp)
     }
 }
 
@@ -118,7 +118,7 @@ fun OnboardingScreen(done: () -> Unit) {
     var sample by remember { mutableStateOf("") }
     Column(Modifier.fillMaxSize().padding(horizontal = 28.dp)) {
         Spacer(Modifier.weight(1f))
-        Text(stringResource(R.string.onb_title3), fontSize = 32.sp, fontWeight = FontWeight.Bold)
+        Text(stringResource(R.string.onb_title3), fontSize = 34.sp, lineHeight = 41.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(18.dp))
         Text(stringResource(R.string.onb_sub3), color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(18.dp))
