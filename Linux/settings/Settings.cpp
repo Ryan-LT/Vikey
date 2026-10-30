@@ -156,7 +156,7 @@ static GtkWidget* group(GtkWidget* page, const char* title) { GtkWidget* g = adw
 static void refreshSetup() { int in = vikeyInInputSources(); gtk_widget_set_visible(_setupLink, in == 0); gtk_widget_set_visible(_hint, in != 0); gtk_switch_set_active(GTK_SWITCH(_loginSw), in != 0); }
 static void onSettingsFile(GFileMonitor*, GFile*, GFile*, GFileMonitorEvent, gpointer) { prefs::reload(); syncSeg(); setHint(); }
 
-static void onFeedback(AdwActionRow*, gpointer) {   // no lambdas in G_CALLBACK (see the Linux compile fixes)
+static void onFeedback(GtkButton*, gpointer) {   // no lambdas in G_CALLBACK (see the Linux compile fixes)
     g_app_info_launch_default_for_uri("https://vikey.app/feedback?platform=linux&v=" VIKEY_VERSION, nullptr, nullptr);
 }
 
@@ -212,12 +212,9 @@ void buildMain(GtkApplication* app) {
     GtkWidget* lr = row(g5, "Mở Vikey khi đăng nhập", "IBus tự mở Vikey mỗi khi bạn đăng nhập, khi Vikey có trong Cài đặt › Bàn phím › Nguồn nhập."); adw_action_row_add_suffix(ADW_ACTION_ROW(lr), _loginSw);
     switchRow(g5, "Tự động cập nhật", "Mỗi ngày Vikey kiểm tra bản mới trên vikey.app và báo cho bạn khi có. Bản mới cài bằng gói .deb/.rpm từ vikey.app.", "AutoUpdate", 1);
     // send feedback (main, 1.0.25): opens vikey.app/feedback in the browser, with the platform and version
-    GtkWidget* fb = adw_action_row_new(); adw_preferences_row_set_title(ADW_PREFERENCES_ROW(fb), "Gửi góp ý");
-    adw_action_row_set_subtitle(ADW_ACTION_ROW(fb), "Báo lỗi hoặc góp ý cho Vikey trên vikey.app.");
-    adw_action_row_add_suffix(ADW_ACTION_ROW(fb), gtk_image_new_from_icon_name("adw-external-link-symbolic"));
-    gtk_list_box_row_set_activatable(GTK_LIST_BOX_ROW(fb), TRUE);
-    g_signal_connect(fb, "activated", G_CALLBACK(onFeedback), nullptr);
-    adw_preferences_group_add(ADW_PREFERENCES_GROUP(g5), fb);
+    GtkWidget* fb = row(g5, "Góp ý", "Báo lỗi hoặc góp ý cho Vikey: mở trang vikey.app/feedback trong trình duyệt.");   // same row as the Mac's
+    GtkWidget* fbBtn = gtk_button_new_with_label("Gửi góp ý…"); gtk_widget_set_valign(fbBtn, GTK_ALIGN_CENTER);
+    g_signal_connect(fbBtn, "clicked", G_CALLBACK(onFeedback), nullptr); adw_action_row_add_suffix(ADW_ACTION_ROW(fb), fbBtn);
     setHint(); refreshEnabled(); refreshSetup();
     g_timeout_add_seconds(2, [](gpointer) -> gboolean { refreshSetup(); return TRUE; }, nullptr);
     GFileMonitor* mon = g_file_monitor_file(g_file_new_for_path(prefs::settingsPath().c_str()), G_FILE_MONITOR_WATCH_MOVES, nullptr, nullptr); if (mon) g_signal_connect(mon, "changed", G_CALLBACK(onSettingsFile), nullptr);
