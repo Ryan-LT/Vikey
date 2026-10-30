@@ -65,6 +65,16 @@ If every listed change is intended, accept them with `Tools/autoswitch/check.sh 
 **Details:** `Windows/PLAN.md`.
 
 ---
+## 44. Backspace never reopens a word from before a language switch
+
+**Status:** Shipped 2026-10-30.
+
+**Problem.** In Vietnamese: "xin ", ⌥Z, "hello", ⌥Z, Backspace, "s" gave "xin heín" (Tony). The engine keeps the last words so Backspace can go back into one and keep editing it. Words typed in English mode never enter that list, so after switching back, Backspace reopened "xin" as if it were the word on the screen, and "s" edited it.
+
+**Fix.** When the language changes, the engine forgets those words (checked in `startNewSession` and on each key, so every app's switch path is covered). Without a switch, going back into the last word works as before ("tooi ddi hocj ⌫ s" → "tôi đi hóc").
+
+**Result.** "xin hells". Goldens and metrics unchanged. Rules D44 (3 cases); the test harness gets `#` for the switch hotkey.
+
 ## 43. Vikey for Android
 
 **Status:** Built 2026-10-29 on branch `android` (release build signed, live test 14/14 on the emulator). Publishing waits for a try on Tony's phone.

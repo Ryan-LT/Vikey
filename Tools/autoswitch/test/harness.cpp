@@ -44,6 +44,10 @@ static void applyOutput(Uint16 key, bool caps) {
 }
 
 static void press(char c) {
+    if (c == '#') {   // the switch hotkey (⌥Z): what the apps do on a manual switch
+        vLanguage = vLanguage ? 0 : 1; startNewSession(); vAutoSwitchForget(); prevN = 0; enCount = 0; enValid = true; enAfterDouble = false;
+        return;
+    }
     bool shifted = c == '"' || c == ')' || c == '(' || c == '?';
     bool caps = (c >= 'A' && c <= 'Z') || shifted;
     char lc = (c >= 'A' && c <= 'Z') ? c + 32 : c;

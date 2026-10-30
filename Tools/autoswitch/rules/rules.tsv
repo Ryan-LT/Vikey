@@ -122,3 +122,6 @@ D42	1	been USA 	bên USA 	0	the same with an acronym that is an English word
 D43	1	la voiws os 	la với ó 	1	lowercase os in Vietnamese is ó (Tony); OS the acronym is typed in caps
 D43	0	the os is 	the os is 	0	in English, os stays
 D43	1	my os is linux 	my os is linux 	0	an English sentence keeps os
+D44	1	xin #hello#<s	xin hells	1	after a switch, Backspace never reopens a word from before it (Tony: gave "xin heín")
+D44	1	xin #hello# <<s	xin hells	1	the same over a space
+D44	1	tooi ddi hocj <s	tôi đi hóc	1	without a switch, Backspace still goes back into the last word
