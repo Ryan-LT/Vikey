@@ -97,11 +97,19 @@ static std::string frontAppX11() {
 #endif
 }
 
-// ---- panel properties (the "menu bar") --------------------------------------------------------------
+// ---- panel properties (the "menu bar")
+static std::string hotkeyLabel() {   // "Alt+Z" (same names as vikey-settings)
+    int hk = prefs::getInt("SwitchKeyStatus", 0); if (!hk) hk = 0x7A000206;
+    static const struct { int k; const char* n; } N[] = {{0,"A"},{11,"B"},{8,"C"},{2,"D"},{14,"E"},{3,"F"},{5,"G"},{4,"H"},{34,"I"},{38,"J"},{40,"K"},{37,"L"},{46,"M"},{45,"N"},{31,"O"},{35,"P"},{12,"Q"},{15,"R"},{1,"S"},{17,"T"},{32,"U"},{9,"V"},{13,"W"},{7,"X"},{16,"Y"},{6,"Z"},
+        {18,"1"},{19,"2"},{20,"3"},{21,"4"},{23,"5"},{22,"6"},{26,"7"},{28,"8"},{25,"9"},{29,"0"},{49,"Space"},{36,"Enter"},{48,"Tab"},{50,"`"},{27,"-"},{24,"="},{33,"["},{30,"]"},{42,"\\"},{41,";"},{39,"'"},{43,","},{47,"."},{44,"/"}};
+    std::string s; if (hk & 0x100) s += "Ctrl+"; if (hk & 0x200) s += "Alt+"; if (hk & 0x800) s += "Shift+"; if (hk & 0x400) s += "Super+";
+    int k = hk & 0xFF; if (k != 0xFE) { for (auto& e : N) if (e.k == k) s += e.n; } else if (!s.empty()) s.pop_back();
+    return s;
+} --------------------------------------------------------------
 static void updateLangProp(VikeyEngine* e) {
     if (!e || !e->pLang) return;
     int vi = core::language();
-    ibus_property_set_label(e->pLang, ibus_text_new_from_string(vi ? "Tiếng Việt" : "English"));
+    ibus_property_set_label(e->pLang, ibus_text_new_from_string(("Tiếng Việt   " + hotkeyLabel()).c_str()));   // the Mac's "Tiếng Việt  ⌥Z", a switch on in Vietnamese
     ibus_property_set_symbol(e->pLang, ibus_text_new_from_string(vi ? "V" : "E"));
     ibus_property_set_state(e->pLang, vi ? PROP_STATE_CHECKED : PROP_STATE_UNCHECKED);
     ibus_engine_update_property(IBUS_ENGINE(e), e->pLang);
