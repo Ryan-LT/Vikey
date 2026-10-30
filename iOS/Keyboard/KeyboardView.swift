@@ -107,11 +107,19 @@ final class KeyboardView: UIView {
     static func diagH(compactHeight: Bool) -> CGFloat { Diag.on ? (compactHeight ? 30 : 40) : 0 }
     /// Emoji search (EmojiKeyboardView): the search field and a row of results take the top instead of the strip.
     static var searchTop: CGFloat?
+    /// Pro Max-size iPhones (430-440 pt wide) have taller keys: 45 pt on a 56 pt pitch, measured on the iOS 26.5
+    /// system keyboard (iPhone 17 Pro Max); 43 on 54 below that (iPhone 17 Pro, 402 pt).
+    static var portraitWidth: CGFloat { min(UIScreen.main.bounds.width, UIScreen.main.bounds.height) }
+    static var tallKeys: Bool { portraitWidth >= 428 }
     static func metrics(compactHeight: Bool) -> (top: CGFloat, keyH: CGFloat, pitch: CGFloat, bottom: CGFloat) {
-        if let t = searchTop { return compactHeight ? (top: t, keyH: 34, pitch: 40, bottom: 4) : (top: t, keyH: 43, pitch: 54, bottom: 3) }
+        let keyH: CGFloat = tallKeys ? 45 : 43, pitch: CGFloat = tallKeys ? 56 : 54
+        if let t = searchTop { return compactHeight ? (top: t, keyH: 34, pitch: 40, bottom: 4) : (top: t, keyH: keyH, pitch: pitch, bottom: 3) }
         let extra = diagH(compactHeight: compactHeight) + (barOn ? barH : 0)
         if compactHeight { return (top: 8 + extra, keyH: 34, pitch: 40, bottom: 4) }
-        return (top: 11 + extra - (barOn ? 3 : 0), keyH: 43, pitch: 54, bottom: 3)
+        // Pro Max: rows 51.33 below the keyboard's top edge, and 2.67 pt higher than with a 3 pt bottom (measured
+        // side by side with the system keyboard in the same app, iOS 26.5)
+        if tallKeys { return (top: 11 + extra - (barOn ? 3.67 : 0), keyH: keyH, pitch: pitch, bottom: 5.67) }
+        return (top: 11 + extra - (barOn ? 3 : 0), keyH: keyH, pitch: pitch, bottom: 3)
     }
     static func keyboardHeight(compactHeight: Bool) -> CGFloat {
         let m = metrics(compactHeight: compactHeight)
@@ -189,9 +197,12 @@ final class KeyboardView: UIView {
         super.layoutSubviews()
         let m = Self.metrics(compactHeight: compactHeight)
         let W = bounds.width
-        let s = W / 402                       // the measured layout is for 402 pt
-        let side = 6.67 * s, gap = 6 * s
+        // measured on the iOS 26.5 system keyboard at 402 and 440 pt (Tony: same sizes as the system keyboard):
+        // the side margin and the gaps don't scale, the letter keys take the rest; function keys grow with the width
+        let s = W / 402                       // older proportions still used for the less-measured pieces
+        let side: CGFloat = 6.67, gap: CGFloat = 6
         let key = (W - 2 * side - 9 * gap) / 10
+        func lerp(_ at402: CGFloat, _ at440: CGFloat) -> CGFloat { at402 + (W - 402) * (at440 - at402) / 38 }
         let rows = rowKinds()
         var frames: [CGRect] = []
         if layer_ == .numpad {   // 3 × 4, the whole height, like the system number pad
@@ -218,7 +229,7 @@ final class KeyboardView: UIView {
                     for i in 0..<row.count { frames.append(rect(side + CGFloat(i) * (key + gap), key)) }
                 }
             case 2:
-                let fn = 45.3 * s
+                let fn = lerp(45.5, 50.17)   // shift and delete: 45.33/45.67 at 402, 50.0/50.33 at 440
                 frames.append(rect(side, fn))
                 let inner = row.count - 2
                 if inner == 7 {
@@ -231,7 +242,7 @@ final class KeyboardView: UIView {
                 }
                 frames.append(rect(W - side - fn, fn))
             default:
-                let small = 43.3 * s, ret = 92.6 * s
+                let small = lerp(43.33, 48), ret = lerp(93, 102.33)   // 123, emoji; return
                 var x = side
                 let fixed = row.filter { if case .char = $0 { return false }; return $0 != .space && $0 != .returnKey }.count
                 let charKeys = row.filter { if case .char = $0 { return true }; return false }.count
@@ -361,9 +372,10 @@ final class KeyboardView: UIView {
     private func refreshColors() {
         bar.dark = dark
         let fg: UIColor = dark ? .white : .black
-        // translucent keys over the keyboard's glass, like iOS 26 (Tony)
-        let key: UIColor = dark ? UIColor(white: 1, alpha: 0.22) : UIColor(white: 1, alpha: 0.68)
-        let pressed: UIColor = dark ? UIColor(white: 1, alpha: 0.38) : UIColor(white: 1, alpha: 0.32)
+        // the system keys over the keyboard's glass, measured: light (253,255,255) on (217,221,233) ≈ 95% white,
+        // dark (61,61,67) on (23,24,31) ≈ 16.5% white (Tony: ours were too transparent)
+        let key: UIColor = dark ? UIColor(white: 1, alpha: 0.165) : UIColor(red: 0.992, green: 1, blue: 1, alpha: 0.99)
+        let pressed: UIColor = dark ? UIColor(white: 1, alpha: 0.32) : UIColor(white: 1, alpha: 0.55)
         for (def, v) in keys {
             var bg = key, tint = fg
             if def.kind == .returnKey && returnIsBlue { bg = .systemBlue; tint = .white }

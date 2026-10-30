@@ -69,3 +69,27 @@ final class LanguageKeyProposalTests: XCTestCase {
     }
 }
 
+
+/// Key frames vs the iOS 26.5 system keyboard, measured from simulator screenshots of iPhone 17 Pro Max (440 pt).
+final class SystemKeyboardGeometryTests: XCTestCase {
+    func testMatchesSystemKeyboardAt440() throws {
+        guard KeyboardView.tallKeys else { throw XCTSkip("needs a Pro Max-size simulator") }
+        KeyboardView.barOn = true; KeyboardView.langStyle = 1
+        let kb = KeyboardView(frame: CGRect(x: 0, y: 0, width: 440, height: KeyboardView.keyboardHeight(compactHeight: false)))
+        kb.layoutIfNeeded()
+        let caps = kb.subviews.compactMap { $0 as? KeyCap }
+        func frame(_ label: String) -> CGRect? { caps.first { $0.label.text == label }?.frame }
+        let q = try XCTUnwrap(frame("q")), a = try XCTUnwrap(frame("a")), z = try XCTUnwrap(frame("z")), p = try XCTUnwrap(frame("p"))
+        let top = q.minY
+        func near(_ v: CGFloat, _ want: CGFloat, _ what: String) { XCTAssertEqual(v, want, accuracy: 0.5, what) }
+        near(q.minX, 6.67, "q x"); near(q.width, 37.33, "letter width"); near(q.height, 45, "key height")
+        near(p.maxX, 433.67, "p right edge")
+        near(a.minX, 28.0, "a x"); near(a.minY - top, 56, "row pitch")
+        near(z.minX, 71.33, "z x"); near(z.minY - top, 112, "row 3")
+        // row 3 sides: shift 6.67 w 50.0, delete 383.33 w 50.33; bottom row: 123 w 48 at 6.67, return 331.33 w 102.33
+        let row3 = caps.filter { abs($0.frame.minY - z.minY) < 1 }.sorted { $0.frame.minX < $1.frame.minX }
+        near(row3.first!.frame.width, 50, "shift width"); near(row3.last!.frame.minX, 383.33, "delete x")
+        let bottom = caps.filter { abs($0.frame.minY - (top + 168)) < 1 }.sorted { $0.frame.minX < $1.frame.minX }
+        near(bottom.first!.frame.width, 48, "123 width"); near(bottom.last!.frame.minX, 331.33, "return x"); near(bottom.last!.frame.width, 102.33, "return width")
+    }
+}
