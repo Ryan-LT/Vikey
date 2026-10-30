@@ -4,15 +4,18 @@
 <title>Vikey</title>
 <link>https://vikey.app</link>
 <item>
-<title>Vikey 1.0.25</title>
-<pubDate>Fri, 30 Oct 2026 00:05:22 +0000</pubDate>
-<sparkle:version>27</sparkle:version>
-<sparkle:shortVersionString>1.0.25</sparkle:shortVersionString>
+<title>Vikey 1.0.26</title>
+<pubDate>Fri, 30 Oct 2026 00:56:26 +0000</pubDate>
+<sparkle:version>28</sparkle:version>
+<sparkle:shortVersionString>1.0.26</sparkle:shortVersionString>
 <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
 <description><![CDATA[<ul>
-<li>Nút Gửi góp ý trong menu và cửa sổ Vikey: mở trang góp ý trên vikey.app.</li>
+<li>Windows và Linux có đủ tính năng như bản Mac: bảng emoji (tìm bằng tiếng Việt, tiếng Anh hoặc Telex), hướng dẫn khi mở lần đầu, âm báo chuyển mới, cửa sổ Ghi nhận.</li>
+<li>Windows và Linux gõ giống bản Mac: gõ tiếp sau khi Xoá hoàn tác ("vaay" → Xoá → "j" ra "vậy"), số dính liền chữ ("5trăm"), nhìn cả từ sau ("vào office ít nhất").</li>
+<li>Linux: tự kiểm tra bản mới mỗi ngày và báo cho bạn.</li>
+<li>Android: giống bản iPhone hơn: gợi ý chọn khi nhấc tay, emoji dùng thường xuyên, tìm emoji bằng :D, thay thế văn bản (omw), chọn ngôn ngữ ứng dụng, giao diện tối rõ hơn.</li>
 </ul>]]></description>
-<enclosure url="https://vikey.app/downloads/Vikey-1.0.25.dmg" type="application/octet-stream" sparkle:edSignature="i4EgZr6x9nchHQKqEMGuyCA4eawdirOePQaeHz0WcI6MrPvp3c1Pq2ABZ/BmIvYXzDNj8BEKdgVl5PkKXy2wBQ==" length="4527073"/>
+<enclosure url="https://vikey.app/downloads/Vikey-1.0.26.dmg" type="application/octet-stream" sparkle:edSignature="2IBG5J3Mj2A8YeaqaprvojT3OKqTEzFyUcAiSWgPEMnAunTKYR8d58cMg0mMUhaufgniWqALnz4RSXEp/DaODA==" length="4527022"/>
 </item>
 <item>
 <title>Vikey 1.0.15 for Windows (x64)</title>
