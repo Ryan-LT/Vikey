@@ -77,6 +77,10 @@ static GtkWidget* switchRow(GtkWidget* group, const char* label, const char* tip
 }
 static GtkWidget* group(GtkWidget* page, const char* title) { GtkWidget* g = adw_preferences_group_new(); if (title) adw_preferences_group_set_title(ADW_PREFERENCES_GROUP(g), title); adw_preferences_page_add(ADW_PREFERENCES_PAGE(page), ADW_PREFERENCES_GROUP(g)); return g; }
 
+static void onFeedback(AdwActionRow*, gpointer) {   // no lambdas in G_CALLBACK (see the Linux compile fixes)
+    g_app_info_launch_default_for_uri("https://vikey.app/feedback?platform=linux&v=" VIKEY_VERSION, nullptr, nullptr);
+}
+
 static void buildMain(GtkApplication* app) {
     GtkWidget* win = adw_application_window_new(app); gtk_window_set_title(GTK_WINDOW(win), "Vikey"); gtk_window_set_default_size(GTK_WINDOW(win), 480, 690);
     GtkWidget* tv = adw_toolbar_view_new(); GtkWidget* hb = adw_header_bar_new(); adw_header_bar_set_show_title(ADW_HEADER_BAR(hb), FALSE); adw_toolbar_view_add_top_bar(ADW_TOOLBAR_VIEW(tv), hb);
@@ -119,6 +123,13 @@ static void buildMain(GtkApplication* app) {
     adw_preferences_group_add(ADW_PREFERENCES_GROUP(g4), r);
     GtkWidget* r2 = adw_action_row_new(); adw_preferences_row_set_title(ADW_PREFERENCES_ROW(r2), "Tự động cập nhật"); adw_action_row_set_subtitle(ADW_ACTION_ROW(r2), "Cập nhật cùng hệ thống qua kho gói (apt/dnf) của vikey.app.");
     adw_preferences_group_add(ADW_PREFERENCES_GROUP(g4), r2);
+    // send feedback: opens vikey.app/feedback in the browser, with the platform and version
+    GtkWidget* fb = adw_action_row_new(); adw_preferences_row_set_title(ADW_PREFERENCES_ROW(fb), "Gửi góp ý");
+    adw_action_row_set_subtitle(ADW_ACTION_ROW(fb), "Báo lỗi hoặc góp ý cho Vikey trên vikey.app.");
+    adw_action_row_add_suffix(ADW_ACTION_ROW(fb), gtk_image_new_from_icon_name("adw-external-link-symbolic"));
+    gtk_list_box_row_set_activatable(GTK_LIST_BOX_ROW(fb), TRUE);
+    g_signal_connect(fb, "activated", G_CALLBACK(onFeedback), nullptr);
+    adw_preferences_group_add(ADW_PREFERENCES_GROUP(g4), fb);
     setHint(); refreshEnabled();
     adw_toolbar_view_set_content(ADW_TOOLBAR_VIEW(tv), page); adw_application_window_set_content(ADW_APPLICATION_WINDOW(win), tv);
     gtk_window_present(GTK_WINDOW(win));

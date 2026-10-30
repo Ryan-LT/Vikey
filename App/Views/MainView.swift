@@ -86,6 +86,11 @@ struct MainView: View {
                     Toggle(isOn: Binding(get: { updater.automatic }, set: { updater.automatic = $0 })) {
                         Tip("Tự động cập nhật", "Mỗi ngày Vikey kiểm tra bản mới trên vikey.app, tự tải về và cài khi bạn thoát Vikey hoặc tắt máy.")
                     }
+                    LabeledContent {
+                        Button("Gửi góp ý…") { Feedback.open() }
+                    } label: {
+                        Tip("Góp ý", "Báo lỗi hoặc góp ý cho Vikey: mở trang vikey.app/feedback trong trình duyệt.")
+                    }
                 }
             }
             .formStyle(.grouped)

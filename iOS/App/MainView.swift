@@ -91,6 +91,7 @@ struct MainView: View {
                     .foregroundStyle(.primary)
                     Button("Xem lại hướng dẫn") { didOnboard = false }
                     NavigationLink("Ghi nhận") { AcknowledgementsView() }
+                    Link("Gửi góp ý", destination: Self.feedbackURL)
                     Link("vikey.app", destination: URL(string: "https://vikey.app")!)
                     LabeledContent("Phiên bản", value: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "")
                 } footer: {
@@ -103,6 +104,15 @@ struct MainView: View {
         }
         .onChange(of: phase) { _, p in if p == .active { added = KeyboardStatus.isAdded; logText = KBLog.read() } }
         .onAppear { logText = KBLog.read() }
+    }
+}
+
+extension MainView {
+    /// vikey.app/feedback (English page when the app is in English) with the platform and version.
+    static var feedbackURL: URL {
+        let v = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
+        let en = (Bundle.main.preferredLocalizations.first ?? "vi") != "vi"
+        return URL(string: "https://vikey.app\(en ? "/en" : "")/feedback?platform=ios&v=\(v)")!
     }
 }
 

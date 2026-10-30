@@ -19,6 +19,7 @@ struct MenuBarContent: View {
             .keyboardShortcut(",")
         Divider()
         Button("Hướng dẫn…") { OnboardingWindow.show() }
+        Button("Gửi góp ý…") { Feedback.open() }
         Button("Kiểm tra cập nhật…") { Updater.shared.checkForUpdates() }
         Button("Giới thiệu Vikey") { AboutPanel.show() }
         Button("Thoát Vikey") { NSApp.terminate(nil) }
@@ -37,4 +38,13 @@ struct DebugMenu: View {
                 .disabled(logEnabled == 0)
         }
     }
+}
+
+/// vikey.app/feedback with the platform and version, so a report says where it came from.
+enum Feedback {
+    static var url: URL {
+        let v = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
+        return URL(string: "https://vikey.app/feedback?platform=macos&v=\(v)")!
+    }
+    static func open() { NSWorkspace.shared.open(url) }
 }
