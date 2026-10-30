@@ -81,11 +81,13 @@ static std::string frontAppX11() {
         if (!getenv("DISPLAY")) setenv("DISPLAY", ":0", 0);
         if (!getenv("XAUTHORITY")) { const char* rt = getenv("XDG_RUNTIME_DIR"); std::string dir = rt ? rt : "/run/user/1000"; glob_t g = {}; if (glob((dir + "/.mutter-Xwaylandauth.*").c_str(), 0, nullptr, &g) == 0 && g.gl_pathc > 0) setenv("XAUTHORITY", g.gl_pathv[0], 0); globfree(&g); }
         d = XOpenDisplay(nullptr);
+        // the focused window can close mid-walk (BadWindow): Xlib's default handler would exit() the engine
+        XSetErrorHandler([](Display*, XErrorEvent*) { return 0; });
     }
     if (!d) return "";
     // XGetInputFocus works on XWayland too (its root has no _NET_ACTIVE_WINDOW); walk up to the window with a class
     Window w = 0; int revert = 0; XGetInputFocus(d, &w, &revert);
-    for (int depth = 0; w && w != DefaultRootWindow(d) && depth < 8; depth++) {
+    for (int depth = 0; w && w != PointerRoot && w != DefaultRootWindow(d) && depth < 8; depth++) {   // None / PointerRoot: no window has the focus
         XClassHint h = {};
         if (XGetClassHint(d, w, &h)) { std::string name = h.res_class ? h.res_class : ""; if (h.res_class) XFree(h.res_class); if (h.res_name) XFree(h.res_name); if (!name.empty()) return name; }
         Window root = 0, parent = 0, *kids = nullptr; unsigned n = 0;

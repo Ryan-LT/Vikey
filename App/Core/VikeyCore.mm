@@ -553,8 +553,8 @@ extern "C" {
 
     /// Sends the engine's result for the current key: backspaces, then the new characters.
     void SendEngineOutput() {
-        //fix autocomplete
-        if (shouldUseRecommendWorkaround(FRONT_APP) && pData->extCode != 4) {
+        //fix autocomplete; not when the extra backspace would reach MAX_BUFF (the engine can ask for 31): then none would be sent
+        if (shouldUseRecommendWorkaround(FRONT_APP) && pData->extCode != 4 && pData->backspaceCount < MAX_BUFF - 1) {
             SendEmptyCharacter();
             pData->backspaceCount++;
         }
