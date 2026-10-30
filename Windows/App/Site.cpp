@@ -72,12 +72,13 @@ std::wstring currentHost() {
 /// (the main window took ~30 s to show, clicks were late), and there is no site or password field to read there.
 static bool ownWindowInFront() { DWORD pid = 0; GetWindowThreadProcessId(GetForegroundWindow(), &pid); return pid == GetCurrentProcessId(); }
 
-/// The focused control is a password field (UIA IsPassword): the typing log must not record its keys.
+/// The focused control is a password field (UIA IsPassword): its keys go through unchanged and the typing log must not record them.
 static bool _focusPassword = false;
 bool focusedIsPassword() { return _focusPassword; }
 void pollPassword() {
     if (ownWindowInFront()) { _focusPassword = false; return; }
-    if (!_uia && FAILED(CoCreateInstance(CLSID_CUIAutomation, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&_uia)))) return;
+    // COM is per thread: without this, CoCreateInstance fails until currentHost() has run once with a browser in front
+    if (!_uia) { CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED); if (FAILED(CoCreateInstance(CLSID_CUIAutomation, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&_uia)))) return; }
     IUIAutomationElement* el = nullptr;
     if (FAILED(_uia->GetFocusedElement(&el)) || !el) { _focusPassword = false; return; }
     BOOL pw = FALSE; el->get_CurrentIsPassword(&pw); el->Release();

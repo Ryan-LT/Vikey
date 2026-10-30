@@ -529,6 +529,9 @@ static LRESULT CALLBACK keyboardHook(int nCode, WPARAM wParam, LPARAM lParam) {
     else if (checkHotKey(vSwitchKeyStatus, GET_SWITCH_KEY(vSwitchKeyStatus) != 0xFE)) { switchLanguage("hotkey"); _lastFlag = 0; _hasJustUsedHotKey = true; return 1; }
     _hasJustUsedHotKey = _lastFlag != 0;
 
+    // a password field gets the keys exactly as typed, in both languages: no Telex, no auto switch, no Backspace undo
+    if (site::focusedIsPassword()) { resetTyping(); return CallNextHookEx(_kbHook, nCode, wParam, lParam); }
+
     // Backspace right after an automatic correction undoes it
     if (_keycode == KEY_DELETE && _autoFixUndo.active && !(OTHER_CONTROL_KEY)) { if (UndoAutoFixWithBackspace()) return 1; }
     _autoFixUndo.active = false;
